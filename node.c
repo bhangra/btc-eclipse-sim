@@ -13,7 +13,7 @@
 #ifndef NODE_C
 #define NODE_C
 
-void *dns_query(){
+void dns_query(){
     
 }
 
@@ -55,14 +55,15 @@ int process_msg(struct msg_hdr *msg_ptr){
 }
 
 void *mining_thread(void *param){
-	struct links links;
+	struct links links, *head, *tail;
 	struct link	new_comer;
 	double x, y;
 	int mined;
 	int times;
 	
-	links.link = &new_comer;
-
+	links.link 	= &new_comer;
+	head		= &links;
+	tail		= &links;
 	while(1){
 		for(times = 0;times < 1000;times++){
 			x = rand()/(RAND_MAX);
@@ -72,6 +73,10 @@ void *mining_thread(void *param){
 				printf("mined block in %d times\n", times);
 				break;
 			}
+/*			for(){
+
+			}
+*/
 		}
 		
 	}
