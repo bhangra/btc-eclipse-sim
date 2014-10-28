@@ -17,7 +17,7 @@ struct block {
 
 struct blocks{
 	struct blocks	*prev;
-	struct block	block;
+	struct block	*block;
 	struct blocks	*next;
 };
 

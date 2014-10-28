@@ -21,13 +21,58 @@ void version(){
 }
 double verack(){
 }
+//chain_head = add_block(&new_block, &chain_head);
 struct blocks *add_block(struct block *block, struct blocks *chain_head){
 	struct blocks *tmp;
 	tmp = malloc(sizeof(struct blocks));
+	tmp->block			= block;
 	chain_head->next 	= tmp;
 	tmp->prev 			= chain_head;
 	return tmp;
 }
+void get_block(struct link *link){
+
+}
+void request_block(struct block *wanted, struct link *dest){
+	
+}
+int verify_block(struct block *new_block, struct blocks *chain_head){
+
+	struct block *tmp;
+	tmp = chain_head->block;
+	if(tmp->height >= new_block->height){
+		return -1;
+	}
+	else if(new_block->prev != (tmp)){
+		return 0;
+	}
+	return 1;
+
+}
+struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head, struct link *from){
+	int rerun;
+	int validity;
+	struct blocks *tmp;
+	tmp = chain_head;
+	for(rerun = 1; rerun==1;){
+		rerun = 0;
+		for(;;){
+			validity = verify_block(block, tmp);
+			if(validity==1){
+				add_block(block, chain_head);
+			}
+			else if(validity==0){
+				request_block(block->prev, from);
+				tmp = tmp->prev;
+			}
+			else if(validity==-1){
+				return chain_head;
+			}
+		}
+		
+	}
+}
+
 int process_msg(struct msg_hdr *msg_ptr){
 	const struct msg_hdr *hdr;
 	hdr = msg_ptr;
