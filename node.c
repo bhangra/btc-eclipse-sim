@@ -10,6 +10,8 @@
 #include"block.h"
 #include"connection.c"
 
+#ifndef NODE_C
+#define NODE_C
 
 void *dns_query(){
     
@@ -75,4 +77,8 @@ void *mining_thread(void *param){
 	}
 }
 
+void *dns_thread(void *param){
 
+}
+
+#endif

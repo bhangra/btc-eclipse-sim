@@ -7,6 +7,9 @@
 
 #include"connection.h"
 
+#ifndef CONNECTION_C
+#define CONNECTION_C
+
 #define HDR_SIZE	16
 
 int send_msg(struct link *dest, char *message, int msg_size){
@@ -69,3 +72,5 @@ int readMessage(struct Connection connetion, const char *pch, unsigned int nByte
 	 
 }
 */
+
+#endif

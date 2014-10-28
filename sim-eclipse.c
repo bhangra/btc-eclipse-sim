@@ -6,6 +6,10 @@
 
 #include"node.c"
 
+
+struct links dns_links[5];
+
+
 int main(int argc, char *argv[]){
 	pthread_t thread;
 	int pid;
