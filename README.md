@@ -10,8 +10,8 @@ This is a work in progress C language implementation of Bitcoin network simulato
 status
 ---------
 
-written little bit of 
-	-connection management mechanis
-	-message receiving mechanism
-	-structure of block
-	-very premitive mining_thread
+written little bit of:
+* connection management mechanis
+* message receiving mechanism
+* structure of block
+* very premitive mining_thread
