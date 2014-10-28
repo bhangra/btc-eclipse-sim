@@ -10,22 +10,26 @@
 #define HDR_SIZE	16
 
 int send_msg(struct link *dest, char *message, int msg_size){
-	pthread_mutex_lock(dest->rcv_utex);
-	if(){
+	pthread_mutex_lock((pthread_mutex_t *)&dest->rcv_mutex);
+/*	if(){
 	}
+	else(){
+		
+	}
+*/
 	dest->num_msg += 1;
-	pthread_mutex_unlock(dest->rcv_mutex);
+	pthread_mutex_unlock((pthread_mutex_t *)&dest->rcv_mutex);
 }
 
 int read_msg(struct link *link){
 	const struct msg_hdr	*hdr;
 	int						read_size;
 	int						over_size;
-	if(!link->num_msg){
+	if(!(int)link->num_msg){
 		return 0;
 	}
 	pthread_mutex_lock(&link->rcv_mutex);
-	hdr 		= link->buf[(link)->read_pos];
+	hdr 		= (struct msg_hdr*)&link->buf[(link)->read_pos];
 	read_size	= HDR_SIZE + hdr->message_size;
 //assume that the BUF_SIZE is large enough for a message
 	if((link->read_pos+read_size)<BUF_SIZE){
@@ -35,7 +39,7 @@ int read_msg(struct link *link){
 	else{
 		over_size = (read_size+link->read_pos) - BUF_SIZE;
 		memcpy(link->process_buf, hdr, read_size-over_size);
-		memcpy(link->process_buf[read_size-over_size], link->buf, over_size);
+		memcpy(&link->process_buf[read_size-over_size], link->buf, over_size);
 		link->read_pos = over_size;
 	}
 	link->num_msg -= 1;

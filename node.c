@@ -20,7 +20,7 @@ void version(){
 double verack(){
 }
 
-int process_msg(char *msg_ptr){
+int process_msg(struct msg_hdr *msg_ptr){
 	const struct msg_hdr *hdr;
 	hdr = msg_ptr;
 	if(strncmp(hdr->command, "addblock", 12)){
@@ -52,14 +52,14 @@ int process_msg(char *msg_ptr){
 	}
 }
 
-void mining_thread(void *param){
+void *mining_thread(void *param){
 	struct links links;
-	struct link	link;
+	struct link	new_comer;
 	double x, y;
 	int mined;
 	int times;
 	
-	links.link = &link;
+	links.link = &new_comer;
 
 	while(1){
 		for(times = 0;times < 1000;times++){

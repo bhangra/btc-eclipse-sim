@@ -3,7 +3,8 @@
 #include<unistd.h>
 #include<sys/types.h>
 
-//the "selfish mining" researcher used Monte Carlo simulator
+#ifndef BLOCK_H
+#define	BLOCK_H
 
 struct block {
 	struct block*	prev;
@@ -13,3 +14,5 @@ struct block {
 	double			size;
 	unsigned int	valid;	
 };
+
+#endif

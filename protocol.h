@@ -7,6 +7,9 @@
 #include<sys/ipc.h>
 #include<sys/sem.h>
 
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
+
 /*
 modifying bitcoin's header without
 "magic number" and "checksum"
@@ -39,3 +42,4 @@ todo!!!!!!!!!!!!!!!!
 */
 
 
+#endif
