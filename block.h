@@ -7,12 +7,18 @@
 #define	BLOCK_H
 
 struct block {
-	struct block*	prev;
+	struct block	*prev;
 	double			height;
 	double			time;
-	double			miner_id;
-	double			size;
+	unsigned int	miner_id;
+	unsigned int	size;
 	unsigned int	valid;	
+};
+
+struct blocks{
+	struct blocks	*prev;
+	struct block	block;
+	struct blocks	*next;
 };
 
 #endif
