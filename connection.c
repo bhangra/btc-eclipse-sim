@@ -29,6 +29,7 @@ int send_msg(struct link *dest, char *message, int msg_size){
 	}
 	dest->num_msg += 1;
 	pthread_mutex_unlock((pthread_mutex_t *)&dest->rcv_mutex);
+	return 1;
 }
 
 int read_msg(struct link *link){

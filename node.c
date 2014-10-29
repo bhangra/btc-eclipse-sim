@@ -8,6 +8,7 @@
 #include<sys/sem.h>
 
 #include"block.h"
+#include"thread.c"
 #include"connection.c"
 
 #ifndef NODE_C
@@ -16,10 +17,12 @@
 void dns_query(){
     
 }
+void dns_roundrobin(){
 
+}
 void version(){
 }
-double verack(){
+void verack(){
 }
 //chain_head = add_block(&new_block, &chain_head);
 struct blocks *add_block(struct block *block, struct blocks *chain_head){
@@ -69,8 +72,8 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 				return chain_head;
 			}
 		}
-		
 	}
+	return chain_head;
 }
 
 int process_msg(struct msg_hdr *msg_ptr){
@@ -103,6 +106,7 @@ int process_msg(struct msg_hdr *msg_ptr){
 	else if(strncmp(hdr->command, "verack", 12)){
 
 	}
+	return 0;
 }
 
 void *mining_thread(void *param){
@@ -149,10 +153,17 @@ void *mining_thread(void *param){
 	}
 }
 
-void *dns_thread(void *param){
+void *dns_thread(void *my_link){
 	while(true){
-		
+/*		if(){
+
+		}	
+*/
 	}
+}
+
+void observer(void *param){
+
 }
 
 #endif
