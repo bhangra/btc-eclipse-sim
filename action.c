@@ -10,6 +10,7 @@
 #include"block.h"
 #include"thread.c"
 #include"connection.c"
+#include"proto-node.c"
 
 #ifndef ACTION_C
 #define ACTION_C
