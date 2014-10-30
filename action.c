@@ -109,7 +109,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 	return chain_head;
 }
 
-int process_msg(struct msg_hdr *msg_ptr){
+int process_msg(char *msg_ptr){
 	const struct msg_hdr *hdr;
 	hdr = msg_ptr;
 	if(strncmp(hdr->command, "addblock", 12)){
