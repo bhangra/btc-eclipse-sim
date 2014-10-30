@@ -25,16 +25,23 @@ void dns_query(){
 void dns_roundrobin(){
 
 }
-void version(struct link *new_comer, struct link *link){
-	struct link *tmp, *new;
-	tmp = new_comer;
-	new = malloc(sizeof(struct link));
-	memcpy(&new->dest, &tmp->process_buf[16], sizeof(struct link*));
+void version(struct link *new_comer, struct links *links){
+	struct links *tmp, *new;
+	struct link *link;
+	int size;
+	size = sizeof(struct link*);
+	tmp = links;
+	new = malloc(sizeof(struct links));
+	new->link = malloc(sizeof(struct links));
+	link = new->link;
+	tmp->next = new;
+	new->prev = tmp;
+	memcpy(&link->sbuf[0], "version", 7);
+	memcpy(&link->sbuf[12], &size, 4);
+	memcpy(&link->sbuf[16], &link, sizeof(&link));
+	send_msg(new_comer, link->sbuf, 16+sizeof(&link));
 }
 void verack(struct link *link){
-	struct link *tmp;
-	tmp = link;
-	memcpy(&tmp->dest, &tmp->process_buf[16], sizeof(struct link*));
 }
 //chain_head = add_block(&new_block, &chain_head);
 struct blocks *add_block(struct block *block, struct blocks *chain_head){
@@ -149,10 +156,15 @@ int process_msg(char *msg_ptr){
 
 	}
 	else if(strncmp(hdr->command, "version", 12)){
-		
+//		struct link *tmp, *new;
+//		tmp = new_comer;
+//		new = malloc(sizeof(struct link));
+//		memcpy(&new->dest, &tmp->process_buf[16], sizeof(struct link*));
 	}
 	else if(strncmp(hdr->command, "verack", 12)){
-
+//		struct link *tmp;
+//		tmp = link;
+//		memcpy(&tmp->dest, &tmp->process_buf[16], sizeof(struct link*));
 	}
 	return 0;
 }
