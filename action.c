@@ -10,7 +10,7 @@
 #include"block.h"
 #include"thread.c"
 #include"connection.c"
-#include"proto-node.c"
+#include"proto-node.h"
 
 #ifndef ACTION_C
 #define ACTION_C
@@ -39,7 +39,11 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id){
 	struct block *head, *current;
 	struct blocks *tmp;
 	tmp = chain_head;
-	current = tmp->block;
+	if(tmp!=NULL){
+		current = tmp->block;
+	}else{
+		current = NULL;
+	}
 	mined = 0;
 	for(times = 0;times < 1000;times++){
 		x = rand()/(RAND_MAX);
@@ -48,7 +52,7 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id){
 			fprintf(stderr,"mined block in %d times\n", times);
 			mined = 1;
 			head 			= malloc(sizeof(struct block));
-			head->prev		= chain_head;
+			head->prev		= current;
 			if(current->height!=0){
 				head->height	= current->height++;
 			}else{
@@ -111,7 +115,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 
 int process_msg(char *msg_ptr){
 	const struct msg_hdr *hdr;
-	hdr = msg_ptr;
+	hdr = (struct msg_hdr*)(msg_ptr);
 	if(strncmp(hdr->command, "addblock", 12)){
 		
 	}

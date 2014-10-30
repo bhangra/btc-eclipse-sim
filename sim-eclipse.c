@@ -6,6 +6,7 @@
 
 #include"thread.c"
 #include"node.c"
+#include"routine.c"
 
 struct link		dns_link[5];
 struct links 	dns_links[5];
@@ -19,17 +20,13 @@ int main(int argc, char *argv[]){
 	}
 	pthread_join(thread, NULL);
 */
-	struct threads *thread, *head, *tail;
-	thread = new_thread(mining_thread, NULL);
-	if(thread != NULL){
-		head = thread;
-		tail = thread;
+	int time;
+	struct threads *thread;
+	thread = new_thread(0, NULL);
+	for(time = 0; time < 5; time++){
+		fprintf(stderr, "time = %d\n", time);//debug
+		miner_routine(thread->miner);
 	}
-	else{
-		perror("new_thread()");
-		exit(-1);
-	}
-	sleep(5);
 	cancel_all(thread);
 	return EXIT_SUCCESS;
 }

@@ -8,7 +8,7 @@
 #include<sys/sem.h>
 
 #include"action.c"
-#include"proto-node.c"
+#include"proto-node.h"
 
 #ifndef ROUTINE_C
 #define ROUTINE_C
@@ -16,13 +16,13 @@
 void miner_routine(struct miner *miner){
 	struct links 	*links;
 	struct link		*link;
-	struct blocks 	*chain_head;
 	for(links=miner->links; links!=NULL; links=links->next){
 		for(link=links->link; link->num_msg!=0;){
 			read_msg(link);
 			process_msg(link->process_buf);
 		} 
 	}
+	fprintf(stderr, "after msg\n");//debug
 	miner->blocks = mine_block(miner->blocks, miner->miner_id);
 }
 
