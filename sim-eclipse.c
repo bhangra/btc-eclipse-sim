@@ -8,18 +8,13 @@
 #include"node.c"
 #include"routine.c"
 
-struct link		dns_link[5];
-struct links 	dns_links[5];
 
+#define BAD_DNS 0
+#define ATTACKER 0
+#define INIT_NODES 1000
 
 int main(int argc, char *argv[]){
-/*	pthread_t thread;
-	if(pthread_create(&thread, NULL, mining_thread, NULL)!=0){
-		perror("pthread_create()");
-		return -1;
-	}
-	pthread_join(thread, NULL);
-*/
+	struct dns	dns[5];
 	int time;
 	struct threads *thread;
 	thread = new_thread(0, NULL);

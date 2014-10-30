@@ -15,15 +15,26 @@
 #ifndef ACTION_C
 #define ACTION_C
 
+void dns_seed(){
+
+}
+
 void dns_query(){
     
 }
 void dns_roundrobin(){
 
 }
-void version(){
+void version(struct link *new_comer, struct link *link){
+	struct link *tmp, *new;
+	tmp = new_comer;
+	new = malloc(sizeof(struct link));
+	memcpy(&new->dest, &tmp->process_buf[16], sizeof(struct link*));
 }
-void verack(){
+void verack(struct link *link){
+	struct link *tmp;
+	tmp = link;
+	memcpy(&tmp->dest, &tmp->process_buf[16], sizeof(struct link*));
 }
 //chain_head = add_block(&new_block, &chain_head);
 struct blocks *add_block(struct block *block, struct blocks *chain_head){

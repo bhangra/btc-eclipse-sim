@@ -9,8 +9,6 @@
 
 //change thread to struct 
 
-#define MINER 0
-#define ATTACKER 1
 
 struct threads{
 	struct threads	*prev;
