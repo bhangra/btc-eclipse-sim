@@ -30,7 +30,7 @@ void version(struct link *new_comer, struct links *links){
 	struct link *link;
 	int size;
 	size = sizeof(struct link*);
-	tmp = links;
+	tmp = links; //might put func to get tail
 	new = malloc(sizeof(struct links));
 	new->link = malloc(sizeof(struct links));
 	link = new->link;
@@ -38,10 +38,25 @@ void version(struct link *new_comer, struct links *links){
 	new->prev = tmp;
 	memcpy(&link->sbuf[0], "version", 7);
 	memcpy(&link->sbuf[12], &size, 4);
-	memcpy(&link->sbuf[16], &link, sizeof(&link));
-	send_msg(new_comer, link->sbuf, 16+sizeof(&link));
+	memcpy(&link->sbuf[16], &link, size);
+	send_msg(new_comer, link->sbuf, 16+size);
 }
-void verack(struct link *link){
+void verack(struct link *new_comer, struct links *links){
+	struct links *tmp, *new;
+	struct link *link;
+	int size;
+	tmp = links; //might put func to get tail
+	size = sizeof(struct link*);
+	new = malloc(sizeof(struct links));
+	new->link = malloc(sizeof(struct link));
+	link = new->link;
+	tmp->next = new;
+	new->prev = tmp;
+	memcpy(&link->dest, &new_comer->process_buf[16], size);
+	memcpy(&link->sbuf[0], "verack", 6);
+	memcpy(&link->sbuf[12], &size, 4);
+	memcpy(&link->sbuf[16], &link, size);
+	send_msg(link->dest, link->sbuf, 16+size);
 }
 //chain_head = add_block(&new_block, &chain_head);
 struct blocks *add_block(struct block *block, struct blocks *chain_head){
