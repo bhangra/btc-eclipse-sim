@@ -16,6 +16,10 @@
 struct miner{
 	unsigned int	TTL;
 	unsigned int	group; 	//for attacker to classify nodes
+	bool            boot;
+	bool            seed;
+	bool            one_way;
+
 	unsigned int	miner_id;
 	double			hash_rate;
 	struct blocks	*blocks;
@@ -28,5 +32,6 @@ struct dns{
 	struct link		new_comer;
 };
 
+struct dns dns[5];
 
 #endif

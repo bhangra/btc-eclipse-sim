@@ -27,12 +27,23 @@ void dns_seed(struct dns *dns, struct link *new_comer){
     memcpy(&link->sbuf[16], &new_comer, size);
     send_msg(&dns->new_comer, link->sbuf, 16+size);
 }
+void seed_receive(struct link *new_comer, struct links *seeds){
+	struct link		link;
+	struct links	*tmp, *new;
 
+	for(tmp = seeds; tmp->next!=NULL;tmp=tmp->next){}
+	new			= malloc(sizeof(struct links));
+	link		= malloc(sizeof(struct link));
+	tmp->next	= new;
+	new->prev	= tmp;
+	new->link	= link;
+	memcpy(&link->dest, &new_comer->process_buf[16], sizeof(struct link*));
+}
 void dns_query(struct dns *dns, struct link *new_comer){
-    
+	   
 }
 void dns_roundrobin(){
-
+	
 }
 void version(struct link *dest, struct links *links){
 	struct links *tmp, *new;

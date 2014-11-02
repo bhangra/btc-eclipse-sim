@@ -16,13 +16,24 @@
 
 
 void miner_routine(struct miner *miner){
+	int 			i;
 	struct links 	*links;
 	struct link		*link;
-	for(links=miner->links; links!=NULL; links=links->next){
-		for(link=links->link; link->num_msg!=0;){
-			read_msg(link);
-			process_msg(links);
-		} 
+	if(miner->boot == true && miner->seed == true){
+		for(i=0; i<5; i++){
+			dns_seed(&dns[i], &miner->new_comer);
+		}
+	}
+/*	else if(){
+
+	}
+*/	else{
+		for(links=miner->links; links!=NULL; links=links->next){
+			for(link=links->link; link->num_msg!=0;){
+				read_msg(link);
+				process_msg(links);
+			} 
+		}
 	}
 	fprintf(stderr, "after msg\n");//debug
 	miner->blocks = mine_block(miner->blocks, miner->miner_id);

@@ -18,7 +18,7 @@
 #define INIT_NODES 1000
 
 int main(int argc, char *argv[]){
-	struct dns	dns[5];
+//	struct dns	dns[5];
 	int time;
 	struct threads *thread;
 	thread = new_thread(0, NULL);
