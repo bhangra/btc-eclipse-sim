@@ -28,10 +28,13 @@ void dns_seed(struct dns *dns, struct link *new_comer){
     send_msg(&dns->new_comer, link->sbuf, 16+size);
 }
 void seed_receive(struct link *new_comer, struct links *seeds){
-	struct link		link;
+	struct link		*link;
 	struct links	*tmp, *new;
 
-	for(tmp = seeds; tmp->next!=NULL;tmp=tmp->next){}
+	for(tmp = seeds; tmp->next!=NULL;tmp=tmp->next){
+		if(0==(memcmp(&((tmp->link)->dest), &new_comer->process_buf[16], sizeof(struct link*))))
+			return;
+	}
 	new			= malloc(sizeof(struct links));
 	link		= malloc(sizeof(struct link));
 	tmp->next	= new;

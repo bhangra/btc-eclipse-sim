@@ -46,8 +46,26 @@ struct threads *new_thread(int type, struct threads *tail){
 	}
 	return tmp;
 }
-
+void free_blocks(struct blocks *blocks){
+	struct blocks    *tmp;
+	for(tmp=blocks; tmp->prev!=NULL; tmp=tmp->prev){}
+	for(; tmp!=NULL;){
+		free(tmp->block);
+		tmp=tmp->next;
+		free(tmp->prev);
+	} 
+}
+void free_links(struct links *links){
+	struct links	*tmp;
+	for(tmp=links; tmp->prev!=NULL; tmp=tmp->prev){}
+	for(; tmp!=NULL;){
+		free(tmp->link);
+		tmp=tmp->next;
+		free(tmp->prev);
+	}	
+}
 struct threads *cancel_thread(struct threads *will_kill){
+	struct miner	*tmp;
 	struct threads *before, *after;
 	if(will_kill==NULL){
 		return NULL;
@@ -62,6 +80,9 @@ struct threads *cancel_thread(struct threads *will_kill){
 	}else{
 		after	= NULL;
 	}
+	tmp = will_kill->miner;
+	free_links(tmp->links);
+	free_blocks(tmp->blocks);
 	free(will_kill->miner);
 	free(will_kill);
 	if(before==NULL){
