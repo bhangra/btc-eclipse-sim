@@ -1,3 +1,6 @@
+#ifndef THREAD_C
+#define THREAD_C
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<stdbool.h>
@@ -11,8 +14,6 @@
 #include"proto-node.h"
 #include"thread.h"
 
-#ifndef THREAD_C
-#define THREAD_C
 
 struct threads *search_head(struct threads *thread){
 	struct threads *tmp;

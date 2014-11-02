@@ -1,3 +1,6 @@
+#ifndef ATTACKER_C
+#define ATTACKER_C
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<stdbool.h>
@@ -7,9 +10,7 @@
 #include<sys/ipc.h>
 #include<sys/sem.h>
 
-#include"connection.c"
+//#include"connection.c"
 
-#ifndef ATTACKER_C
-#define ATTACKER_C
 
 #endif

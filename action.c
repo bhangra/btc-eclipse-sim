@@ -1,3 +1,6 @@
+#ifndef ACTION_C
+#define ACTION_C
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<stdbool.h>
@@ -12,20 +15,18 @@
 #include"connection.c"
 #include"proto-node.h"
 
-#ifndef ACTION_C
-#define ACTION_C
 
-void dns_seed(){
+void dns_seed(struct dns *dns, struct link *link){
 
 }
 
-void dns_query(){
+void dns_query(struct dns *dns, struct link *new_comer){
     
 }
 void dns_roundrobin(){
 
 }
-void version(struct link *new_comer, struct links *links){
+void version(struct link *dest, struct links *links){
 	struct links *tmp, *new;
 	struct link *link;
 	int size;
@@ -39,9 +40,9 @@ void version(struct link *new_comer, struct links *links){
 	memcpy(&link->sbuf[0], "version", 7);
 	memcpy(&link->sbuf[12], &size, 4);
 	memcpy(&link->sbuf[16], &link, size);
-	send_msg(new_comer, link->sbuf, 16+size);
+	send_msg(dest, link->sbuf, 16+size);
 }
-void verack(struct link *new_comer, struct links *links){
+void verack(struct links *links){
 	struct links *tmp, *new;
 	struct link *link;
 	int size;
@@ -52,7 +53,7 @@ void verack(struct link *new_comer, struct links *links){
 	link = new->link;
 	tmp->next = new;
 	new->prev = tmp;
-	memcpy(&link->dest, &new_comer->process_buf[16], size);
+	memcpy(&link->dest, &link->process_buf[16], size);
 	memcpy(&link->sbuf[0], "verack", 6);
 	memcpy(&link->sbuf[12], &size, 4);
 	memcpy(&link->sbuf[16], &link, size);
@@ -146,9 +147,13 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 	return chain_head;
 }
 
-int process_msg(char *msg_ptr){
+int process_msg(struct links *links){
+	char *payload;
+	struct link *link;
+	link = links->link;
 	const struct msg_hdr *hdr;
-	hdr = (struct msg_hdr*)(msg_ptr);
+	hdr = (struct msg_hdr*)(link->process_buf);
+	payload = hdr +sizeof(struct msg_hdr);
 	if(strncmp(hdr->command, "addblock", 12)){
 		
 	}
@@ -162,7 +167,7 @@ int process_msg(char *msg_ptr){
 
 	}
 	else if(strncmp(hdr->command, "roundrobin", 12)){
-
+		version((struct link*)payload, links);
 	}
 	else if(strncmp(hdr->command, "getaddr", 12)){
 		
@@ -171,6 +176,7 @@ int process_msg(char *msg_ptr){
 
 	}
 	else if(strncmp(hdr->command, "version", 12)){
+		verack(links);
 //		struct link *tmp, *new;
 //		tmp = new_comer;
 //		new = malloc(sizeof(struct link));

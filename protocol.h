@@ -1,3 +1,6 @@
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<stdbool.h>
@@ -7,8 +10,6 @@
 #include<sys/ipc.h>
 #include<sys/sem.h>
 
-#ifndef PROTOCOL_H
-#define PROTOCOL_H
 
 /*
 modifying bitcoin's header without

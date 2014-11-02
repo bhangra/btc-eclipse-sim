@@ -1,3 +1,7 @@
+#ifndef SIM_ECLIPSE_C
+#define SIM_ECLIPSE_C
+
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<pthread.h>
@@ -5,7 +9,7 @@
 #include<sys/types.h>
 
 #include"thread.c"
-#include"node.c"
+//#include"node.c"
 #include"routine.c"
 
 
@@ -25,3 +29,5 @@ int main(int argc, char *argv[]){
 	cancel_all(thread);
 	return EXIT_SUCCESS;
 }
+
+#endif

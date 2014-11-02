@@ -1,11 +1,13 @@
+#ifndef THREAD_H
+#define THREAD_H
+
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<pthread.h>
 #include<unistd.h>
 #include<sys/types.h>
 
-#ifndef THREAD_H
-#define THREAD_H
 
 //change thread to struct 
 

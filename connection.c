@@ -1,3 +1,6 @@
+#ifndef CONNECTION_C
+#define CONNECTION_C
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<stdbool.h>
@@ -6,9 +9,6 @@
 #include<unistd.h>
 
 #include"connection.h"
-
-#ifndef CONNECTION_C
-#define CONNECTION_C
 
 #define HDR_SIZE	16
 

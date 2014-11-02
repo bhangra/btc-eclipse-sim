@@ -1,3 +1,6 @@
+#ifndef CONNECTION_H
+#define CONNECTION_H
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<stdbool.h>
@@ -5,9 +8,6 @@
 #include<unistd.h>
 
 #include"protocol.h"
-
-#ifndef CONNECTION_H
-#define CONNECTION_H
 
 #define MAX_SIZE	100
 #define BUF_SIZE	10000
