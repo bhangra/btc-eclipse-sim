@@ -12,7 +12,7 @@
 #include<sys/sem.h>
 
 #include"action.c"
-#include"proto-node.h"
+//#include"proto-node.h"
 
 
 void miner_routine(struct miner *miner){

@@ -8,7 +8,7 @@
 #include<unistd.h>
 #include<sys/types.h>
 
-#include"thread.c"
+//#include"thread.c"
 //#include"node.c"
 #include"routine.c"
 

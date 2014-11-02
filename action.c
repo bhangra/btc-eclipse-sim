@@ -13,7 +13,7 @@
 #include"block.h"
 #include"thread.c"
 #include"connection.c"
-#include"proto-node.h"
+//#include"proto-node.h"
 
 
 void dns_seed(struct dns *dns, struct link *link){
@@ -153,7 +153,7 @@ int process_msg(struct links *links){
 	link = links->link;
 	const struct msg_hdr *hdr;
 	hdr = (struct msg_hdr*)(link->process_buf);
-	payload = hdr +sizeof(struct msg_hdr);
+	payload = (char *)(hdr +sizeof(struct msg_hdr));
 	if(strncmp(hdr->command, "addblock", 12)){
 		
 	}
