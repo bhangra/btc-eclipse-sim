@@ -10,14 +10,22 @@
 #include<sys/ipc.h>
 #include<sys/sem.h>
 
-#include"block.h"
 #include"thread.c"
 #include"connection.c"
-//#include"proto-node.h"
+#include"proto-node.h"
 
 
-void dns_seed(struct dns *dns, struct link *link){
-
+void dns_seed(struct dns *dns, struct link *new_comer){
+    struct links *tmp, *new;
+    struct link *link;
+    int size;
+    size = sizeof(struct link*);
+	link = new_comer; 
+    link->dest = &dns->new_comer;
+    memcpy(&link->sbuf[0], "dnsseed", 7);
+    memcpy(&link->sbuf[12], &size, 4);
+    memcpy(&link->sbuf[16], &new_comer, size);
+    send_msg(&dns->new_comer, link->sbuf, 16+size);
 }
 
 void dns_query(struct dns *dns, struct link *new_comer){
