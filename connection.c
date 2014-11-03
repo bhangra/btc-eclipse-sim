@@ -5,12 +5,31 @@
 #include<stdlib.h>
 #include<stdbool.h>
 #include<string.h>
-#include<pthread.h>
+#include<sys/types.h>
+#include<sys/mman.h>
 #include<unistd.h>
+#include<signal.h>
+#include<pthread.h>
 
 #include"connection.h"
 
 #define HDR_SIZE	16
+
+void remove_links(struct links *will_remove){
+	struct links *after, *before;
+	after	= will_remove->next;
+	before	= will_remove->prev;
+	if(after!=NULL&&before!=NULL){
+		after->prev	= before;
+		before->next= after;
+	}
+	else if(after!=NULL){
+		after->prev	= NULL;
+	}
+	else{
+		before->next= NULL;
+	}
+}
 
 int send_msg(struct link *dest, char *message, int msg_size){
 	unsigned int pos, over_size;

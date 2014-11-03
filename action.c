@@ -6,6 +6,7 @@
 #include<stdbool.h>
 #include<pthread.h>
 #include<unistd.h>
+#include<signal.h>
 #include<sys/types.h>
 #include<sys/ipc.h>
 #include<sys/sem.h>
@@ -222,10 +223,7 @@ int process_msg(struct links *links){
 	const struct msg_hdr *hdr;
 	hdr = (struct msg_hdr*)(link->process_buf);
 	payload = (char *)(hdr +sizeof(struct msg_hdr));
-	if(strncmp(hdr->command, "addblock", 8)==0){
-		
-	}
-	else if(strncmp(hdr->command, "block", 5)==0){
+	if(strncmp(hdr->command, "block", 5)==0){
 		
 	}
 	else if(strncmp(hdr->command, "newhead", 7)==0){
