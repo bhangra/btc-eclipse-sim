@@ -43,10 +43,38 @@ void seed_receive(struct link *new_comer, struct links *seeds){
 	memcpy(&link->dest, &new_comer->process_buf[16], sizeof(struct link*));
 }
 void dns_query(struct dns *dns, struct link *new_comer){
-	   
+	int size;
+	struct link *link;
+	struct links *tmp;
+	size = sizeof(struct link*);
+	link = new_comer;
+	link->dest = &(dns->new_comer);
+	memcpy(&link->sbuf[0], "dnsquery", 8);
+	memcpy(&link->sbuf[12], &size, 4);
+	memcpy(&link->sbuf[16], &new_comer, size);
+	send_msg(&dns->new_comer, link->sbuf, 16+size);  
 }
-void dns_roundrobin(){
-	
+void dns_roundrobin(struct link *new_comer, struct links *seeds){
+	int i, j, size;
+	struct link *link;
+	struct links *tmp, *head;
+	size = sizeof(struct link*);
+	link = new_comer;
+	for(tmp=seeds;tmp->prev!=NULL;tmp=tmp->prev){;}
+	head=tmp;
+	for(i=1; tmp->next!=NULL; i++){
+		tmp=tmp->next;
+	}
+	j=rand()%i;
+	tmp = head;
+	for(i=0; i<j; i++){
+		tmp = tmp->next;
+	}
+	memcpy(&link->dest, &(link->process_buf[16]), size);
+	memcpy(&link->sbuf[0], "roundrobin", 10);
+	memcpy(&link->sbuf[12], &size, 4);
+	memcpy(&link->sbuf[16], tmp->link, size);
+	send_msg(link->dest, link->sbuf, 16+size);
 }
 void version(struct link *dest, struct links *links){
 	struct links *tmp, *new;
@@ -168,7 +196,25 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 	}
 	return chain_head;
 }
-
+int process_dns(struct links *new_comer, struct links *seeds){
+	char * payload;
+	struct link *link;
+	const struct msg_hdr *hdr;
+	link	= new_comer;
+	hdr		= (struct msg_hdr*)(link->process_buf);
+	payload	= (char *)(hdr+sizeof(struct msg_hdr));
+	if(strncmp(hdr->command, "dnsseed", 7)==0){
+		seed_receive(link, seeds);
+		return 1;
+	}
+	else if(strcmp(hdr->command, "dnsquery", 8)==0){
+		dns_roundrobin(link, seeds);
+		return 1;
+	}
+	else{
+		return 0;
+	}
+}
 int process_msg(struct links *links){
 	char *payload;
 	struct link *link;
@@ -176,35 +222,32 @@ int process_msg(struct links *links){
 	const struct msg_hdr *hdr;
 	hdr = (struct msg_hdr*)(link->process_buf);
 	payload = (char *)(hdr +sizeof(struct msg_hdr));
-	if(strncmp(hdr->command, "addblock", 12)){
+	if(strncmp(hdr->command, "addblock", 8)==0){
 		
 	}
-	else if(strncmp(hdr->command, "block", 12)){
+	else if(strncmp(hdr->command, "block", 5)==0){
 		
 	}
-	else if(strncmp(hdr->command, "newhead", 12)){
+	else if(strncmp(hdr->command, "newhead", 7)==0){
 
 	}
-	else if(strncmp(hdr->command, "getblock", 12)){
+	else if(strncmp(hdr->command, "getblock", 8)==0){
 
 	}
-	else if(strncmp(hdr->command, "roundrobin", 12)){
+	else if(strncmp(hdr->command, "roundrobin", 10)==0){
 		version((struct link*)payload, links);
 	}
-	else if(strncmp(hdr->command, "getaddr", 12)){
+	else if(strncmp(hdr->command, "getaddr", 7)==0){
 		
 	}
-	else if(strncmp(hdr->command, "addr", 12)){
+	else if(strncmp(hdr->command, "addr", 4)==0){
 
 	}
-	else if(strncmp(hdr->command, "version", 12)){
+	else if(strncmp(hdr->command, "version", 6)==0){
 		verack(links);
-//		struct link *tmp, *new;
-//		tmp = new_comer;
-//		new = malloc(sizeof(struct link));
-//		memcpy(&new->dest, &tmp->process_buf[16], sizeof(struct link*));
 	}
-	else if(strncmp(hdr->command, "verack", 12)){
+	else if(strncmp(hdr->command, "verack", 6)==0){
+		link->dest = (struct link*)payload;
 //		struct link *tmp;
 //		tmp = link;
 //		memcpy(&tmp->dest, &tmp->process_buf[16], sizeof(struct link*));

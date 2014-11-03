@@ -35,7 +35,6 @@ void miner_routine(struct miner *miner){
 			} 
 		}
 	}
-	fprintf(stderr, "after msg\n");//debug
 	miner->blocks = mine_block(miner->blocks, miner->miner_id);
 }
 
