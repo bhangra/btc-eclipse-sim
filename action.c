@@ -196,7 +196,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 	}
 	return chain_head;
 }
-int process_dns(struct links *new_comer, struct links *seeds){
+int process_dns(struct link *new_comer, struct links *seeds){
 	char * payload;
 	struct link *link;
 	const struct msg_hdr *hdr;
@@ -207,7 +207,7 @@ int process_dns(struct links *new_comer, struct links *seeds){
 		seed_receive(link, seeds);
 		return 1;
 	}
-	else if(strcmp(hdr->command, "dnsquery", 8)==0){
+	else if(strncmp(hdr->command, "dnsquery", 8)==0){
 		dns_roundrobin(link, seeds);
 		return 1;
 	}
