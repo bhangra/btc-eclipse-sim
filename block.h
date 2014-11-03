@@ -5,10 +5,12 @@
 #include<stdlib.h>
 #include<unistd.h>
 #include<sys/types.h>
+#include<openssl/sha.h>
 
 struct block {
-	struct block	*prev;
-	double			height;
+//	struct block	*prev;
+	unsigned char	prev[SHA256_DIGEST_LENGTH];
+	unsigned int	height;
 	double			time;
 	unsigned int	miner_id;
 	unsigned int	size;

@@ -2,7 +2,7 @@
 COMPILER 	= gcc
 CFLAGS		= -g -pthread #-Wextra
 LDFLAGS		= -z muldefs
-LIBS		= 
+LIBS		=  -lcrypto
 INCLUDE		= -I./
 TARGET		= ./$(shell basename `readlink -f .`)
 OBJDIR		= ./obj

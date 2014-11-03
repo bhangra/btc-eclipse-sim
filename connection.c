@@ -33,7 +33,7 @@ void remove_links(struct links *will_remove){
 	}
 }
 
-struct links *add_links(unsigned int miner_id, struct link *dest, struct links *links){
+struct links *add_links(unsigned int miner_id, struct link *dest, struct link *new_comer, struct links *links){
 	struct links *tmp, *new;
 	for(tmp=links; tmp->next!=NULL; tmp=tmp->next){}
 	new			= malloc(sizeof(struct links));

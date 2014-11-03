@@ -6,11 +6,11 @@
 #include<stdbool.h>
 #include<pthread.h>
 #include<unistd.h>
-#include<signal.h>
 #include<sys/types.h>
 #include<sys/ipc.h>
 #include<sys/sem.h>
 
+#include"block.h"
 #include"thread.c"
 #include"connection.c"
 #include"proto-node.h"
@@ -33,12 +33,15 @@ void seed_receive(struct link *new_comer, struct links *seeds){
 	unsigned int	miner_id;
 	struct link		*link;
 	struct links	*tmp, *new;
-	miner_id = (unsigned int)new_comer->process_buf[16+sizeof(struct link*)];
+//	miner_id = (unsigned int)new_comer->process_buf[16+sizeof(struct link*)];
+	memcpy((char *)&miner_id, &new_comer->process_buf[16+sizeof(struct link*)], sizeof(unsigned int));
+//	link 	= (struct link*)new_comer->process_buf[16];
+	memcpy(&link, &new_comer->process_buf[16], sizeof(struct link*));
 	for(tmp = seeds; tmp->next!=NULL;tmp=tmp->next){
 		if(miner_id==tmp->miner_id)
 			return;
 	}
-	add_links(miner_id, (struct link*)&new_comer->process_buf[16], tmp);
+	add_links(miner_id, link, link, tmp);
 }
 void dns_query(struct dns *dns, struct link *new_comer){
 	int size;
@@ -52,6 +55,7 @@ void dns_query(struct dns *dns, struct link *new_comer){
 	memcpy(&link->sbuf[16], &new_comer, size);
 	send_msg(&dns->new_comer, link->sbuf, 16+size);  
 }
+
 void dns_roundrobin(struct link *new_comer, struct links *seeds){
 	int i, j, size;
 	struct link *link;
@@ -75,36 +79,71 @@ void dns_roundrobin(struct link *new_comer, struct links *seeds){
 	memcpy(&link->sbuf[16+size], &tmp->miner_id, sizeof(unsigned int));
 	send_msg(link->dest, link->sbuf, 16+size+sizeof(unsigned int));
 }
-void version(unsigned int my_id, struct link *dest, struct links *links){
+
+void getaddr(struct link *dest){
+	unsigned int	size;
+	struct link 	*link;
+	size = 0;
+	link = dest;
+	memcpy(&link->sbuf[0], "getaddr", 7);
+	memcpy(&link->sbuf[12], &size, 4);
+	send_msg(link->dest, link->sbuf, 16);
+}
+
+void addr(struct link *dest, struct miner *me){
+	unsigned int	size, i;
+	struct link		*link, *tmp;
+	struct links 	*links;
+	link = dest;
+	size = 0;
+	memcpy(&link->sbuf[0], "addr", 4);
+	for(links=me->links; links->prev!=NULL; links=links->prev){}
+	for(i=0; links!=NULL; i++){
+		link=links->link;	
+		memcpy(&link->sbuf[16+(i*sizeof(struct link*))], &links->new_comer, sizeof(struct link*));
+		links=links->next;
+	}
+	size=i*sizeof(struct link*);
+	memcpy(&link->sbuf[12], &size, 4);
+	send_msg(link->dest, link->sbuf, 16);
+}
+//dest is desination's new_comer
+void version(unsigned int my_id, unsigned int dest_id, struct link *dest, struct link *new_comer, struct links *links){
 	unsigned int miner_id;
 	struct links *new;
 	struct link *link;
-	int size;
+	unsigned int size, total;
 	size = sizeof(struct link*);
-	new = add_links(0, dest, links);
+	total = size+sizeof(unsigned int)+sizeof(struct link*);
+	new = add_links(dest_id, dest, dest,  links);
 	link = new->link;
 	memcpy(&link->sbuf[0], "version", 7);
-	memcpy(&link->sbuf[12], &size, 4);
+	memcpy(&link->sbuf[12], &total, 4);
 	memcpy(&link->sbuf[16], &link, size);
 	memcpy(&link->sbuf[16+size], &my_id, sizeof(unsigned int));
+	memcpy(&link->sbuf[16+size+sizeof(unsigned int)], new_comer, sizeof(struct link*));
 	send_msg(dest, link->sbuf, 16+size+sizeof(unsigned int));
 }
+
 void verack(struct link *new_comer, struct links *links){
 	unsigned int miner_id;
 	struct links *tmp, *new;
-	struct link *link, *dest;
-	int size;
+	struct link *link, *dest, *dest_new_comer;
+	unsigned int size;
 	size = sizeof(struct link*);
 	dest		= (struct link*)&new_comer->process_buf[16];
-	miner_id	= (unsigned int)new_comer->process_buf[16+size];
-	tmp			= add_links(miner_id, dest, links);
+//	miner_id	= (unsigned int)new_comer->process_buf[16+size];
+	memcpy(&miner_id, &new_comer->process_buf[16+size], sizeof(unsigned int));
+//	dest_new_comer= (struct link*)new_comer->process_buf[16+size+sizeof(unsigned int)];
+	memcpy(&dest_new_comer, &new_comer->process_buf[16+size+sizeof(unsigned int)], sizeof(struct link*));
+	tmp			= add_links(miner_id, dest, dest_new_comer, links);
 	link		= tmp->link;
 	memcpy(&link->sbuf[0], "verack", 6);
 	memcpy(&link->sbuf[12], &size, 4);
 	memcpy(&link->sbuf[16], &link, size);
 	send_msg(link->dest, link->sbuf, 16+size);
 }
-//chain_head = add_block(&new_block, &chain_head);
+
 struct blocks *add_block(struct block *block, struct blocks *chain_head){
 	struct blocks *tmp;
 	tmp = malloc(sizeof(struct blocks));
@@ -113,10 +152,35 @@ struct blocks *add_block(struct block *block, struct blocks *chain_head){
 	tmp->prev 			= chain_head;
 	return tmp;
 }
-struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id){
-	int x, y, times, mined;
-	struct block *head, *current;
-	struct blocks *tmp;
+
+void send_block(struct block *block, struct link *dest){
+	int size;
+	struct link *link;
+	size = sizeof(struct block);
+	link = dest;
+	memcpy(&link->sbuf[0], "block", 5);
+	memcpy(&link->sbuf[12], &size, 4);
+	memcpy(&link->sbuf[16], block, size);
+	send_msg(link->dest, link->sbuf, 16+size);
+}
+
+void propagate_block(struct block *block, struct miner *me){
+	struct link		*link;
+	struct links	*links;
+	for(links=me->links; links->prev!=NULL;links=links->prev){}
+	for(; links!=NULL; links=links->next){
+		link = links->link;
+		send_block(block, link);
+	}
+}
+
+struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, struct miner *me){
+	int				x, y, times, mined;
+	struct block	*head, *current;
+	struct blocks	*tmp;
+	struct link		*link;
+	struct links	*links;
+
 	tmp = chain_head;
 	if(tmp!=NULL){
 		current = tmp->block;
@@ -129,13 +193,15 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id){
 		y = rand()/(RAND_MAX);
 		if((x*x+y*y)>0.5){
 			fprintf(stderr,"mined block in %d times\n", times);
-			mined = 1;
-			head 			= malloc(sizeof(struct block));
-			head->prev		= current;
+			mined			= 1;
+			head			= malloc(sizeof(struct block));
+//			head->prev      = current;
 			if(current->height!=0){
 				head->height	= current->height++;
+				memcpy(head->prev, SHA256((char *)current, sizeof(struct block), 0), SHA256_DIGEST_LENGTH);
 			}else{
 				head->height	= 1;
+				memset(head->prev, 0, SHA256_DIGEST_LENGTH);
 			}
 //			head->time              = ~~~
 			head->miner_id	= miner_id;
@@ -146,14 +212,20 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id){
 	}
 	if(mined){
 		tmp = add_block(head, tmp);
+		propagate_block(head, me);
 	}
 	return tmp;
 }
-void get_block(struct link *link){
 
-}
-void request_block(struct block *wanted, struct link *dest){
-	
+void request_block(/*struct block*/unsigned int wanted_height, struct link *dest){
+	int size;
+	struct link *link;
+	size = sizeof(unsigned int);
+	link = dest;
+	memcpy(&link->sbuf[0], "getblock", 8);
+	memcpy(&link->sbuf[12], &size, 4);
+	memcpy(&link->sbuf[16], &wanted_height, size);
+	send_msg(link->dest, link->sbuf, 16+size);
 }
 int verify_block(struct block *new_block, struct blocks *chain_head){
 
@@ -162,7 +234,7 @@ int verify_block(struct block *new_block, struct blocks *chain_head){
 	if(tmp->height >= new_block->height){
 		return -1;
 	}
-	else if(new_block->prev != (tmp)){
+	else if(memcmp(new_block->prev, SHA256((char *)tmp, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)/*new_block->prev != (tmp)*/){
 		return 0;
 	}
 	return 1;
@@ -171,6 +243,7 @@ int verify_block(struct block *new_block, struct blocks *chain_head){
 struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head, struct link *from){
 	int rerun;
 	int validity;
+	struct block *accept;
 	struct blocks *tmp;
 	tmp = chain_head;
 	for(rerun = 1; rerun==1;){
@@ -178,10 +251,12 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 		for(;;){
 			validity = verify_block(block, tmp);
 			if(validity==1){
-				add_block(block, chain_head);
+				accept = malloc(sizeof(block));
+				memcpy(accept, block, sizeof(block));
+				add_block(accept, chain_head);
 			}
 			else if(validity==0){
-				request_block(block->prev, from);
+				request_block((block->height-1), from);
 				tmp = tmp->prev;
 			}
 			else if(validity==-1){
@@ -210,30 +285,43 @@ int process_dns(struct link *new_comer, struct links *seeds){
 		return 0;
 	}
 }
-int process_msg(struct link *new_comer,struct links *links){
-	char *payload;
-	struct link *link;
-	link = links->link;
+int process_msg(struct link *new_comer,struct links *links, struct miner *me){
+	char				*payload;
+	unsigned int		height;
+	struct link			*link;
 	const struct msg_hdr *hdr;
+	struct block		*block;
+	struct blocks		*blocks;
+
+	link = links->link;
 	hdr = (struct msg_hdr*)(link->process_buf);
 	payload = (char *)(hdr +sizeof(struct msg_hdr));
 	if(strncmp(hdr->command, "block", 5)==0){
-		
+		me->blocks = process_new_blocks((struct block*)payload, me->blocks, link);
 	}
 	else if(strncmp(hdr->command, "newhead", 7)==0){
 
 	}
 	else if(strncmp(hdr->command, "getblock", 8)==0){
-
+		height = (unsigned int)*payload;
+		for(blocks=me->blocks; blocks->next!=NULL; blocks=blocks->next){}
+		for(;block->height!=height||blocks!=NULL;blocks=blocks->prev){
+			block=blocks->block;
+		}
+		if(blocks==NULL)
+			return;
+		else{
+			send_block(block, link);
+		}
 	}
 	else if(strncmp(hdr->command, "roundrobin", 10)==0){
-		version((unsigned int)*(payload+sizeof(struct link*)) ,(struct link*)payload, links);
+		version(me->miner_id, (unsigned int)*(payload+sizeof(struct link*)), (struct link*)payload, &me->new_comer, links);
 	}
 	else if(strncmp(hdr->command, "getaddr", 7)==0){
 		
 	}
 	else if(strncmp(hdr->command, "addr", 4)==0){
-
+		
 	}
 	else if(strncmp(hdr->command, "version", 6)==0){
 		verack(new_comer, links);

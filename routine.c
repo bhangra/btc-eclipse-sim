@@ -26,18 +26,18 @@ void miner_routine(struct miner *miner){
 			dns_seed(miner->miner_id, &dns[i], &miner->new_comer);
 		}
 	}
-/*	else if(){
-
+	if(miner->boot == true){
+		
 	}
-*/	else{
+	else{
 		for(links=miner->links; links!=NULL; links=links->next){
 			for(link=links->link; link->num_msg!=0;){
 				read_msg(link);	
-				process_msg(&miner->new_comer, links);
+				process_msg(&miner->new_comer, links, miner);
 			} 
 		}
 	}
-	miner->blocks = mine_block(miner->blocks, miner->miner_id);
+	miner->blocks = mine_block(miner->blocks, miner->miner_id, miner);
 }
 void links_kill(int miner_id, struct threads *threads){
 	struct threads	*tmp;
@@ -53,7 +53,7 @@ void links_kill(int miner_id, struct threads *threads){
 	}
 }
 void miner_kill(struct miner *miner){
-
+	
 }
 
 #endif
