@@ -33,9 +33,7 @@ void seed_receive(struct link *new_comer, struct links *seeds){
 	unsigned int	miner_id;
 	struct link		*link;
 	struct links	*tmp, *new;
-//	miner_id = (unsigned int)new_comer->process_buf[16+sizeof(struct link*)];
 	memcpy((char *)&miner_id, &new_comer->process_buf[16+sizeof(struct link*)], sizeof(unsigned int));
-//	link 	= (struct link*)new_comer->process_buf[16];
 	memcpy(&link, &new_comer->process_buf[16], sizeof(struct link*));
 	for(tmp = seeds; tmp->next!=NULL;tmp=tmp->next){
 		if(miner_id==tmp->miner_id)
@@ -132,9 +130,7 @@ void verack(struct link *new_comer, struct links *links){
 	unsigned int size;
 	size = sizeof(struct link*);
 	dest		= (struct link*)&new_comer->process_buf[16];
-//	miner_id	= (unsigned int)new_comer->process_buf[16+size];
 	memcpy(&miner_id, &new_comer->process_buf[16+size], sizeof(unsigned int));
-//	dest_new_comer= (struct link*)new_comer->process_buf[16+size+sizeof(unsigned int)];
 	memcpy(&dest_new_comer, &new_comer->process_buf[16+size+sizeof(unsigned int)], sizeof(struct link*));
 	tmp			= add_links(miner_id, dest, dest_new_comer, links);
 	link		= tmp->link;
@@ -217,7 +213,7 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, stru
 	return tmp;
 }
 
-void request_block(/*struct block*/unsigned int wanted_height, struct link *dest){
+void request_block(unsigned int wanted_height, struct link *dest){
 	int size;
 	struct link *link;
 	size = sizeof(unsigned int);
@@ -234,7 +230,7 @@ int verify_block(struct block *new_block, struct blocks *chain_head){
 	if(tmp->height >= new_block->height){
 		return -1;
 	}
-	else if(memcmp(new_block->prev, SHA256((char *)tmp, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)/*new_block->prev != (tmp)*/){
+	else if(memcmp(new_block->prev, SHA256((char *)tmp, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
 		return 0;
 	}
 	return 1;
@@ -328,9 +324,6 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	}
 	else if(strncmp(hdr->command, "verack", 6)==0){
 		link->dest = (struct link*)payload;
-//		struct link *tmp;
-//		tmp = link;
-//		memcpy(&tmp->dest, &tmp->process_buf[16], sizeof(struct link*));
 	}
 	return 0;
 }
