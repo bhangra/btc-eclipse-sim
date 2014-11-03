@@ -24,7 +24,7 @@ struct link{
 };
 
 struct links{
-	int					miner_id;
+	unsigned int		miner_id;
 	struct links		*prev;
 	struct link			*link;
 	struct links		*next;

@@ -16,7 +16,7 @@
 #include"proto-node.h"
 
 
-void dns_seed(struct dns *dns, struct link *new_comer){
+void dns_seed(int my_id, struct dns *dns, struct link *new_comer){
     struct links *tmp, *new;
     struct link *link;
     int size;
@@ -26,22 +26,19 @@ void dns_seed(struct dns *dns, struct link *new_comer){
     memcpy(&link->sbuf[0], "dnsseed", 7);
     memcpy(&link->sbuf[12], &size, 4);
     memcpy(&link->sbuf[16], &new_comer, size);
-    send_msg(&dns->new_comer, link->sbuf, 16+size);
+	memcpy(&link->sbuf[16+size], &my_id, sizeof(unsigned int));
+    send_msg(&dns->new_comer, link->sbuf, 16+size+sizeof(unsigned int));
 }
 void seed_receive(struct link *new_comer, struct links *seeds){
+	unsigned int	miner_id;
 	struct link		*link;
 	struct links	*tmp, *new;
-
+	miner_id = (unsigned int)new_comer->process_buf[16+sizeof(struct link*)];
 	for(tmp = seeds; tmp->next!=NULL;tmp=tmp->next){
-		if(0==(memcmp(&((tmp->link)->dest), &new_comer->process_buf[16], sizeof(struct link*))))
+		if(miner_id==tmp->miner_id)
 			return;
 	}
-	new			= malloc(sizeof(struct links));
-	link		= malloc(sizeof(struct link));
-	tmp->next	= new;
-	new->prev	= tmp;
-	new->link	= link;
-	memcpy(&link->dest, &new_comer->process_buf[16], sizeof(struct link*));
+	add_links(miner_id, (struct link*)&new_comer->process_buf[16], tmp);
 }
 void dns_query(struct dns *dns, struct link *new_comer){
 	int size;
@@ -75,36 +72,33 @@ void dns_roundrobin(struct link *new_comer, struct links *seeds){
 	memcpy(&link->sbuf[0], "roundrobin", 10);
 	memcpy(&link->sbuf[12], &size, 4);
 	memcpy(&link->sbuf[16], tmp->link, size);
-	send_msg(link->dest, link->sbuf, 16+size);
+	memcpy(&link->sbuf[16+size], &tmp->miner_id, sizeof(unsigned int));
+	send_msg(link->dest, link->sbuf, 16+size+sizeof(unsigned int));
 }
-void version(struct link *dest, struct links *links){
-	struct links *tmp, *new;
+void version(unsigned int my_id, struct link *dest, struct links *links){
+	unsigned int miner_id;
+	struct links *new;
 	struct link *link;
 	int size;
 	size = sizeof(struct link*);
-	tmp = links; //might put func to get tail
-	new = malloc(sizeof(struct links));
-	new->link = malloc(sizeof(struct links));
+	new = add_links(0, dest, links);
 	link = new->link;
-	tmp->next = new;
-	new->prev = tmp;
 	memcpy(&link->sbuf[0], "version", 7);
 	memcpy(&link->sbuf[12], &size, 4);
 	memcpy(&link->sbuf[16], &link, size);
-	send_msg(dest, link->sbuf, 16+size);
+	memcpy(&link->sbuf[16+size], &my_id, sizeof(unsigned int));
+	send_msg(dest, link->sbuf, 16+size+sizeof(unsigned int));
 }
-void verack(struct links *links){
+void verack(struct link *new_comer, struct links *links){
+	unsigned int miner_id;
 	struct links *tmp, *new;
-	struct link *link;
+	struct link *link, *dest;
 	int size;
-	tmp = links; //might put func to get tail
 	size = sizeof(struct link*);
-	new = malloc(sizeof(struct links));
-	new->link = malloc(sizeof(struct link));
-	link = new->link;
-	tmp->next = new;
-	new->prev = tmp;
-	memcpy(&link->dest, &link->process_buf[16], size);
+	dest		= (struct link*)&new_comer->process_buf[16];
+	miner_id	= (unsigned int)new_comer->process_buf[16+size];
+	tmp			= add_links(miner_id, dest, links);
+	link		= tmp->link;
 	memcpy(&link->sbuf[0], "verack", 6);
 	memcpy(&link->sbuf[12], &size, 4);
 	memcpy(&link->sbuf[16], &link, size);
@@ -216,7 +210,7 @@ int process_dns(struct link *new_comer, struct links *seeds){
 		return 0;
 	}
 }
-int process_msg(struct links *links){
+int process_msg(struct link *new_comer,struct links *links){
 	char *payload;
 	struct link *link;
 	link = links->link;
@@ -233,7 +227,7 @@ int process_msg(struct links *links){
 
 	}
 	else if(strncmp(hdr->command, "roundrobin", 10)==0){
-		version((struct link*)payload, links);
+		version((unsigned int)*(payload+sizeof(struct link*)) ,(struct link*)payload, links);
 	}
 	else if(strncmp(hdr->command, "getaddr", 7)==0){
 		
@@ -242,7 +236,7 @@ int process_msg(struct links *links){
 
 	}
 	else if(strncmp(hdr->command, "version", 6)==0){
-		verack(links);
+		verack(new_comer, links);
 	}
 	else if(strncmp(hdr->command, "verack", 6)==0){
 		link->dest = (struct link*)payload;

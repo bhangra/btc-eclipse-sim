@@ -23,7 +23,7 @@ void miner_routine(struct miner *miner){
 	struct link		*link;
 	if(miner->boot == true && miner->seed == true){
 		for(i=0; i<5; i++){
-			dns_seed(&dns[i], &miner->new_comer);
+			dns_seed(miner->miner_id, &dns[i], &miner->new_comer);
 		}
 	}
 /*	else if(){
@@ -33,7 +33,7 @@ void miner_routine(struct miner *miner){
 		for(links=miner->links; links!=NULL; links=links->next){
 			for(link=links->link; link->num_msg!=0;){
 				read_msg(link);	
-				process_msg(links);
+				process_msg(&miner->new_comer, links);
 			} 
 		}
 	}

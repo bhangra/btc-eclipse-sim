@@ -19,6 +19,8 @@ void remove_links(struct links *will_remove){
 	struct links *after, *before;
 	after	= will_remove->next;
 	before	= will_remove->prev;
+	free(will_remove->link);
+	free(will_remove);
 	if(after!=NULL&&before!=NULL){
 		after->prev	= before;
 		before->next= after;
@@ -29,6 +31,17 @@ void remove_links(struct links *will_remove){
 	else{
 		before->next= NULL;
 	}
+}
+
+struct links *add_links(unsigned int miner_id, struct link *dest, struct links *links){
+	struct links *tmp, *new;
+	for(tmp=links; tmp->next!=NULL; tmp=tmp->next){}
+	new			= malloc(sizeof(struct links));
+	new->link	= malloc(sizeof(struct link));
+	new->prev	= tmp;
+	tmp->next	= new;
+	new->miner_id		= miner_id;
+	(new->link)->dest	= dest;
 }
 
 int send_msg(struct link *dest, char *message, int msg_size){
