@@ -15,7 +15,14 @@
 #include"action.c"
 //#include"proto-node.h"
 
-
+void dns_routine(struct dns *dns){
+	for(; (&dns->new_comer)->num_msg!=0;){
+		fprintf(stderr, "num of msg to dns: %d\n", (&dns->new_comer)->num_msg);
+		read_msg(&dns->new_comer);
+		fprintf(stderr, "read msg\n");
+		process_dns(&dns->new_comer, dns->seeds);
+	}
+}
 
 void miner_routine(struct miner *miner){
 	int 			i;
@@ -23,11 +30,18 @@ void miner_routine(struct miner *miner){
 	struct link		*link;
 	if(miner->boot == true && miner->seed == true){
 		for(i=0; i<5; i++){
+			fprintf(stderr, "will send dns_seed request\n");//debug
 			dns_seed(miner->miner_id, &dns[i], &miner->new_comer);
+			fprintf(stderr, "sent dns_seed request\n");//debug
 		}
+		for(i=0; i<rand()%6; i++){}
+		dns_query(&dns[i], &miner->new_comer);
+		miner->boot = false;
 	}
 	if(miner->boot == true){
-		
+		for(i=0; i<rand()%6; i++){}
+		dns_query(&dns[i], &miner->new_comer);
+		miner->boot = false;
 	}
 	else{
 		for(links=miner->links; links!=NULL; links=links->next){

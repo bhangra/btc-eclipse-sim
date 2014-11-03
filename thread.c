@@ -22,29 +22,43 @@ struct threads *search_head(struct threads *thread){
 }
 
 //will add variable for threads
-struct threads *new_thread(int type, struct threads *tail){
-	struct threads *tmp;
-	tmp 		= malloc(sizeof(struct threads));
-	if(tmp == NULL){
+struct threads *new_thread(int type, unsigned int miner_id,  struct threads *threads){
+	struct miner	*miner;
+	struct threads	*new, *tmp;
+	new 		= malloc(sizeof(struct threads));
+	if(new == NULL){
 		perror("malloc()");
 		return NULL;
 	}
-	tmp->type = type;
-	if((tmp->miner=malloc(sizeof(struct miner)))==NULL){
+	memset(new, 0, sizeof(struct threads));
+	new->type = type;	//distinguish miner/attacker
+	if((new->miner=malloc(sizeof(struct miner)))==NULL){
 		perror("malloc()");
-		free(tmp);
+		free(new);
 		return NULL;
 	}
-	if(tail!=NULL){
-		tail->next	= tmp;
-		tmp->prev	= tail;
-		tmp->next	= NULL;
+	miner=new->miner;
+	memset(miner, 0, sizeof(struct miner));
+	miner->miner_id = miner_id;
+	miner->seed		= rand()%2;
+	miner->boot		= true;
+
+	if(threads!=NULL){
+		tmp = threads;
+		for(;tmp->next!=NULL; tmp=tmp->next){
+			if(tmp->next==NULL){
+				break;
+			}
+		}
+		new->next = NULL;
+		new->prev = tmp;
+		tmp->next = new;
 	}
 	else{
-		tmp->prev	= NULL;
-		tmp->next 	= NULL;
+		new->next = NULL;
+		new->prev = NULL;
 	}
-	return tmp;
+	return new;
 }
 void free_blocks(struct blocks *blocks){
 	struct blocks    *tmp;

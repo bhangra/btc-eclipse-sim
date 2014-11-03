@@ -296,9 +296,10 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	if(strncmp(hdr->command, "block", 5)==0){
 		me->blocks = process_new_blocks((struct block*)payload, me->blocks, link);
 	}
-	else if(strncmp(hdr->command, "newhead", 7)==0){
+/*	else if(strncmp(hdr->command, "newhead", 7)==0){
 
 	}
+*/
 	else if(strncmp(hdr->command, "getblock", 8)==0){
 		height = (unsigned int)*payload;
 		for(blocks=me->blocks; blocks->next!=NULL; blocks=blocks->next){}
