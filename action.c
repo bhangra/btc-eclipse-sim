@@ -97,11 +97,12 @@ void addr(struct link *dest, struct miner *me){
 	memcpy(&link->sbuf[0], "addr", 4);
 	for(links=me->links; links->prev!=NULL; links=links->prev){}
 	for(i=0; links!=NULL; i++){
-		link=links->link;	
-		memcpy(&link->sbuf[16+(i*sizeof(struct link*))], &links->new_comer, sizeof(struct link*));
+		link=links->link;
+		memcpy(&link->sbuf[16+(i*sizeof(struct link*))], &links->miner_id, sizeof(unsigned int));	
+		memcpy(&link->sbuf[16+(i*sizeof(struct link*))+sizeof(unsigned int)], &links->new_comer, sizeof(struct link*));
 		links=links->next;
 	}
-	size=i*sizeof(struct link*);
+	size=i*(sizeof(struct link*)+sizeof(unsigned int));
 	memcpy(&link->sbuf[12], &size, 4);
 	send_msg(link->dest, link->sbuf, 16);
 }
@@ -283,7 +284,7 @@ int process_dns(struct link *new_comer, struct links *seeds){
 }
 int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	char				*payload;
-	unsigned int		height;
+	unsigned int		height, i, miner_id;
 	struct link			*link;
 	const struct msg_hdr *hdr;
 	struct block		*block;
@@ -314,10 +315,13 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 		version(me->miner_id, (unsigned int)*(payload+sizeof(struct link*)), (struct link*)payload, &me->new_comer, links);
 	}
 	else if(strncmp(hdr->command, "getaddr", 7)==0){
-		
+		addr(link, me);
 	}
 	else if(strncmp(hdr->command, "addr", 4)==0){
-		
+		for(i=0; i<(hdr->message_size/(sizeof(struct link*)+sizeof(unsigned int))); i++){
+			memcpy(&miner_id, &payload[i*sizeof(struct link*)], sizeof(unsigned int));
+			version(me->miner_id, miner_id, (struct link*)(&payload[i*sizeof(struct link*)+sizeof(unsigned int)]), &me->new_comer, links);
+		}
 	}
 	else if(strncmp(hdr->command, "version", 6)==0){
 		verack(new_comer, links);
