@@ -7,7 +7,6 @@
 #include<stdbool.h>
 #include<pthread.h>
 #include<unistd.h>
-#include<signal.h>
 #include<sys/types.h>
 #include<sys/ipc.h>
 #include<sys/sem.h>
@@ -20,7 +19,7 @@ void dns_routine(struct dns *dns){
 		fprintf(stderr, "DNS: num of msg = %d\n", (&dns->new_comer)->num_msg); //debug
 		read_msg(&dns->new_comer);
 		fprintf(stderr, "DNS: have read msg\n"); //debug
-		dns->seeds = process_dns(&dns->new_comer, dns->seeds);
+		dns->seeds = process_dns(&dns->new_comer, /*(struct links*)&*/dns->seeds);
 		fprintf(stderr, "DNS: processed msg\n");  //debug
 	}
 }
@@ -49,7 +48,7 @@ void miner_routine(struct miner *miner){
 		links = miner->links;
 		for(link=&miner->new_comer; link->num_msg!=0;){
 			read_msg(link);
-			process_new(&miner->new_comer, links, miner);
+			miner->links = process_new(&miner->new_comer, links, miner);
 		}
 		for(; links!=NULL; links=links->next){
 			for(link=links->link; link->num_msg!=0;){

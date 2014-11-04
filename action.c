@@ -37,6 +37,7 @@ struct links *seed_receive(struct link *new_comer, struct links *seeds){
 	size = sizeof(struct link*);
 	memcpy(&link, &new_comer->process_buf[16], sizeof(struct link*));
 	memcpy(&miner_id, &new_comer->process_buf[16+size], sizeof(unsigned int));
+	fprintf(stderr, "seed_receive(): will add_links()\n");
 	return add_links(miner_id, link, link, seeds);
 }
 void dns_query(struct dns *dns, struct link *new_comer){
@@ -108,7 +109,7 @@ void addr(struct link *dest, struct miner *me){
 	send_msg(link->dest, link->sbuf, 16);
 }
 //dest is desination's new_comer
-void version(unsigned int my_id, unsigned int dest_id, struct link *dest, struct link *new_comer, struct links *links){
+struct links *version(unsigned int my_id, unsigned int dest_id, struct link *dest, struct link *new_comer, struct links *links){
 	unsigned int miner_id;
 	struct links *new;
 	struct link *link;
@@ -127,11 +128,12 @@ void version(unsigned int my_id, unsigned int dest_id, struct link *dest, struct
 	fprintf(stderr, "sent version to: %d\n", new->miner_id); //debug
 }
 
-void verack(struct link *new_comer, struct links *links){
+struct links *verack(struct link *new_comer, struct links *links){
 	unsigned int miner_id;
 	struct links *tmp, *new;
 	struct link *link, *dest, *dest_new_comer;
 	unsigned int size;
+	fprintf(stderr, "will send verack msg\n"); //debug
 	size = sizeof(struct link*);
 	dest		= (struct link*)&new_comer->process_buf[16];
 	memcpy(&miner_id, &new_comer->process_buf[16+size], sizeof(unsigned int));
@@ -335,16 +337,10 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 			version(me->miner_id, miner_id, (struct link*)(&payload[i*sizeof(struct link*)+sizeof(unsigned int)]), &me->new_comer, links);
 		}
 	}
-	else if(strncmp(hdr->command, "version", 6)==0){
-		verack(new_comer, links);
-	}
-	else if(strncmp(hdr->command, "verack", 6)==0){
-		link->dest = (struct link*)payload;
-	}
 	return 0;
 }
 
-int process_new(struct link *new_comer,struct links *links, struct miner *me){
+struct links *process_new(struct link *new_comer,struct links *links, struct miner *me){
     char                *payload;
     unsigned int        height, i, miner_id;
     struct link         *link;
@@ -357,15 +353,15 @@ int process_new(struct link *new_comer,struct links *links, struct miner *me){
     payload = (char *)(hdr +sizeof(struct msg_hdr));
     fprintf(stderr, "check command\n"); //debug
     if(strncmp(hdr->command, "roundrobin", 10)==0){
-        version(me->miner_id, (unsigned int)*(payload+sizeof(struct link*)), (struct link*)payload, &me->new_comer, links);
+        return version(me->miner_id, (unsigned int)*(payload+sizeof(struct link*)), (struct link*)payload, &me->new_comer, links);
     }
     else if(strncmp(hdr->command, "version", 6)==0){
-        verack(new_comer, links);
+        return verack(new_comer, links);
     }
     else if(strncmp(hdr->command, "verack", 6)==0){
         link->dest = (struct link*)payload;
     }
-    return 0;
+    return NULL;
 }
 
 

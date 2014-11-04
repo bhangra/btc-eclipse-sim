@@ -35,19 +35,23 @@ void remove_links(struct links *will_remove){
 
 struct links *add_links(unsigned int miner_id, struct link *dest, struct link *new_comer, struct links *links){
 	struct links *tmp, *new;
-	for(tmp=links;; tmp=tmp->next){
+	for(tmp=links;; tmp=tmp->next){ //get tail
+		fprintf(stderr, "*links = %p\n", tmp); //debug
 		if(tmp==NULL)
 			break;
-		if(miner_id==tmp->miner_id)
+		if(miner_id==tmp->miner_id) //already connected 
 			break;
 		if(tmp->next==NULL)
 			break;
 	}
 	fprintf(stderr, "will malloc\n"); //debug
+
 	new			= malloc(sizeof(struct links));
 	memset(new, 0, sizeof(struct links));
 	new->link	= malloc(sizeof(struct link));
 	memset(new->link, 0, sizeof(struct link));
+
+	new->next	= NULL;
 	new->prev	= tmp;
 	if(tmp!=NULL)
 		tmp->next	= new;
@@ -55,6 +59,7 @@ struct links *add_links(unsigned int miner_id, struct link *dest, struct link *n
 	new->new_comer		= new_comer;
 	(new->link)->dest	= dest;
 	fprintf(stderr, "added link\n");
+	return new;
 }
 
 int send_msg(struct link *dest, char *message, unsigned int msg_size){
