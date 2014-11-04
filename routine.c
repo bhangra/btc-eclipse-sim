@@ -49,17 +49,18 @@ void miner_routine(struct miner *miner){
 		links = miner->links;
 		if(links==NULL)
 			return;
-		for(; links!=NULL; links=links->next){
-			fprintf(stderr, "entered already connected links\n"); //debug
-			fprintf(stderr, "links = %p\n", links); //debug
+		for(i=0/*debug*/; links!=NULL; links=links->next){
+			fprintf(stderr, "link->num_msg = %d\n", link->num_msg);//debug
 			for(link=links->link; link->num_msg!=0;){
 				fprintf(stderr, "will read msgs\n"); //debug
 				read_msg(link);	
 				process_msg(&miner->new_comer, links, miner);
 			} 
+			i++; //debug
 			if(links->next==NULL)
 				break;
 		}
+		fprintf(stderr, "num of links: %d\n", i);//debug
 	}
 	miner->blocks = mine_block(miner->blocks, miner->miner_id, miner);
 }

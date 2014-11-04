@@ -43,6 +43,7 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	miner->seed		= rand()%2;
 	miner->boot		= true;
 	miner->links	= NULL;
+	miner->blocks	= NULL;
 	if(threads!=NULL){
 		tmp = threads;
 		for(;tmp->next!=NULL; tmp=tmp->next){

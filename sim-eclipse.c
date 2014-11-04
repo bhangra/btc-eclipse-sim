@@ -31,11 +31,10 @@ int main(int argc, char *argv[]){
 		threads=new_thread(1, miner_id, threads);
 	}
 //	thread = new_thread(1, NULL);
-	for(time = 0; time < 10; time++){
+	for(time = 0; time < 20; time++){
 		fprintf(stderr, "time = %d\n", time);//debug
 		for(;threads->prev!=NULL; threads=threads->prev){}
 		for(;;threads=threads->next){
-			fprintf(stderr, "time: %d\n", time);
 			miner_routine(threads->miner);
 			if(threads->next==NULL)
 				break;
