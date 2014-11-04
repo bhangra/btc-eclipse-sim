@@ -15,8 +15,51 @@
 #include"connection.c"
 #include"proto-node.h"
 
+//totally for debugging
+void hexDump (char *desc, void *addr, int len) {
+    int i;
+    unsigned char buff[17];
+    unsigned char *pc = (unsigned char*)addr;
 
-void dns_seed(int my_id, struct dns *dns, struct link *new_comer){
+    // Output description if given.
+    if (desc != NULL)
+        printf ("%s:\n", desc);
+
+    // Process every byte in the data.
+    for (i = 0; i < len; i++) {
+        // Multiple of 16 means new line (with line offset).
+
+        if ((i % 16) == 0) {
+            // Just don't print ASCII for the zeroth line.
+            if (i != 0)
+                printf ("  %s\n", buff);
+
+            // Output the offset.
+            printf ("  %04x ", i);
+        }
+
+        // Now the hex code for the specific character.
+        printf (" %02x", pc[i]);
+
+        // And store a printable ASCII character for later.
+        if ((pc[i] < 0x20) || (pc[i] > 0x7e))
+            buff[i % 16] = '.';
+        else
+            buff[i % 16] = pc[i];
+        buff[(i % 16) + 1] = '\0';
+    }
+
+    // Pad out last line if not exactly 16 characters.
+    while ((i % 16) != 0) {
+        printf ("   ");
+        i++;
+    }
+
+    // And print the final ASCII bit.
+    printf ("  %s\n", buff);
+}
+
+void dns_seed(unsigned int my_id, struct dns *dns, struct link *new_comer){
     struct links	*tmp, *new;
     struct link		*link;
     unsigned int	size, payload_size;
@@ -26,7 +69,7 @@ void dns_seed(int my_id, struct dns *dns, struct link *new_comer){
 	payload_size	= size + sizeof(unsigned int);
     memcpy(&link->sbuf[0], "dnsseed", 7);
     memcpy(&link->sbuf[12], &payload_size, sizeof(unsigned int));
-    memcpy(&link->sbuf[16], &new_comer, size);
+    memcpy(&link->sbuf[16], &link, size);
 	memcpy(&link->sbuf[16+size], &my_id, sizeof(unsigned int));
     send_msg(&dns->new_comer, link->sbuf, 16+payload_size);
 }
@@ -35,7 +78,7 @@ struct links *seed_receive(struct link *new_comer, struct links *seeds){
 	struct link		*link;
 	struct links	*new;
 	size = sizeof(struct link*);
-	memcpy(&link, &new_comer->process_buf[16], sizeof(struct link*));
+	memcpy(&link, &new_comer->process_buf[16], size);
 	memcpy(&miner_id, &new_comer->process_buf[16+size], sizeof(unsigned int));
 	fprintf(stderr, "seed_receive(): will add_links()\n");
 	return add_links(miner_id, link, link, seeds);
@@ -72,12 +115,14 @@ void dns_roundrobin(struct link *new_comer, struct links *seeds){
 	for(i=0; i<j; tmp=tmp->next/*i++*/){
 		i++;//	tmp = tmp->next;
 	}
+	fprintf(stderr, "seed: %d %p\n", tmp->miner_id, tmp->new_comer);
 	memcpy(&link->dest, &link->process_buf[16], size);
 	memcpy(&link->sbuf[0], "roundrobin", 10);
 	memcpy(&link->sbuf[12], &payload_size, 4);
 	memcpy(&link->sbuf[16], &tmp->new_comer, size);
 	memcpy(&link->sbuf[16+size], &tmp->miner_id, sizeof(unsigned int));
 	send_msg(link->dest, link->sbuf, 16+payload_size);
+	hexDump("roundrobin", &link->sbuf, 16+payload_size); 
 }
 
 void getaddr(struct link *dest){
@@ -113,19 +158,21 @@ struct links *version(unsigned int my_id, unsigned int dest_id, struct link *des
 	unsigned int miner_id;
 	struct links *new;
 	struct link *link;
-	unsigned int size, total;
-	fprintf(stderr, "will send version msg\n");
+	unsigned int size, payload_size;
+	fprintf(stderr, "will send version msg\n"); //debug
+	fprintf(stderr, "dest: %d %p\n", dest_id, dest); //debug
 	size = sizeof(struct link*);
-	total = size+sizeof(unsigned int)+sizeof(struct link*);
+	payload_size = size+sizeof(unsigned int)+sizeof(struct link*);
 	new = add_links(dest_id, dest, dest,  links);
 	link = new->link;
 	memcpy(&link->sbuf[0], "version", 7);
-	memcpy(&link->sbuf[12], &total, 4);
+	memcpy(&link->sbuf[12], &payload_size, 4);
 	memcpy(&link->sbuf[16], &link, size);
 	memcpy(&link->sbuf[16+size], &my_id, sizeof(unsigned int));
 	memcpy(&link->sbuf[16+size+sizeof(unsigned int)], new_comer, sizeof(struct link*));
-	send_msg(dest, link->sbuf, 16+size+sizeof(unsigned int));
-	fprintf(stderr, "sent version to: %d\n", new->miner_id); //debug
+	send_msg(dest, link->sbuf, 16+payload_size);
+	fprintf(stderr, "sent version to: %d, %p\n", new->miner_id, link->dest); //debug
+	return new;
 }
 
 struct links *verack(struct link *new_comer, struct links *links){
@@ -145,6 +192,8 @@ struct links *verack(struct link *new_comer, struct links *links){
 	memcpy(&link->sbuf[16], &link, size);
 	send_msg(link->dest, link->sbuf, 16+size);
 	fprintf(stderr, "sent verack to: %d\n", tmp->miner_id); //debug
+	hexDump("verack msg", &link->sbuf, 16+size);
+	return tmp;
 }
 
 struct blocks *add_block(struct block *block, struct blocks *chain_head){
@@ -278,7 +327,6 @@ struct links *process_dns(struct link *new_comer, struct links *seeds){
 	hdr		= (struct msg_hdr*)(link->process_buf);
 	payload	= (char *)(hdr+sizeof(struct msg_hdr));
 	if(strncmp(hdr->command, "dnsseed", 7)==0){
-		fprintf(stderr, "dnsseed received\n"); //debug
 		tmp = seed_receive(link, seeds);
 		if(tmp!=NULL)
 			return tmp;
@@ -325,9 +373,6 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 			send_block(block, link);
 		}
 	}
-	else if(strncmp(hdr->command, "roundrobin", 10)==0){
-		version(me->miner_id, (unsigned int)*(payload+sizeof(struct link*)), (struct link*)payload, &me->new_comer, links);
-	}
 	else if(strncmp(hdr->command, "getaddr", 7)==0){
 		addr(link, me);
 	}
@@ -337,29 +382,37 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 			version(me->miner_id, miner_id, (struct link*)(&payload[i*sizeof(struct link*)+sizeof(unsigned int)]), &me->new_comer, links);
 		}
 	}
+	else if(strncmp(hdr->command, "verack", 6)==0){
+		link->dest = (struct link*)payload;
+	}
 	return 0;
 }
 
 struct links *process_new(struct link *new_comer,struct links *links, struct miner *me){
     char                *payload;
-    unsigned int        height, i, miner_id;
+    unsigned int        height, i, miner_id, size, payload_size;
     struct link         *link;
-    const struct msg_hdr *hdr;
+	struct msg_hdr *hdr;
     struct block        *block;
     struct blocks       *blocks;
 
+	size = sizeof(struct link*);
     link = new_comer;
     hdr = (struct msg_hdr*)(link->process_buf);
     payload = (char *)(hdr +sizeof(struct msg_hdr));
+	memcpy(&payload_size, &link->process_buf[12], 4);
     fprintf(stderr, "check command\n"); //debug
     if(strncmp(hdr->command, "roundrobin", 10)==0){
-        return version(me->miner_id, (unsigned int)*(payload+sizeof(struct link*)), (struct link*)payload, &me->new_comer, links);
+		hexDump("roundrobin received", hdr, 16+size+sizeof(unsigned int));
+		memcpy(&link, &link->process_buf[16], size);
+		memcpy(&miner_id, &link->process_buf[16+size], sizeof(unsigned int));
+		fprintf(stderr, "will send version to: %d %p\n", miner_id, link);
+        return version(me->miner_id, miner_id, link, &me->new_comer, links);
     }
-    else if(strncmp(hdr->command, "version", 6)==0){
+    else if(strncmp(hdr->command, "version", 7)==0){
+		hexDump("version received", hdr, 16+payload_size);
+		fprintf(stderr, "version received\n");
         return verack(new_comer, links);
-    }
-    else if(strncmp(hdr->command, "verack", 6)==0){
-        link->dest = (struct link*)payload;
     }
     return NULL;
 }

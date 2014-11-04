@@ -87,14 +87,12 @@ int read_msg(struct link *link){
 	const struct msg_hdr	*hdr;
 	int						read_size, over_size;
 
-	fprintf(stderr, "num_msg: %d\n", link->num_msg); //debug
 	if(!(int)link->num_msg){
 		return 0;
 	}
 	pthread_mutex_lock(&link->rcv_mutex);
 	hdr 		= (struct msg_hdr*)&link->buf[(link)->read_pos];
 	read_size	= HDR_SIZE + hdr->message_size;
-	fprintf(stderr, "read_size: %d\n", read_size); //debug
 //assumes that the BUF_SIZE is large enough for a message
 	if((link->read_pos+read_size)<BUF_SIZE){
 		memcpy(&link->process_buf, hdr, read_size);
@@ -108,7 +106,6 @@ int read_msg(struct link *link){
 	}
 	link->num_msg -= 1;
 	pthread_mutex_unlock(&link->rcv_mutex);
-	fprintf(stderr, "have read_msg\n"); //debug
 	return 1;
 }
 

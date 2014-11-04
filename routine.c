@@ -16,11 +16,8 @@
 
 void dns_routine(struct dns *dns){
 	for(; (&dns->new_comer)->num_msg!=0;){
-		fprintf(stderr, "DNS: num of msg = %d\n", (&dns->new_comer)->num_msg); //debug
 		read_msg(&dns->new_comer);
-		fprintf(stderr, "DNS: have read msg\n"); //debug
 		dns->seeds = process_dns(&dns->new_comer, /*(struct links*)&*/dns->seeds);
-		fprintf(stderr, "DNS: processed msg\n");  //debug
 	}
 }
 
@@ -30,9 +27,7 @@ void miner_routine(struct miner *miner){
 	struct link		*link;
 	if(miner->boot == true && miner->seed == true){
 		for(i=0; i<5; i++){
-			fprintf(stderr, "will send dns_seed\n");//debug
 			dns_seed(miner->miner_id, &dns[i], &miner->new_comer);
-			fprintf(stderr, "sent dns_seed\n");//debug
 		}
 		for(i=0; i<rand()%6; i++){}
 		dns_query(&dns[i], &miner->new_comer);
@@ -45,16 +40,25 @@ void miner_routine(struct miner *miner){
 		miner->boot = false;
 	}
 	else{
-		links = miner->links;
 		for(link=&miner->new_comer; link->num_msg!=0;){
+			fprintf(stderr, "new_comer link\n"); //debug
 			read_msg(link);
 			miner->links = process_new(&miner->new_comer, links, miner);
+			fprintf(stderr, "miner->links = %p\n", miner->links);
 		}
+		links = miner->links;
+		if(links==NULL)
+			return;
 		for(; links!=NULL; links=links->next){
+			fprintf(stderr, "entered already connected links\n"); //debug
+			fprintf(stderr, "links = %p\n", links); //debug
 			for(link=links->link; link->num_msg!=0;){
+				fprintf(stderr, "will read msgs\n"); //debug
 				read_msg(link);	
 				process_msg(&miner->new_comer, links, miner);
 			} 
+			if(links->next==NULL)
+				break;
 		}
 	}
 	miner->blocks = mine_block(miner->blocks, miner->miner_id, miner);
