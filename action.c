@@ -40,12 +40,12 @@ struct links *seed_receive(struct link *new_comer, struct links *seeds){
 	return add_links(miner_id, link, link, seeds);
 }
 void dns_query(struct dns *dns, struct link *new_comer){
-	int size;
-	struct link *link;
-	struct links *tmp;
-	size = sizeof(struct link*);
-	link = new_comer;
-	link->dest = &(dns->new_comer);
+	unsigned int	size;
+	struct link		*link;
+	struct links	*tmp;
+	size		= sizeof(struct link*);
+	link		= new_comer;
+	link->dest	= &(dns->new_comer);
 	memcpy(&link->sbuf[0], "dnsquery", 8);
 	memcpy(&link->sbuf[12], &size, 4);
 	memcpy(&link->sbuf[16], &new_comer, size);
@@ -53,27 +53,30 @@ void dns_query(struct dns *dns, struct link *new_comer){
 }
 
 void dns_roundrobin(struct link *new_comer, struct links *seeds){
-	int i, j, size;
-	struct link *link;
-	struct links *tmp, *head;
-	size = sizeof(struct link*);
-	link = new_comer;
-	for(tmp=seeds;tmp->prev!=NULL;tmp=tmp->prev){;}
+	unsigned int	i, j, size, payload_size;
+	struct link		*link;
+	struct links	*tmp, *head;
+	size			= sizeof(struct link*);
+	payload_size	= size + sizeof(unsigned int);
+	link 			= new_comer;
+	for(tmp=seeds;tmp->prev!=NULL;tmp=tmp->prev){
+		;
+	}
 	head=tmp;
 	for(i=1; tmp->next!=NULL; i++){
 		tmp=tmp->next;
 	}
 	j=rand()%i;
 	tmp = head;
-	for(i=0; i<j; i++){
-		tmp = tmp->next;
+	for(i=0; i<j; tmp=tmp->next/*i++*/){
+		i++;//	tmp = tmp->next;
 	}
-	memcpy(&link->dest, &(link->process_buf[16]), size);
+	memcpy(&link->dest, &link->process_buf[16], size);
 	memcpy(&link->sbuf[0], "roundrobin", 10);
-	memcpy(&link->sbuf[12], &size, 4);
-	memcpy(&link->sbuf[16], tmp->link, size);
+	memcpy(&link->sbuf[12], &payload_size, 4);
+	memcpy(&link->sbuf[16], &tmp->new_comer, size);
 	memcpy(&link->sbuf[16+size], &tmp->miner_id, sizeof(unsigned int));
-	send_msg(link->dest, link->sbuf, 16+size+sizeof(unsigned int));
+	send_msg(link->dest, link->sbuf, 16+payload_size);
 }
 
 void getaddr(struct link *dest){
@@ -110,6 +113,7 @@ void version(unsigned int my_id, unsigned int dest_id, struct link *dest, struct
 	struct links *new;
 	struct link *link;
 	unsigned int size, total;
+	fprintf(stderr, "will send version msg\n");
 	size = sizeof(struct link*);
 	total = size+sizeof(unsigned int)+sizeof(struct link*);
 	new = add_links(dest_id, dest, dest,  links);
@@ -120,6 +124,7 @@ void version(unsigned int my_id, unsigned int dest_id, struct link *dest, struct
 	memcpy(&link->sbuf[16+size], &my_id, sizeof(unsigned int));
 	memcpy(&link->sbuf[16+size+sizeof(unsigned int)], new_comer, sizeof(struct link*));
 	send_msg(dest, link->sbuf, 16+size+sizeof(unsigned int));
+	fprintf(stderr, "sent version to: %d\n", new->miner_id); //debug
 }
 
 void verack(struct link *new_comer, struct links *links){
@@ -137,6 +142,7 @@ void verack(struct link *new_comer, struct links *links){
 	memcpy(&link->sbuf[12], &size, 4);
 	memcpy(&link->sbuf[16], &link, size);
 	send_msg(link->dest, link->sbuf, 16+size);
+	fprintf(stderr, "sent verack to: %d\n", tmp->miner_id); //debug
 }
 
 struct blocks *add_block(struct block *block, struct blocks *chain_head){
@@ -297,6 +303,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	link = links->link;
 	hdr = (struct msg_hdr*)(link->process_buf);
 	payload = (char *)(hdr +sizeof(struct msg_hdr));
+	fprintf(stderr, "check command\n"); //debug
 	if(strncmp(hdr->command, "block", 5)==0){
 		me->blocks = process_new_blocks((struct block*)payload, me->blocks, link);
 	}
@@ -336,5 +343,30 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	}
 	return 0;
 }
+
+int process_new(struct link *new_comer,struct links *links, struct miner *me){
+    char                *payload;
+    unsigned int        height, i, miner_id;
+    struct link         *link;
+    const struct msg_hdr *hdr;
+    struct block        *block;
+    struct blocks       *blocks;
+
+    link = new_comer;
+    hdr = (struct msg_hdr*)(link->process_buf);
+    payload = (char *)(hdr +sizeof(struct msg_hdr));
+    fprintf(stderr, "check command\n"); //debug
+    if(strncmp(hdr->command, "roundrobin", 10)==0){
+        version(me->miner_id, (unsigned int)*(payload+sizeof(struct link*)), (struct link*)payload, &me->new_comer, links);
+    }
+    else if(strncmp(hdr->command, "version", 6)==0){
+        verack(new_comer, links);
+    }
+    else if(strncmp(hdr->command, "verack", 6)==0){
+        link->dest = (struct link*)payload;
+    }
+    return 0;
+}
+
 
 #endif

@@ -54,6 +54,7 @@ struct links *add_links(unsigned int miner_id, struct link *dest, struct link *n
 	new->miner_id		= miner_id;
 	new->new_comer		= new_comer;
 	(new->link)->dest	= dest;
+	fprintf(stderr, "added link\n");
 }
 
 int send_msg(struct link *dest, char *message, unsigned int msg_size){
@@ -102,6 +103,7 @@ int read_msg(struct link *link){
 	}
 	link->num_msg -= 1;
 	pthread_mutex_unlock(&link->rcv_mutex);
+	fprintf(stderr, "have read_msg\n"); //debug
 	return 1;
 }
 
