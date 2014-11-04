@@ -21,8 +21,13 @@ int main(int argc, char *argv[]){
 //	struct dns	dns[5];
 	unsigned int time, miner_id, i;
 	struct threads *threads;
+
+//DNS nodes initialization
+	memset(&dns, 0, 5*sizeof(struct dns));
+
+
 	threads = NULL;
-	for(miner_id=1; miner_id<11; miner_id++){
+	for(miner_id=0; miner_id<3; miner_id++){
 		threads=new_thread(1, miner_id, threads);
 	}
 //	thread = new_thread(1, NULL);

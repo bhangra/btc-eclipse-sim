@@ -17,29 +17,27 @@
 
 
 void dns_seed(int my_id, struct dns *dns, struct link *new_comer){
-    struct links *tmp, *new;
-    struct link *link;
-    int size;
-    size = sizeof(struct link*);
-	link = new_comer; 
-    link->dest = &dns->new_comer;
+    struct links	*tmp, *new;
+    struct link		*link;
+    unsigned int	size, payload_size;
+    size			= sizeof(struct link*);
+	link			= new_comer; 
+    link->dest		= &dns->new_comer;
+	payload_size	= size + sizeof(unsigned int);
     memcpy(&link->sbuf[0], "dnsseed", 7);
-    memcpy(&link->sbuf[12], &size, 4);
+    memcpy(&link->sbuf[12], &payload_size, sizeof(unsigned int));
     memcpy(&link->sbuf[16], &new_comer, size);
 	memcpy(&link->sbuf[16+size], &my_id, sizeof(unsigned int));
-    send_msg(&dns->new_comer, link->sbuf, 16+size+sizeof(unsigned int));
+    send_msg(&dns->new_comer, link->sbuf, 16+payload_size);
 }
-void seed_receive(struct link *new_comer, struct links *seeds){
-	unsigned int	miner_id;
+struct links *seed_receive(struct link *new_comer, struct links *seeds){
+	unsigned int	miner_id, size;
 	struct link		*link;
-	struct links	*tmp, *new;
-	memcpy((char *)&miner_id, &new_comer->process_buf[16+sizeof(struct link*)], sizeof(unsigned int));
+	struct links	*new;
+	size = sizeof(struct link*);
 	memcpy(&link, &new_comer->process_buf[16], sizeof(struct link*));
-	for(tmp = seeds; tmp->next!=NULL;tmp=tmp->next){
-		if(miner_id==tmp->miner_id)
-			return;
-	}
-	add_links(miner_id, link, link, tmp);
+	memcpy(&miner_id, &new_comer->process_buf[16+size], sizeof(unsigned int));
+	return add_links(miner_id, link, link, seeds);
 }
 void dns_query(struct dns *dns, struct link *new_comer){
 	int size;
@@ -263,23 +261,29 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 	}
 	return chain_head;
 }
-int process_dns(struct link *new_comer, struct links *seeds){
-	char * payload;
-	struct link *link;
-	const struct msg_hdr *hdr;
+struct links *process_dns(struct link *new_comer, struct links *seeds){
+	char 					*payload;
+	struct link				*link;
+	struct links			*tmp;
+	const struct msg_hdr	*hdr;
 	link	= new_comer;
 	hdr		= (struct msg_hdr*)(link->process_buf);
 	payload	= (char *)(hdr+sizeof(struct msg_hdr));
 	if(strncmp(hdr->command, "dnsseed", 7)==0){
-		seed_receive(link, seeds);
-		return 1;
+		fprintf(stderr, "dnsseed received\n"); //debug
+		tmp = seed_receive(link, seeds);
+		if(tmp!=NULL)
+			return tmp;
+		else
+			return seeds;
 	}
 	else if(strncmp(hdr->command, "dnsquery", 8)==0){
+		fprintf(stderr, "dnsquery received\n"); //debug
 		dns_roundrobin(link, seeds);
-		return 1;
+		return seeds;
 	}
 	else{
-		return 0;
+		return seeds;
 	}
 }
 int process_msg(struct link *new_comer,struct links *links, struct miner *me){
