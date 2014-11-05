@@ -35,6 +35,7 @@ int main(int argc, char *argv[]){
 		fprintf(stderr, "time = %d\n", time);//debug
 		for(;threads->prev!=NULL; threads=threads->prev){}
 		for(;;threads=threads->next){
+			fprintf(stderr, "\nminer: %d\n", (threads->miner)->miner_id);
 			miner_routine(threads->miner);
 			if(threads->next==NULL)
 				break;

@@ -247,11 +247,11 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, stru
 //			head->prev      = current;
 			if(current==NULL){
 				head->height	= 1;
-				memset(head->prev, 0, SHA256_DIGEST_LENGTH);
+				memset(head->hash, 0, SHA256_DIGEST_LENGTH);
 			}
 			else/* if(current->height!=0)*/{
 				head->height	= current->height+1;
-				memcpy(head->prev, SHA256((char *)current, sizeof(struct block), 0), SHA256_DIGEST_LENGTH);
+				memcpy(head->hash, SHA256((char *)current, sizeof(struct block), 0), SHA256_DIGEST_LENGTH);
 			}/*else{
 				head->height	= 1;
 				memset(head->prev, 0, SHA256_DIGEST_LENGTH);

@@ -9,7 +9,7 @@
 
 struct block {
 //	struct block	*prev;
-	unsigned char	prev[SHA256_DIGEST_LENGTH];
+	unsigned char	hash[SHA256_DIGEST_LENGTH];
 	unsigned int	height;
 	double			time;
 	unsigned int	miner_id;

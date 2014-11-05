@@ -63,7 +63,7 @@ struct links *add_links(unsigned int miner_id, struct link *dest, struct link *n
 }
 
 int send_msg(struct link *dest, char *message, unsigned int msg_size){
-	hexDump("sending msg", message, msg_size);
+//	hexDump("sending msg", message, msg_size);
 	unsigned int pos, over_size;
 	fprintf(stderr, "sending msg_size: %d\n", msg_size); //debug
 	pos = dest->write_pos;
