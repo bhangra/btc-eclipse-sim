@@ -10,7 +10,7 @@
 #include<sys/ipc.h>
 #include<sys/sem.h>
 
-#include"block.h"
+#include"block.c"
 #include"thread.c"
 #include"connection.c"
 #include"proto-node.h"
@@ -195,22 +195,6 @@ struct links *verack(struct link *new_comer, struct links *links){
 	return tmp;
 }
 
-struct blocks *add_block(struct block *block, struct blocks *chain_head){
-	struct blocks *tmp;
-	tmp = malloc(sizeof(struct blocks));
-	memset(tmp, 0, sizeof(struct blocks));
-	tmp->block			= block;
-	if(chain_head!=NULL){
-		chain_head->next 	= tmp;
-		tmp->prev 			= chain_head;
-		tmp->next			= NULL;
-	}else{
-		tmp->prev			= NULL;
-		tmp->next			= NULL;
-	}
-	return tmp;
-}
-
 void send_block(struct block *block, struct link *dest){
 	int size;
 	struct link *link;
@@ -298,54 +282,7 @@ void request_block(unsigned int wanted_height, struct link *dest){
 	memcpy(&link->sbuf[16], &wanted_height, size);
 	send_msg(link->dest, link->sbuf, 16+size);
 }
-int verify_block(struct block *new_block, struct blocks *chain_head){
 
-	struct block *tmp;
-	
-	if(chain_head==NULL&&new_block->height ==1)
-		return 1;
-	tmp = chain_head->block;
-	if(tmp->height >= new_block->height){
-		fprintf(stderr, "new block's height equal or lower than mine\n");//debug
-		return -1;
-	}
-	else if(memcmp(new_block->prev, SHA256((char *)tmp, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
-		fprintf(stderr, "don't have new block's previous block\n"); //debug
-		return 0;
-	}
-	return 1;
-
-}
-struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head, struct link *from){
-	int rerun;
-	int validity;
-	struct block *accept;
-	struct blocks *tmp;
-	fprintf(stderr, "process_new_blocks()\n"); //debug
-	tmp = chain_head;
-	for(rerun = 1; rerun==1;){
-		rerun = 0;
-		for(;;){
-			validity = verify_block(block, tmp);
-			if(validity==1){
-				accept = malloc(sizeof(block));
-				memcpy(accept, block, sizeof(block));
-				fprintf(stderr, "accepted block with height: %d\n", accept->height); // debug
-				return add_block(accept, chain_head);
-			}
-			else if(validity==0){
-				request_block((block->height-1), from);
-				if(tmp->prev==NULL)
-					return chain_head;
-				tmp = tmp->prev;
-			}
-			else if(validity==-1){
-				return chain_head;
-			}
-		}
-	}
-	return chain_head;
-}
 struct links *process_dns(struct link *new_comer, struct links *seeds){
 	char 					*payload;
 	struct link				*link;
@@ -384,7 +321,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	fprintf(stderr, "check command\n"); //debug
 	if(strncmp(hdr->command, "block", 5)==0){
 		fprintf(stderr, "received block\n"); //debug
-		me->blocks = process_new_blocks((struct block*)&link->process_buf[16], me->blocks, link);
+		me->blocks = process_new_blocks((struct block*)&link->process_buf[16], me->blocks, me, link);
 	}
 /*	else if(strncmp(hdr->command, "newhead", 7)==0){
 

@@ -23,6 +23,7 @@ struct miner{
 	unsigned int	miner_id;
 	double			hash_rate;
 	struct blocks	*blocks;
+	struct blocks	*new_chain;
 	struct links	*links;
 	struct link		new_comer;
 };
