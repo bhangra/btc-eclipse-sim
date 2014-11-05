@@ -198,12 +198,15 @@ struct links *verack(struct link *new_comer, struct links *links){
 struct blocks *add_block(struct block *block, struct blocks *chain_head){
 	struct blocks *tmp;
 	tmp = malloc(sizeof(struct blocks));
+	memset(tmp, 0, sizeof(struct blocks));
 	tmp->block			= block;
 	if(chain_head!=NULL){
 		chain_head->next 	= tmp;
 		tmp->prev 			= chain_head;
+		tmp->next			= NULL;
 	}else{
 		tmp->prev			= NULL;
+		tmp->next			= NULL;
 	}
 	return tmp;
 }
@@ -240,13 +243,14 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, stru
 	struct blocks	*tmp;
 	struct link		*link;
 	struct links	*links;
-	fprintf(stderr, "start mining\n");
 	tmp = chain_head;
 	if(tmp!=NULL){
+		for(;tmp->next!=NULL; tmp=tmp->next){}
 		current = tmp->block;
 	}else{
 		current = NULL;
 	}
+	fprintf(stderr, "start mining on current: %p\n", current);
 	mined = 0;
 	for(times = 0;times < 1/*000*/;times++){
 		x = rand()%5;  // /(RAND_MAX);
@@ -255,18 +259,19 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, stru
 			fprintf(stdout,"mined block in %d times\n", times);
 			mined			= 1;
 			head			= malloc(sizeof(struct block));
+			memset(head, 0, sizeof(struct block));
 //			head->prev      = current;
 			if(current==NULL){
 				head->height	= 1;
 				memset(head->prev, 0, SHA256_DIGEST_LENGTH);
 			}
-			else if(current->height!=0){
-				head->height	= current->height++;
+			else/* if(current->height!=0)*/{
+				head->height	= current->height+1;
 				memcpy(head->prev, SHA256((char *)current, sizeof(struct block), 0), SHA256_DIGEST_LENGTH);
-			}else{
+			}/*else{
 				head->height	= 1;
 				memset(head->prev, 0, SHA256_DIGEST_LENGTH);
-			}
+			}*/
 //			head->time              = ~~~
 			head->miner_id	= miner_id;
 			head->size		= sizeof(struct block);
@@ -275,10 +280,11 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, stru
 		}
 	}
 	if(mined){
-		fprintf(stderr, "will propagate block\n");
+		fprintf(stderr, "will propagate block with height: %d\n", head->height); //debug
 		me->blocks = add_block(head, tmp);
 		propagate_block(head, me);
 	}
+	fprintf(stderr, "finished mining for the turn\n"); //debug
 	return tmp;
 }
 
@@ -295,11 +301,16 @@ void request_block(unsigned int wanted_height, struct link *dest){
 int verify_block(struct block *new_block, struct blocks *chain_head){
 
 	struct block *tmp;
+	
+	if(chain_head==NULL&&new_block->height ==1)
+		return 1;
 	tmp = chain_head->block;
 	if(tmp->height >= new_block->height){
+		fprintf(stderr, "new block's height equal or lower than mine\n");//debug
 		return -1;
 	}
 	else if(memcmp(new_block->prev, SHA256((char *)tmp, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
+		fprintf(stderr, "don't have new block's previous block\n"); //debug
 		return 0;
 	}
 	return 1;
@@ -310,6 +321,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 	int validity;
 	struct block *accept;
 	struct blocks *tmp;
+	fprintf(stderr, "process_new_blocks()\n"); //debug
 	tmp = chain_head;
 	for(rerun = 1; rerun==1;){
 		rerun = 0;
@@ -318,10 +330,13 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 			if(validity==1){
 				accept = malloc(sizeof(block));
 				memcpy(accept, block, sizeof(block));
-				add_block(accept, chain_head);
+				fprintf(stderr, "accepted block with height: %d\n", accept->height); // debug
+				return add_block(accept, chain_head);
 			}
 			else if(validity==0){
 				request_block((block->height-1), from);
+				if(tmp->prev==NULL)
+					return chain_head;
 				tmp = tmp->prev;
 			}
 			else if(validity==-1){
@@ -369,7 +384,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	fprintf(stderr, "check command\n"); //debug
 	if(strncmp(hdr->command, "block", 5)==0){
 		fprintf(stderr, "received block\n"); //debug
-		me->blocks = process_new_blocks((struct block*)payload, me->blocks, link);
+		me->blocks = process_new_blocks((struct block*)&link->process_buf[16], me->blocks, link);
 	}
 /*	else if(strncmp(hdr->command, "newhead", 7)==0){
 

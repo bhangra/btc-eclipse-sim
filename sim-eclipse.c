@@ -31,7 +31,7 @@ int main(int argc, char *argv[]){
 		threads=new_thread(1, miner_id, threads);
 	}
 //	thread = new_thread(1, NULL);
-	for(time = 0; time < 20; time++){
+	for(time = 0; time < 100; time++){
 		fprintf(stderr, "time = %d\n", time);//debug
 		for(;threads->prev!=NULL; threads=threads->prev){}
 		for(;;threads=threads->next){
@@ -43,6 +43,7 @@ int main(int argc, char *argv[]){
 			dns_routine(&dns[i]);
 		}
 	}
+	fprintf(stderr, "will cancel_all()\n"); //debug
 	cancel_all(threads);
 	return EXIT_SUCCESS;
 }

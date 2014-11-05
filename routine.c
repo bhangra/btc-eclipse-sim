@@ -15,6 +15,7 @@
 //#include"proto-node.h"
 
 void dns_routine(struct dns *dns){
+	fprintf(stderr, "entered dns_routine()\n"); //debug
 	for(; (&dns->new_comer)->num_msg!=0;){
 		read_msg(&dns->new_comer);
 		dns->seeds = process_dns(&dns->new_comer, /*(struct links*)&*/dns->seeds);
@@ -25,6 +26,7 @@ void miner_routine(struct miner *miner){
 	int 			i;
 	struct links 	*links;
 	struct link		*link;
+	fprintf(stderr, "entered miner_routine()\n"); //debug
 	if(miner->boot == true && miner->seed == true){
 		for(i=0; i<5; i++){
 			dns_seed(miner->miner_id, &dns[i], &miner->new_comer);
@@ -63,6 +65,7 @@ void miner_routine(struct miner *miner){
 		fprintf(stderr, "num of links: %d\n", i);//debug
 	}
 	miner->blocks = mine_block(miner->blocks, miner->miner_id, miner);
+	fprintf(stderr, "miner->blocks = %p\n", miner->blocks);
 }
 void links_kill(int miner_id, struct threads *threads){
 	struct threads	*tmp;
