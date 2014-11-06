@@ -265,7 +265,7 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, stru
 	}
 	if(mined){
 		fprintf(stderr, "will propagate block with height: %d\n", head->height); //debug
-		me->blocks = add_block(head, tmp);
+		tmp = add_block(head, tmp);
 		propagate_block(head, me);
 	}
 	fprintf(stderr, "finished mining for the turn\n"); //debug
