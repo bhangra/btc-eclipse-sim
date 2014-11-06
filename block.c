@@ -55,7 +55,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 			accept = malloc(sizeof(struct block));
 			memcpy(accept, block, sizeof(struct block));
 			propagate_block(accept, me);
-			return add_block(accept, tmp);
+			return add_block(accept, chain_head);
 		}
 	}
 	if(me->new_chain!=NULL){

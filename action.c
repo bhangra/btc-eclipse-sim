@@ -331,13 +331,20 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	else if(strncmp(hdr->command, "getblock", 8)==0){
 		fprintf(stderr, "getblock received\n");
 		memcpy(&height, &link->process_buf[16], sizeof(unsigned int));
+		fprintf(stderr, "trying to find requested block: %d\n", height);
+		fprintf(stderr, "me->blocks = %p\n", me->blocks);
 		for(blocks=me->blocks; blocks->next!=NULL; blocks=blocks->next){}
-		for(;block->height!=height && blocks!=NULL;blocks=blocks->prev){
+		block = blocks->block;
+		for(block=blocks->block;block->height!=height && blocks!=NULL;blocks=blocks->prev){
 			block=blocks->block;
+			if(block->height==height){
+				break;
+			}
 		}
 		if(blocks==NULL)
 			return;
 		else{
+			fprintf(stderr, "found the requested block\n");
 			send_block(block, link);
 		}
 	}
@@ -374,6 +381,10 @@ struct links *process_new(struct link *new_comer,struct links *links, struct min
     if(strncmp(hdr->command, "roundrobin", 10)==0){
 		memcpy(&link, &link->process_buf[16], size);
 		memcpy(&miner_id, &link->process_buf[16+size], sizeof(unsigned int));
+		if(miner_id==me->miner_id){
+			fprintf(stderr, "will not send version to me\n");
+			return links;
+		}
 		fprintf(stderr, "will send version to: %d %p\n", miner_id, link);
         return version(me->miner_id, miner_id, link, &me->new_comer, links);
     }
