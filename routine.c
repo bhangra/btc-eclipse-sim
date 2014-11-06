@@ -16,6 +16,7 @@
 
 void dns_routine(struct dns *dns){
 	for(; (&dns->new_comer)->num_msg!=0;){
+		fprintf(stderr, "num of msgs to dns: %d\n", (&dns->new_comer)->num_msg);
 		read_msg(&dns->new_comer);
 		dns->seeds = process_dns(&dns->new_comer, /*(struct links*)&*/dns->seeds);
 	}
@@ -31,13 +32,13 @@ void miner_routine(struct miner *miner){
 			dns_seed(miner->miner_id, &dns[i], &miner->new_comer);
 		}
 		for(i=0; i<rand()%6; i++){}
-		dns_query(&dns[i], &miner->new_comer);
+		dns_query(&dns[i], &miner->new_comer, miner->miner_id);
 		fprintf(stderr, "sent dns_query\n");
 		miner->boot = false;
 	}
 	if(miner->boot == true){
 		for(i=0; i<rand()%6; i++){}
-		dns_query(&dns[i], &miner->new_comer);
+		dns_query(&dns[i], &miner->new_comer, miner->miner_id);
 		miner->boot = false;
 	}
 	else{

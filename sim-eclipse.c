@@ -27,7 +27,7 @@ int main(int argc, char *argv[]){
 
 
 	threads = NULL;
-	for(miner_id=0; miner_id<3; miner_id++){
+	for(miner_id=0; miner_id<5; miner_id++){
 		threads=new_thread(1, miner_id, threads);
 	}
 //	thread = new_thread(1, NULL);

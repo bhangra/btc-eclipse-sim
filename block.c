@@ -62,16 +62,20 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 		fprintf(stderr, "will check in the new_chain\n");
 		for(tmp=me->new_chain; tmp->next!=NULL; tmp=tmp->next){}
 		head=tmp->block;
-		if(!memcmp(block->hash, SHA256((char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
+		if(block->height == head->height + 1 && !memcmp(block->hash, SHA256((char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
 			fprintf(stderr, "new block added to new_chain's head\n"); //debug
 			accept = malloc(sizeof(struct block));
 			memcpy(accept, block, sizeof(struct block));
-			add_block(accept, tmp);
+			me->new_chain = add_block(accept, tmp);
+			for(; tmp->prev!=NULL; tmp=tmp->prev){}
+			head = tmp->block;
+			request_block(head->height-1, from);
+//			request_block(accept->height-1, from);
 			return chain_head;
 		}
 		for(;;tmp=tmp->prev){
 			head = tmp->block;
-			if(!memcmp(head->hash, SHA256((char *)block, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
+			if(head->height = block->height+1 && !memcmp(head->hash, SHA256((char *)block, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
 				fprintf(stderr,"new block added to tail of new_chain\n"); //debug
 				accept = malloc(sizeof(struct block));
 				memcpy(accept, block, sizeof(struct block));
@@ -94,6 +98,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 						return tmp;
 					}
 				}
+				request_block(block->height-1, from);
 			}
 			if(tmp->prev==NULL){break;}
 		}

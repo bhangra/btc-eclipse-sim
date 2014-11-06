@@ -40,7 +40,7 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	miner=new->miner;
 	memset(miner, 0, sizeof(struct miner));
 	miner->miner_id = miner_id;
-	miner->seed		= rand()%2;
+	miner->seed		= 1;//rand()%2;
 	miner->boot		= true;
 	miner->links	= NULL;
 	miner->blocks	= NULL;

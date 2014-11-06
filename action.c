@@ -9,6 +9,7 @@
 #include<sys/types.h>
 #include<sys/ipc.h>
 #include<sys/sem.h>
+#include<time.h>
 
 #include"block.c"
 #include"thread.c"
@@ -83,34 +84,50 @@ struct links *seed_receive(struct link *new_comer, struct links *seeds){
 	fprintf(stderr, "seed_receive(): will add_links()\n");
 	return add_links(miner_id, link, link, seeds);
 }
-void dns_query(struct dns *dns, struct link *new_comer){
-	unsigned int	size;
+void dns_query(struct dns *dns, struct link *new_comer, unsigned int my_id){
+	unsigned int	size, payload_size, miner_id;
 	struct link		*link;
 	struct links	*tmp;
 	size		= sizeof(struct link*);
+	payload_size= size+sizeof(unsigned int);
+	miner_id	= my_id;
 	link		= new_comer;
 	link->dest	= &(dns->new_comer);
 	memcpy(&link->sbuf[0], "dnsquery", 8);
-	memcpy(&link->sbuf[12], &size, 4);
+	memcpy(&link->sbuf[12], &payload_size, 4);
 	memcpy(&link->sbuf[16], &new_comer, size);
-	send_msg(&dns->new_comer, link->sbuf, 16+size);  
+	memcpy(&link->sbuf[16+size], &miner_id, sizeof(unsigned int));
+	
+	send_msg(&dns->new_comer, link->sbuf, 16+payload_size);  
 }
 
 void dns_roundrobin(struct link *new_comer, struct links *seeds){
-	unsigned int	i, j, size, payload_size;
+	unsigned int	i, j, size, payload_size, dest_id, random;
 	struct link		*link;
 	struct links	*tmp, *head;
 	size			= sizeof(struct link*);
 	payload_size	= size + sizeof(unsigned int);
 	link 			= new_comer;
-	for(tmp=seeds;tmp->prev!=NULL;tmp=tmp->prev){
-		;
-	}
+
+	srand((unsigned)time(NULL));
+
+	memcpy(&dest_id, &link->process_buf[16+size], sizeof(unsigned int));
+	fprintf(stderr, "dest_id = %d\n", dest_id);
+	for(tmp=seeds;tmp->prev!=NULL;tmp=tmp->prev){}
 	head=tmp;
 	for(i=1; tmp->next!=NULL; i++){
 		tmp=tmp->next;
 	}
-	j=rand()%i;
+	fprintf(stderr, "i = %d\n", i);
+	for(; ;){
+		random=rand();
+		fprintf(stderr, "random = %d\n", random);
+		j=random%i;
+		fprintf(stderr, "j = %d\n", j);
+		if(j!=dest_id||(i==1&&dest_id==0)){
+			break;
+		}
+	}
 	tmp = head;
 	for(i=0; i<j; tmp=tmp->next/*i++*/){
 		i++;//	tmp = tmp->next;
@@ -122,6 +139,7 @@ void dns_roundrobin(struct link *new_comer, struct links *seeds){
 	memcpy(&link->sbuf[16], &tmp->new_comer, size);
 	memcpy(&link->sbuf[16+size], &tmp->miner_id, sizeof(unsigned int));
 	send_msg(link->dest, link->sbuf, 16+payload_size);
+	fprintf(stderr, "sent DNS round robin\n");
 }
 
 void getaddr(struct link *dest){
@@ -204,7 +222,6 @@ void send_block(struct block *block, struct link *dest){
 	memcpy(&link->sbuf[12], &size, 4);
 	memcpy(&link->sbuf[16], block, size);
 	send_msg(link->dest, link->sbuf, 16+size);
-	fprintf(stderr, "sent block\n");
 }
 
 void propagate_block(struct block *block, struct miner *me){
@@ -285,6 +302,7 @@ void request_block(unsigned int wanted_height, struct link *dest){
 
 struct links *process_dns(struct link *new_comer, struct links *seeds){
 	char 					*payload;
+	unsigned int			dest_id;
 	struct link				*link;
 	struct links			*tmp;
 	const struct msg_hdr	*hdr;
@@ -321,7 +339,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	fprintf(stderr, "check command\n"); //debug
 	if(strncmp(hdr->command, "block", 5)==0){
 		block=(struct block*)&link->process_buf[16];
-		fprintf(stderr, "received block with height: %d\n", block->height); //debug
+		fprintf(stderr, "received block with height: %d from %d\n", block->height, links->miner_id); //debug
 		me->blocks = process_new_blocks(block, me->blocks, me, link);
 	}
 /*	else if(strncmp(hdr->command, "newhead", 7)==0){
@@ -329,7 +347,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	}
 */
 	else if(strncmp(hdr->command, "getblock", 8)==0){
-		fprintf(stderr, "getblock received\n");
+		fprintf(stderr, "getblock received from: %d\n", links->miner_id);
 		memcpy(&height, &link->process_buf[16], sizeof(unsigned int));
 		fprintf(stderr, "trying to find requested block: %d\n", height);
 		fprintf(stderr, "me->blocks = %p\n", me->blocks);
@@ -344,8 +362,8 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 		if(blocks==NULL)
 			return;
 		else{
-			fprintf(stderr, "found the requested block\n");
 			send_block(block, link);
+			fprintf(stderr, "sent block with height: %d to miner: %d\n", block->height, links->miner_id);
 		}
 	}
 	else if(strncmp(hdr->command, "getaddr", 7)==0){
