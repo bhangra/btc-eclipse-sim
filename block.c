@@ -17,6 +17,7 @@
 
 
 void request_block(unsigned int wanted_height, struct link *dest);
+void propagate_block(struct block *block, struct miner *me);
 
 struct blocks *add_block(struct block *block, struct blocks *chain_head){
 	struct blocks *tmp, *tmp2;
@@ -53,6 +54,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 			fprintf(stderr, "next block received\n"); //debug
 			accept = malloc(sizeof(struct block));
 			memcpy(accept, block, sizeof(struct block));
+			propagate_block(accept, me);
 			return add_block(accept, tmp);
 		}
 	}

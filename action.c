@@ -329,10 +329,10 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	}
 */
 	else if(strncmp(hdr->command, "getblock", 8)==0){
-//		height = (unsigned int)*payload;
+		fprintf(stderr, "getblock received\n");
 		memcpy(&height, &link->process_buf[16], sizeof(unsigned int));
 		for(blocks=me->blocks; blocks->next!=NULL; blocks=blocks->next){}
-		for(;block->height!=height||blocks!=NULL;blocks=blocks->prev){
+		for(;block->height!=height && blocks!=NULL;blocks=blocks->prev){
 			block=blocks->block;
 		}
 		if(blocks==NULL)
