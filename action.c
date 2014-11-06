@@ -320,15 +320,17 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	payload = (char *)(hdr +sizeof(struct msg_hdr));
 	fprintf(stderr, "check command\n"); //debug
 	if(strncmp(hdr->command, "block", 5)==0){
-		fprintf(stderr, "received block\n"); //debug
-		me->blocks = process_new_blocks((struct block*)&link->process_buf[16], me->blocks, me, link);
+		block=(struct block*)&link->process_buf[16];
+		fprintf(stderr, "received block with height: %d\n", block->height); //debug
+		me->blocks = process_new_blocks(block, me->blocks, me, link);
 	}
 /*	else if(strncmp(hdr->command, "newhead", 7)==0){
 
 	}
 */
 	else if(strncmp(hdr->command, "getblock", 8)==0){
-		height = (unsigned int)*payload;
+//		height = (unsigned int)*payload;
+		memcpy(&height, &link->process_buf[16], sizeof(unsigned int));
 		for(blocks=me->blocks; blocks->next!=NULL; blocks=blocks->next){}
 		for(;block->height!=height||blocks!=NULL;blocks=blocks->prev){
 			block=blocks->block;

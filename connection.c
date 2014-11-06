@@ -65,7 +65,7 @@ struct links *add_links(unsigned int miner_id, struct link *dest, struct link *n
 int send_msg(struct link *dest, char *message, unsigned int msg_size){
 //	hexDump("sending msg", message, msg_size);
 	unsigned int pos, over_size;
-	fprintf(stderr, "sending msg_size: %d\n", msg_size); //debug
+	fprintf(stderr, "sending msg_size: %d %s\n", msg_size, message); //debug
 	pos = dest->write_pos;
 
 	pthread_mutex_lock((pthread_mutex_t *)&dest->rcv_mutex);
