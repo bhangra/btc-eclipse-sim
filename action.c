@@ -393,8 +393,8 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	}
 	else if(strncmp(hdr->command, "addr", 4)==0){
 		for(i=0; i<(hdr->message_size/(sizeof(struct link*)+sizeof(unsigned int))); i++){
-			memcpy(&miner_id, &payload[i*sizeof(struct link*)], sizeof(unsigned int));
-			version(me->miner_id, miner_id, (struct link*)(&payload[i*sizeof(struct link*)+sizeof(unsigned int)]), &me->new_comer, links);
+			memcpy(&miner_id, &link->process_buf[16+i*(sizeof(struct link*)+sizeof(unsigned int))], sizeof(unsigned int));
+			version(me->miner_id, miner_id, (struct link*)(&link->process_buf[16+i*(sizeof(struct link*)+sizeof(unsigned int))+sizeof(unsigned int)]), &me->new_comer, links);
 		}
 	}
 	else if(strncmp(hdr->command, "verack", 6)==0){
