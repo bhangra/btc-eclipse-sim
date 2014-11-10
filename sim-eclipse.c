@@ -4,6 +4,10 @@
 
 #include<stdio.h>
 #include<stdlib.h>
+#include<stdbool.h>
+#include<pthread.h>
+#include<unistd.h>
+#include<time.h>
 #include<pthread.h>
 #include<unistd.h>
 #include<sys/types.h>
@@ -19,8 +23,11 @@
 
 int main(int argc, char *argv[]){
 //	struct dns	dns[5];
-	unsigned int time, miner_id, i;
+	unsigned int times, miner_id, i;
 	struct threads *threads;
+
+// random seed
+	srand(time(NULL));
 
 //DNS nodes initialization
 	memset(&dns, 0, 5*sizeof(struct dns));
@@ -31,8 +38,8 @@ int main(int argc, char *argv[]){
 		threads=new_thread(1, miner_id, threads);
 	}
 //	thread = new_thread(1, NULL);
-	for(time = 0; time < 100; time++){
-		fprintf(stderr, "time = %d\n", time);//debug
+	for(times = 0; times < 100; times++){
+		fprintf(stderr, "times = %d\n", times);//debug
 		for(;threads->prev!=NULL; threads=threads->prev){}
 		for(;;threads=threads->next){
 			fprintf(stderr, "\nminer: %d\n", (threads->miner)->miner_id);

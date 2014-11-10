@@ -48,7 +48,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 	}
 	if(chain_head!=NULL){
 		fprintf(stderr, "will check if it's next block\n");
-//		for(tmp=chain_head; tmp->next!=NULL; tmp=tmp->next){}
+		for(tmp=chain_head; tmp->next!=NULL; tmp=tmp->next){}
 		head = chain_head->block;
 		if(block->height == head->height+1 && !memcmp(block->hash, SHA256((char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
 			fprintf(stderr, "next block received\n"); //debug

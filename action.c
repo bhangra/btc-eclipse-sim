@@ -109,7 +109,7 @@ void dns_roundrobin(struct link *new_comer, struct links *seeds){
 	payload_size	= size + sizeof(unsigned int);
 	link 			= new_comer;
 
-	srand((unsigned)time(NULL));
+//	srand((unsigned)time(NULL));
 
 	memcpy(&dest_id, &link->process_buf[16+size], sizeof(unsigned int));
 	for(tmp=seeds;tmp->prev!=NULL;tmp=tmp->prev){}
@@ -140,7 +140,7 @@ void dns_roundrobin(struct link *new_comer, struct links *seeds){
 			for(i=0; i<j; tmp=tmp->next/*i++*/){
 				i++;//	tmp = tmp->next;
 			}
-			if(tmp->miner_id != dest_id||i==1){
+			if(tmp->miner_id != dest_id){
 				break;
 			}
 		}
@@ -174,9 +174,14 @@ void addr(struct link *dest, struct miner *me){
 	memcpy(&link->sbuf[0], "addr", 4);
 	for(links=me->links; links->prev!=NULL; links=links->prev){}
 	for(i=0; links!=NULL; i++){
-		link=links->link;
-		memcpy(&link->sbuf[16+(i*sizeof(struct link*))], &links->miner_id, sizeof(unsigned int));	
-		memcpy(&link->sbuf[16+(i*sizeof(struct link*))+sizeof(unsigned int)], &links->new_comer, sizeof(struct link*));
+		if(links->new_comer!=links->link){
+			link=links->link;
+			memcpy(&link->sbuf[16+(i*sizeof(struct link*))], &links->miner_id, sizeof(unsigned int));	
+			memcpy(&link->sbuf[16+(i*sizeof(struct link*))+sizeof(unsigned int)], &links->new_comer, sizeof(struct link*));
+		}
+		else{
+			i=i-1;
+		}
 		links=links->next;
 	}
 	size=i*(sizeof(struct link*)+sizeof(unsigned int));
@@ -401,7 +406,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 struct links *process_new(struct link *new_comer,struct links *links, struct miner *me){
     char                *payload;
     unsigned int        height, i, miner_id, size, payload_size;
-    struct link         *link;
+    struct link         *link, *dest;
 	struct msg_hdr *hdr;
     struct block        *block;
     struct blocks       *blocks;
@@ -412,15 +417,22 @@ struct links *process_new(struct link *new_comer,struct links *links, struct min
     payload = (char *)(hdr +sizeof(struct msg_hdr));
 	memcpy(&payload_size, &link->process_buf[12], 4);
     fprintf(stderr, "check command\n"); //debug
+	hexDump("Message received", link->process_buf, 16+hdr->message_size);
     if(strncmp(hdr->command, "roundrobin", 10)==0){
-		memcpy(&link, &link->process_buf[16], size);
-		memcpy(&miner_id, &link->process_buf[16+size], sizeof(unsigned int));
+//		memcpy(&link, &link->process_buf[16], size);
+		memcpy(&dest, &link->process_buf[16], size);
+/*int a, b;
+for(a = 0; a < 26; a++) {
+fprintf(stderr, "process_buf[%d] : %d\n",a ,link->process_buf[a]);
+}*/
+		memcpy(&miner_id, &link->process_buf[24/*16+size*/], /*sizeof(unsigned int)*/4);
 		if(miner_id==me->miner_id){
 			fprintf(stderr, "will not send version to me\n");
 			return NULL;
 		}
-		fprintf(stderr, "will send version to: %d %p\n", miner_id, link);
-        return version(me->miner_id, miner_id, link, &me->new_comer, links);
+		fprintf(stderr, "will send version to: %d %p\n", miner_id, /*link*/dest);
+//        return version(me->miner_id, miner_id, link, &me->new_comer, links);
+		return version(me->miner_id, miner_id, dest, &me->new_comer, NULL);
     }
     else if(strncmp(hdr->command, "version", 7)==0){
 		fprintf(stderr, "version received\n");

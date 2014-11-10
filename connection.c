@@ -39,8 +39,10 @@ struct links *add_links(unsigned int miner_id, struct link *dest, struct link *n
 		fprintf(stderr, "*links = %p\n", tmp); //debug
 		if(tmp==NULL)
 			break;
-		if(miner_id==tmp->miner_id) //already connected 
-			break;
+		if(miner_id==tmp->miner_id){ //already connected 
+			fprintf(stderr, "already connected\n");
+			return links;
+		}
 		if(tmp->next==NULL)
 			break;
 	}
