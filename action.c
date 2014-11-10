@@ -24,7 +24,7 @@ void hexDump (char *desc, void *addr, int len) {
 
     // Output description if given.
     if (desc != NULL)
-        printf ("%s:\n", desc);
+        fprintf (stderr, "%s:\n", desc);
 
     // Process every byte in the data.
     for (i = 0; i < len; i++) {
@@ -33,14 +33,14 @@ void hexDump (char *desc, void *addr, int len) {
         if ((i % 16) == 0) {
             // Just don't print ASCII for the zeroth line.
             if (i != 0)
-                printf ("  %s\n", buff);
+                fprintf (stderr, "  %s\n", buff);
 
             // Output the offset.
-            printf ("  %04x ", i);
+            fprintf (stderr,"  %04x ", i);
         }
 
         // Now the hex code for the specific character.
-        printf (" %02x", pc[i]);
+        fprintf (stderr, " %02x", pc[i]);
 
         // And store a printable ASCII character for later.
         if ((pc[i] < 0x20) || (pc[i] > 0x7e))
@@ -52,12 +52,12 @@ void hexDump (char *desc, void *addr, int len) {
 
     // Pad out last line if not exactly 16 characters.
     while ((i % 16) != 0) {
-        printf ("   ");
+        fprintf (stderr,"   ");
         i++;
     }
 
     // And print the final ASCII bit.
-    printf ("  %s\n", buff);
+    fprintf (stderr,"  %s\n", buff);
 }
 
 void dns_seed(unsigned int my_id, struct dns *dns, struct link *new_comer){
@@ -102,7 +102,7 @@ void dns_query(struct dns *dns, struct link *new_comer, unsigned int my_id){
 }
 
 void dns_roundrobin(struct link *new_comer, struct links *seeds){
-	unsigned int	i, j, size, payload_size, dest_id, random;
+	unsigned int	i, j, num_seeds, size, payload_size, dest_id, random;
 	struct link		*link;
 	struct links	*tmp, *head;
 	size			= sizeof(struct link*);
@@ -112,25 +112,38 @@ void dns_roundrobin(struct link *new_comer, struct links *seeds){
 	srand((unsigned)time(NULL));
 
 	memcpy(&dest_id, &link->process_buf[16+size], sizeof(unsigned int));
-	fprintf(stderr, "dest_id = %d\n", dest_id);
 	for(tmp=seeds;tmp->prev!=NULL;tmp=tmp->prev){}
 	head=tmp;
 	for(i=1; tmp->next!=NULL; i++){
 		tmp=tmp->next;
 	}
-	fprintf(stderr, "i = %d\n", i);
+	num_seeds=i;
 	for(; ;){
+		i=num_seeds;
 		random=rand();
-		fprintf(stderr, "random = %d\n", random);
-		j=random%i;
-		fprintf(stderr, "j = %d\n", j);
-		if(j!=dest_id||(i==1&&dest_id==0)){
+		fprintf(stderr, "i = %d, random = %d\n", i, random);
+		if(i==0){
+			fprintf(stderr, "no seeds\n");
+			return;
+		}
+		if(i==1){
+			tmp=head;
 			break;
 		}
-	}
-	tmp = head;
-	for(i=0; i<j; tmp=tmp->next/*i++*/){
-		i++;//	tmp = tmp->next;
+		if(random>=i){
+			j=random%i;
+//			if(j!=dest_id||(i==1&&dest_id==0)){
+//				break;
+//			}
+//		}
+			tmp = head;
+			for(i=0; i<j; tmp=tmp->next/*i++*/){
+				i++;//	tmp = tmp->next;
+			}
+			if(tmp->miner_id != dest_id||i==1){
+				break;
+			}
+		}
 	}
 	fprintf(stderr, "seed: %d %p\n", tmp->miner_id, tmp->new_comer);
 	memcpy(&link->dest, &link->process_buf[16], size);
@@ -310,6 +323,7 @@ struct links *process_dns(struct link *new_comer, struct links *seeds){
 	hdr		= (struct msg_hdr*)(link->process_buf);
 	payload	= (char *)(hdr+sizeof(struct msg_hdr));
 	if(strncmp(hdr->command, "dnsseed", 7)==0){
+		fprintf(stderr, "seed request received\n");
 		tmp = seed_receive(link, seeds);
 		if(tmp!=NULL)
 			return tmp;
@@ -351,6 +365,8 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 		memcpy(&height, &link->process_buf[16], sizeof(unsigned int));
 		fprintf(stderr, "trying to find requested block: %d\n", height);
 		fprintf(stderr, "me->blocks = %p\n", me->blocks);
+		if(me->blocks==NULL)
+			return;
 		for(blocks=me->blocks; blocks->next!=NULL; blocks=blocks->next){}
 		block = blocks->block;
 		for(block=blocks->block;block->height!=height && blocks!=NULL;blocks=blocks->prev){
@@ -401,7 +417,7 @@ struct links *process_new(struct link *new_comer,struct links *links, struct min
 		memcpy(&miner_id, &link->process_buf[16+size], sizeof(unsigned int));
 		if(miner_id==me->miner_id){
 			fprintf(stderr, "will not send version to me\n");
-			return links;
+			return NULL;
 		}
 		fprintf(stderr, "will send version to: %d %p\n", miner_id, link);
         return version(me->miner_id, miner_id, link, &me->new_comer, links);

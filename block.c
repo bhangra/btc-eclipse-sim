@@ -60,8 +60,11 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 	}
 	if(me->new_chain!=NULL){
 		fprintf(stderr, "will check in the new_chain\n");
-		for(tmp=me->new_chain; tmp->next!=NULL; tmp=tmp->next){}
+		for(tmp=me->new_chain; tmp->next!=NULL; tmp=tmp->next){
+			if(tmp->next==NULL){break;}
+		}
 		head=tmp->block;
+		fprintf(stderr, "will check, if it's next one to new_chain\n");
 		if(block->height == head->height + 1 && !memcmp(block->hash, SHA256((char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
 			fprintf(stderr, "new block added to new_chain's head\n"); //debug
 			accept = malloc(sizeof(struct block));
@@ -70,12 +73,20 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 			for(; tmp->prev!=NULL; tmp=tmp->prev){}
 			head = tmp->block;
 			request_block(head->height-1, from);
+			request_block(head->height-2, from);
+			request_block(head->height-3, from);
+
 //			request_block(accept->height-1, from);
 			return chain_head;
 		}
+		fprintf(stderr, "will check, if it's previous one to new_chain\n");
 		for(;;tmp=tmp->prev){
+			fprintf(stderr, "tmp = %p, tmp->block = %p\n", tmp, tmp->block);
+			if(tmp==NULL){
+				return chain_head;
+			}
 			head = tmp->block;
-			if(head->height = block->height+1 && !memcmp(head->hash, SHA256((char *)block, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
+			if(head->height == block->height+1 && !memcmp(head->hash, SHA256((char *)block, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
 				fprintf(stderr,"new block added to tail of new_chain\n"); //debug
 				accept = malloc(sizeof(struct block));
 				memcpy(accept, block, sizeof(struct block));
@@ -86,10 +97,11 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 				tmp->prev	= tmp2;
 				for(tmp=chain_head; tmp!=NULL; tmp=tmp->prev){
 					head=tmp->block;
-					if(!memcmp(accept->hash, SHA256((char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
-						tmp->next = tmp2;
-						tmp2->prev= tmp;
-						for(; tmp!=NULL; tmp=tmp3){
+					if(accept->height==head->height+1 && !memcmp(accept->hash, SHA256((char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
+						tmp3		= tmp->next;
+						tmp->next	= tmp2;
+						tmp2->prev	= tmp;
+						for(tmp=tmp3; tmp!=NULL; tmp=tmp3){
 							tmp3	= tmp->next;
 							free(tmp->block);
 							free(tmp);						
@@ -99,17 +111,22 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 					}
 				}
 				request_block(block->height-1, from);
+				request_block(block->height-2, from);
+				request_block(block->height-3, from);
+				return chain_head;
 			}
 			if(tmp->prev==NULL){break;}
+			fprintf(stderr, "test\n");
 		}
+		fprintf(stderr, "check in new_chain finished\n");
 		if(block->height <= head->height){
-			fprintf(stderr, "equal or lower block received\n"); //debug
+			fprintf(stderr, "in new_chain: equal or lower block received\n"); //debug
 			return chain_head;
 		}
 	}
-	if(block->height>1&&chain_head==NULL){
-		request_block(block->height-1, from);
-	}
+//	if(block->height>1&&chain_head==NULL){
+//		request_block(block->height-1, from);
+//	}
 	fprintf(stderr, "will check if it's lower or equal\n");
 
 	if(block->height > 1 && chain_head==NULL){
@@ -121,16 +138,24 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 			for(; tmp!=NULL; tmp=tmp2){
 				tmp2 = tmp->prev;
 				free(tmp->block);
-				free(tmp);
+				if((struct links*)tmp!=(struct links*)&me->new_chain)
+					free(tmp);
 			}
 		}
 		me->new_chain = malloc(sizeof(struct blocks));
 		memset(me->new_chain, 0, sizeof(struct blocks));
-		(me->new_chain)->block = accept;
-		fprintf(stderr, "will request for it's prev block\n");
+		accept = malloc(sizeof(struct block));
+		memcpy(accept, block, sizeof(struct block));
+		(me->new_chain)->block	= accept;
+		(me->new_chain)->next	= NULL;
+		(me->new_chain)->prev	= NULL;
+		fprintf(stderr, "will request for it's prev blocks\n");
 		request_block(block->height-1, from);
+		request_block(block->height-2, from);
+		request_block(block->height-3, from);
 		return chain_head;
     }
+	fprintf(stderr, "check if higher than my chain height\n");
 	head = chain_head->block;
 	if(block->height > head->height){
 		fprintf(stderr, "need previous block\n"); //debug
@@ -144,12 +169,15 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 			for(; tmp!=NULL; tmp=tmp2){
 				tmp2 = tmp->prev;
 				free(tmp->block);
-				free(tmp);
+				if((struct links*)tmp!=(struct links*)&me->new_chain)
+					free(tmp);
 			}
 		}
 		me->new_chain = malloc(sizeof(struct blocks));
 		memset(me->new_chain, 0, sizeof(struct blocks));
 		(me->new_chain)->block = accept;
+		(me->new_chain)->next = NULL;
+		(me->new_chain)->prev = NULL;
 		fprintf(stderr, "will request for it's prev block\n");
 		request_block(block->height-1, from);
 		return chain_head;
