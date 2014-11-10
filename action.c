@@ -251,6 +251,7 @@ void propagate_block(struct block *block, struct miner *me){
 	for(links=me->links; links->prev!=NULL;links=links->prev){}
 	for(; links!=NULL; links=links->next){
 		link = links->link;
+		fprintf(stderr, "sent block with height: %d to miner: %d\n", block->height, links->miner_id);
 		send_block(block, link);
 	}
 	fprintf(stderr, "propagated block\n"); //debug
@@ -274,7 +275,7 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, stru
 	for(times = 0;times < 1/*000*/;times++){
 		x = rand()%5;  // /(RAND_MAX);
 		y = rand()%5;  // /(RAND_MAX);
-		if((x*x+y*y)>20/*0.5 0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001*/){
+		if((x*x+y*y)>30/*0.5 0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001*/){
 			fprintf(stdout,"mined block in %d times\n", times);
 			mined			= 1;
 			head			= malloc(sizeof(struct block));
@@ -355,7 +356,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	link = links->link;
 	hdr = (struct msg_hdr*)(link->process_buf);
 	payload = (char *)(hdr +sizeof(struct msg_hdr));
-	fprintf(stderr, "check command\n"); //debug
+//	fprintf(stderr, "check command\n"); //debug
 	if(strncmp(hdr->command, "block", 5)==0){
 		block=(struct block*)&link->process_buf[16];
 		fprintf(stderr, "received block with height: %d from %d\n", block->height, links->miner_id); //debug
@@ -397,6 +398,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 		}
 	}
 	else if(strncmp(hdr->command, "verack", 6)==0){
+		fprintf(stderr, "received verack\n");
 //		link->dest = (struct link*)payload;
 		memcpy(&link->dest, &link->process_buf[16], sizeof(struct link*));
 	}
@@ -416,15 +418,11 @@ struct links *process_new(struct link *new_comer,struct links *links, struct min
     hdr = (struct msg_hdr*)(link->process_buf);
     payload = (char *)(hdr +sizeof(struct msg_hdr));
 	memcpy(&payload_size, &link->process_buf[12], 4);
-    fprintf(stderr, "check command\n"); //debug
-	hexDump("Message received", link->process_buf, 16+hdr->message_size);
+//    fprintf(stderr, "check command\n"); //debug
+//	hexDump("Message received", link->process_buf, 16+hdr->message_size);
     if(strncmp(hdr->command, "roundrobin", 10)==0){
 //		memcpy(&link, &link->process_buf[16], size);
 		memcpy(&dest, &link->process_buf[16], size);
-/*int a, b;
-for(a = 0; a < 26; a++) {
-fprintf(stderr, "process_buf[%d] : %d\n",a ,link->process_buf[a]);
-}*/
 		memcpy(&miner_id, &link->process_buf[24/*16+size*/], /*sizeof(unsigned int)*/4);
 		if(miner_id==me->miner_id){
 			fprintf(stderr, "will not send version to me\n");

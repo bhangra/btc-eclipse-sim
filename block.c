@@ -44,6 +44,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 		fprintf(stderr, "genesis block received\n"); //debug
 		accept = malloc(sizeof(struct block));
 		memcpy(accept, block, sizeof(struct block));
+		propagate_block(accept, me);
 		return add_block(accept, chain_head);
 	}
 	if(chain_head!=NULL){
@@ -75,6 +76,8 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 			request_block(head->height-1, from);
 			request_block(head->height-2, from);
 			request_block(head->height-3, from);
+			request_block(head->height-4, from);
+			request_block(head->height-5, from);
 
 //			request_block(accept->height-1, from);
 			return chain_head;
@@ -95,6 +98,11 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 				tmp2->prev	= NULL;
 				tmp2->next	= tmp;
 				tmp->prev	= tmp2;
+				if(accept->height == 1){
+					for(; tmp->next!=NULL; tmp=tmp->next){}
+					return tmp;
+				}
+				else{
 				for(tmp=chain_head; tmp!=NULL; tmp=tmp->prev){
 					head=tmp->block;
 					if(accept->height==head->height+1 && !memcmp(accept->hash, SHA256((char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
@@ -110,9 +118,12 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 						return tmp;
 					}
 				}
+				}
 				request_block(block->height-1, from);
 				request_block(block->height-2, from);
 				request_block(block->height-3, from);
+				request_block(block->height-4, from);
+				request_block(block->height-5, from);
 				return chain_head;
 			}
 			if(tmp->prev==NULL){break;}
@@ -153,11 +164,14 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 		request_block(block->height-1, from);
 		request_block(block->height-2, from);
 		request_block(block->height-3, from);
+		request_block(block->height-4, from);
+		request_block(block->height-5, from);
+
 		return chain_head;
     }
 	fprintf(stderr, "check if higher than my chain height\n");
 	head = chain_head->block;
-	if(block->height > head->height){
+	if(block->height > head->height+1){
 		fprintf(stderr, "need previous block\n"); //debug
 		accept = malloc(sizeof(struct block));
 		memcpy(accept, block, sizeof(struct block));
@@ -180,6 +194,10 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 		(me->new_chain)->prev = NULL;
 		fprintf(stderr, "will request for it's prev block\n");
 		request_block(block->height-1, from);
+		request_block(block->height-2, from);
+		request_block(block->height-3, from);
+		request_block(block->height-4, from);
+		request_block(block->height-5, from);
 		return chain_head;
 	}
 	return chain_head;
