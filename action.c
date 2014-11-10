@@ -176,8 +176,8 @@ void addr(struct link *dest, struct miner *me){
 	for(i=0; links!=NULL; i++){
 		if(links->new_comer!=links->link){
 			link=links->link;
-			memcpy(&link->sbuf[16+(i*sizeof(struct link*))], &links->miner_id, sizeof(unsigned int));	
-			memcpy(&link->sbuf[16+(i*sizeof(struct link*))+sizeof(unsigned int)], &links->new_comer, sizeof(struct link*));
+			memcpy(&link->sbuf[16+(i*(sizeof(struct link*)+sizeof(unsigned int)))], &links->miner_id, sizeof(unsigned int));	
+			memcpy(&link->sbuf[16+(i*(sizeof(struct link*)+sizeof(unsigned int)))+sizeof(unsigned int)], &links->new_comer, sizeof(struct link*));
 		}
 		else{
 			i=i-1;
