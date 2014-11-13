@@ -360,7 +360,7 @@ struct links *process_dns(struct link *new_comer, struct links *seeds){
 	}
 }
 int process_msg(struct link *new_comer,struct links *links, struct miner *me){
-	bool				connect;
+	bool				connect, connected;
 	char				*payload;
 	unsigned int		height, i, miner_id, size, set, num_addr, payload_size;
 	struct link			*link, *dest;
@@ -421,7 +421,8 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 		for(i=0; i<num_addr; i++){
 			memcpy(&miner_id, &link->process_buf[16+i*set], sizeof(unsigned int));
 			memcpy(&dest, &link->process_buf[16+i*set+sizeof(unsigned int)], size);
-			connect = true;
+			connect		= true;
+			connected	= false;
 			for(tmp=me->links; tmp->next!=NULL; tmp=tmp->next){
 				if(tmp->miner_id==miner_id){
 					connect = false;
@@ -429,9 +430,13 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 				}				
 			}
 			if(connect){
+				connected = true;
 				fprintf(stderr, "will send version to dest: %p, id: %d\n", dest, miner_id);
 				me->links = version(me->miner_id, miner_id, dest, &me->new_comer, me->links);
 			}
+		}
+		if(!connected){
+			dns_query(&dns[rand()%6], &me->new_comer, me->miner_id);
 		}
 	}
 	else if(strncmp(hdr->command, "verack", 6)==0){

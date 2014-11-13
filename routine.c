@@ -14,7 +14,7 @@
 #include"action.c"
 //#include"proto-node.h"
 
-#define LEAST_NEIGHBOR 2
+#define LEAST_NEIGHBOR 3
 
 void dns_routine(struct dns *dns){
 	fprintf(stderr, "\n");

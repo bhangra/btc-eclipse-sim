@@ -34,11 +34,11 @@ int main(int argc, char *argv[]){
 
 
 	threads = NULL;
-	for(miner_id=0; miner_id<5; miner_id++){
+	for(miner_id=0; miner_id<10; miner_id++){
 		threads=new_thread(1, miner_id, threads);
 	}
 //	thread = new_thread(1, NULL);
-	for(times = 0; times < 1000; times++){
+	for(times = 0; times < 100; times++){
 		fprintf(stderr, "times = %d\n", times);//debug
 		for(;threads->prev!=NULL; threads=threads->prev){}
 		for(;;threads=threads->next){
