@@ -46,7 +46,7 @@ struct links *add_links(unsigned int miner_id, struct link *dest, struct link *n
 		if(tmp->next==NULL)
 			break;
 	}
-	fprintf(stderr, "will malloc\n"); //debug
+//	fprintf(stderr, "will malloc\n"); //debug
 
 	new			= malloc(sizeof(struct links));
 	memset(new, 0, sizeof(struct links));
@@ -60,7 +60,7 @@ struct links *add_links(unsigned int miner_id, struct link *dest, struct link *n
 	new->miner_id		= miner_id;
 	new->new_comer		= new_comer;
 	(new->link)->dest	= dest;
-	fprintf(stderr, "added link\n");
+//	fprintf(stderr, "added link\n");
 	return new;
 }
 

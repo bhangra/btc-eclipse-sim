@@ -53,13 +53,13 @@ void miner_routine(struct miner *miner){
 			fprintf(stderr, "miner->links = %p\n", miner->links);
 		}
 		links = miner->links;
-		if(miner->links==NULL){
+		if(links==NULL){
 			i=0;
 			miner->boot=true;
-			return;
 		}
 //			return;
 		else{
+			for(;links->prev!=NULL; links=links->prev){}
 			for(i=0/*debug*/; links!=NULL; links=links->next){
 //				fprintf(stderr, "link->num_msg = %d\n", link->num_msg);//debug
 				for(link=links->link; link->num_msg!=0;){
