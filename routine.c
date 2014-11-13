@@ -14,6 +14,8 @@
 #include"action.c"
 //#include"proto-node.h"
 
+#define LEAST_NEIGHBOR 2
+
 void dns_routine(struct dns *dns){
 	fprintf(stderr, "\n");
 	for(; (&dns->new_comer)->num_msg!=0;){
@@ -49,7 +51,7 @@ void miner_routine(struct miner *miner){
 		for(link=&miner->new_comer; link->num_msg!=0;){
 			fprintf(stderr, "new_comer link\n"); //debug
 			read_msg(link);
-			miner->links = process_new(&miner->new_comer, links, miner);
+			miner->links = process_new(&miner->new_comer, miner);
 			fprintf(stderr, "miner->links = %p\n", miner->links);
 		}
 		links = miner->links;
@@ -73,6 +75,17 @@ void miner_routine(struct miner *miner){
 			}
 		}
 		fprintf(stderr, "num of links: %d\n", i);//debug
+		if(miner->links!=NULL){
+			for(links=miner->links; links->prev!=NULL; links=links->prev){}
+			for(; links!=NULL; links=links->next){
+				link = links->link;
+				fprintf(stderr, "links dest: %p, new: %p, id: %d\n", link->dest, links->new_comer, links->miner_id);
+			}
+			if(i<LEAST_NEIGHBOR && miner->links!=NULL && ((miner->links)->link)->dest!=(miner->links)->new_comer){
+				getaddr((miner->links)->link, miner->miner_id);
+				fprintf(stderr, "sending getaddr to dest: %p, id: %d\n", (miner->links)->link, (miner->links)->miner_id);
+			}
+		}
 	}
 	miner->blocks = mine_block(miner->blocks, miner->miner_id, miner);
 	fprintf(stderr, "miner->blocks = %p ", miner->blocks);

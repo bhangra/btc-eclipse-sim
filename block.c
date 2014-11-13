@@ -98,8 +98,20 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 				tmp2->prev	= NULL;
 				tmp2->next	= tmp;
 				tmp->prev	= tmp2;
+				tmp3		= tmp;
 				if(accept->height == 1){
-					for(; tmp->next!=NULL; tmp=tmp->next){}
+					for(tmp=me->blocks; tmp->next=NULL; tmp=tmp->next){
+						if(tmp==NULL||tmp->next==NULL){break;}
+					}
+					for(; tmp!=NULL; tmp=tmp2){
+						tmp2 = tmp->prev;
+						free(tmp->block);
+						if((struct links*)tmp!=(struct links*)&me->blocks)
+							free(tmp);
+					}			
+					for(tmp=tmp3; tmp->next!=NULL; tmp=tmp->next){}
+					me->new_chain = NULL;
+					propagate_block(tmp->block, me);
 					return tmp;
 				}
 				else{
@@ -115,6 +127,8 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 							free(tmp);						
 						}
 						for(tmp=tmp2; tmp->next!=NULL;  tmp=tmp->next){}
+						me->new_chain=NULL;
+						propagate_block(tmp->block, me);
 						return tmp;
 					}
 				}
@@ -177,7 +191,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 		memcpy(accept, block, sizeof(struct block));
 		if(me->new_chain!=NULL){
 			fprintf(stderr, "free new_chain\n");
-			for(tmp=me->new_chain; tmp->next=NULL; tmp=tmp->next){
+			for(tmp=me->new_chain; tmp->next!=NULL; tmp=tmp->next){
 				if(tmp==NULL||tmp->next==NULL){break;}
 			}
 			for(; tmp!=NULL; tmp=tmp2){

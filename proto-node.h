@@ -16,9 +16,9 @@
 struct miner{
 	unsigned int	TTL;
 	unsigned int	group; 	//for attacker to classify nodes
+	bool			one_way;
 	bool            boot;
 	bool            seed;
-	bool            one_way;
 
 	unsigned int	miner_id;
 	double			hash_rate;
