@@ -17,9 +17,9 @@ struct link{
     unsigned int	num_msg; 	//number of messages unprocessed 	
     unsigned int   	read_pos;
 	unsigned int	write_pos;
-	char			buf[BUF_SIZE];
-	char			sbuf[BUF_SIZE];
-	char			process_buf[BUF_SIZE];
+	unsigned char	buf[BUF_SIZE];
+	unsigned char	sbuf[BUF_SIZE];
+	unsigned char	process_buf[BUF_SIZE];
 	struct link		*dest;
 };
 

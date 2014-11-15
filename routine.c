@@ -42,8 +42,8 @@ void miner_routine(struct miner *miner){
 		miner->seed = false;
 	}
 	else if(miner->boot == true){
-		for(i=0; i<rand()%6; i++){}
-		dns_query(&dns[i], &miner->new_comer, miner->miner_id);
+//		for(i=0; i<rand()%6; i++){}
+		dns_query(&dns[rand()%5], &miner->new_comer, miner->miner_id);
 		fprintf(stderr, "sent dns_query\n");
 		miner->boot = false;
 	}

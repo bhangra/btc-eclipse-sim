@@ -418,11 +418,11 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 		fprintf(stderr, "num_addr = %d\n", num_addr);
 		if(num_addr == 0)
 			me->boot = true;
+		connected = false;
 		for(i=0; i<num_addr; i++){
 			memcpy(&miner_id, &link->process_buf[16+i*set], sizeof(unsigned int));
 			memcpy(&dest, &link->process_buf[16+i*set+sizeof(unsigned int)], size);
 			connect		= true;
-			connected	= false;
 			if(miner_id==me->miner_id){
 				connect = false;
 			}
@@ -442,7 +442,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 			}
 		}
 		if(!connected){
-			dns_query(&dns[rand()%6], &me->new_comer, me->miner_id);
+			dns_query(&dns[rand()%5], &me->new_comer, me->miner_id);
 		}
 	}
 	else if(strncmp(hdr->command, "verack", 6)==0){
