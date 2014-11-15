@@ -423,11 +423,17 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 			memcpy(&dest, &link->process_buf[16+i*set+sizeof(unsigned int)], size);
 			connect		= true;
 			connected	= false;
-			for(tmp=me->links; tmp->next!=NULL; tmp=tmp->next){
-				if(tmp->miner_id==miner_id){
-					connect = false;
-					break;
-				}				
+			if(miner_id==me->miner_id){
+				connect = false;
+			}
+			else{
+				for(tmp=me->links; tmp->prev!=NULL; tmp=tmp->prev){}
+				for(; tmp->next!=NULL; tmp=tmp->next){
+					if(tmp->miner_id==miner_id){
+						connect = false;
+						break;
+					}				
+				}
 			}
 			if(connect){
 				connected = true;

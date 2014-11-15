@@ -214,6 +214,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 		request_block(block->height-5, from);
 		return chain_head;
 	}
+	fprintf(stderr, "block received not added\n");
 	return chain_head;
 }
 

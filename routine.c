@@ -14,7 +14,7 @@
 #include"action.c"
 //#include"proto-node.h"
 
-#define LEAST_NEIGHBOR 3
+#define LEAST_NEIGHBOR 8
 
 void dns_routine(struct dns *dns){
 	fprintf(stderr, "\n");
@@ -65,7 +65,7 @@ void miner_routine(struct miner *miner){
 			for(i=0/*debug*/; links!=NULL; links=links->next){
 //				fprintf(stderr, "link->num_msg = %d\n", link->num_msg);//debug
 				for(link=links->link; link->num_msg!=0;){
-//					fprintf(stderr, "will read msgs\n"); //debug
+					fprintf(stderr, "will read msg from miner: %d\n", links->miner_id); //debug
 					read_msg(link);	
 					process_msg(&miner->new_comer, links, miner);
 				} 
@@ -79,7 +79,7 @@ void miner_routine(struct miner *miner){
 			for(links=miner->links; links->prev!=NULL; links=links->prev){}
 			for(; links!=NULL; links=links->next){
 				link = links->link;
-				fprintf(stderr, "links dest: %p, new: %p, id: %d\n", link->dest, links->new_comer, links->miner_id);
+//				fprintf(stderr, "links dest: %p, new: %p, id: %d\n", link->dest, links->new_comer, links->miner_id);
 			}
 			if(i<LEAST_NEIGHBOR && miner->links!=NULL && ((miner->links)->link)->dest!=(miner->links)->new_comer){
 				getaddr((miner->links)->link, miner->miner_id);

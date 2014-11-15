@@ -70,14 +70,16 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 	unsigned int pos, over_size;
 	fprintf(stderr, "sending msg_size: %d %s\n", msg_size, message); //debug
 	pos = dest->write_pos;
-
+//	if ((pos<dest->read_pos && pos+msg_size >=dest->read_pos)||(pos>dest->read_pos && (pos+msg_size-BUF_SIZE)>=dest->read_pos))
+//		return 0;
+	fprintf(stderr, "dest->write_pos = %d\n", dest->write_pos);
 	pthread_mutex_lock((pthread_mutex_t *)&dest->rcv_mutex);
 	if(pos+msg_size < BUF_SIZE){
 		memcpy(&dest->buf[pos], message, msg_size);
 		dest->write_pos += msg_size;
 	}
 	else{
-		over_size = (pos+msg_size) - BUF_SIZE;
+		over_size = (pos+msg_size) - (BUF_SIZE);
 		memcpy(&dest->buf[pos], message, (msg_size-over_size));
 		memcpy(&dest->buf[0], &message[msg_size-over_size], over_size);
 		dest->write_pos = over_size;
@@ -90,13 +92,32 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 
 int read_msg(struct link *link){
 	const struct msg_hdr	*hdr;
-	int						read_size, over_size;
+	unsigned char			char_size[sizeof(unsigned int)];
+	int						i, j;
+	unsigned int			read_size, tmp_size, over_size;
 	if(!(int)link->num_msg){
 		return 0;
 	}
+	fprintf(stderr, "read_pos = %d,", link->read_pos);
 	pthread_mutex_lock(&link->rcv_mutex);
-	hdr 		= (struct msg_hdr*)&link->buf[(link)->read_pos];
-	read_size	= HDR_SIZE + hdr->message_size;
+	hdr         = (struct msg_hdr*)&link->buf[(link)->read_pos];
+	if((link->read_pos+HDR_SIZE)<BUF_SIZE){
+		read_size	= HDR_SIZE + hdr->message_size;
+	}
+	else{
+		for(i=0; i+link->read_pos+12<BUF_SIZE; i++){
+			char_size[i] = link->buf[link->read_pos+12+i]; 
+//			fprintf(stderr, "char_size[%d] = %d\n", i, char_size[i]);
+		}
+		j = i;
+		for(;i<sizeof(unsigned int); i++){
+			char_size[i] = link->buf[i-j];
+//			fprintf(stderr, "char_size[%d] = %d\n", i, char_size[i]);
+		}
+		memcpy(&tmp_size, &char_size[0], sizeof(unsigned int));
+		read_size	= HDR_SIZE + tmp_size;
+	}
+	fprintf(stderr, " read_size = %d\n", read_size);
 //assumes that the BUF_SIZE is large enough for a message
 	if((link->read_pos+read_size)<BUF_SIZE){
 		memcpy(&link->process_buf, hdr, read_size);
