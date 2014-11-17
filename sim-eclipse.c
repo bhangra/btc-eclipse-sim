@@ -15,7 +15,7 @@
 //#include"thread.c"
 //#include"node.c"
 #include"routine.c"
-
+#include"bad-routine.c"
 
 #define BAD_DNS 0
 #define ATTACKER 0
