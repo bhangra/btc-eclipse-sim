@@ -367,11 +367,11 @@ void get_blocks(struct link *dest, struct blocks *main_chain, struct blocks *new
 	send_msg(dest->dest, dest->sbuf, 16+payload_size);
 }
 
-void send_blocks(struct link *from, struct blocks *main_chain, unsigned int height, unsigned int height2){
+void send_blocks(struct link *from, struct blocks *main_chain, unsigned int height2, unsigned int height){
 	struct blocks	*tmp;
 	for(tmp=main_chain; tmp->prev!=NULL; tmp=tmp->prev){}
-	for(; (tmp->block)->height!=height2; tmp=tmp->next){}
-	for(;(tmp->block)->height!=height-1 && tmp!=NULL;tmp=tmp->prev){
+	for(; (tmp->block)->height!=height && tmp->next!=NULL; tmp=tmp->next){}
+	for(;(tmp->block)->height!=height2-1 && tmp!=NULL;tmp=tmp->prev){
 		send_block(tmp->block, from);
 		if(tmp->prev==NULL)
 			break;

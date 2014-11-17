@@ -19,7 +19,7 @@
 
 #define BAD_DNS 0
 #define ATTACKER 0
-#define INIT_NODES 100
+#define INIT_NODES 1000
 
 int main(int argc, char *argv[]){
 //	struct dns	dns[5];
