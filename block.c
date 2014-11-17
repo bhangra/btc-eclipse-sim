@@ -15,7 +15,7 @@
 #include"connection.h"
 #include"proto-node.h"
 
-
+void get_blocks(struct link *dest, struct blocks *main_chain, struct blocks *new_chain);
 void request_block(unsigned int wanted_height, struct link *dest);
 void propagate_block(struct block *block, struct miner *me);
 
@@ -73,13 +73,12 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 			me->new_chain = add_block(accept, tmp);
 			for(; tmp->prev!=NULL; tmp=tmp->prev){}
 			head = tmp->block;
-			request_block(head->height-1, from);
-			request_block(head->height-2, from);
-			request_block(head->height-3, from);
-			request_block(head->height-4, from);
-			request_block(head->height-5, from);
-
-//			request_block(accept->height-1, from);
+//			request_block(head->height-1, from);
+//			request_block(head->height-2, from);
+//			request_block(head->height-3, from);
+//			request_block(head->height-4, from);
+//			request_block(head->height-5, from);
+			get_blocks(from, me->blocks, me->new_chain);
 			return chain_head;
 		}
 		fprintf(stderr, "will check, if it's previous one to new_chain\n");
@@ -133,15 +132,15 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 					}
 				}
 				}
-				request_block(block->height-1, from);
-				request_block(block->height-2, from);
-				request_block(block->height-3, from);
-				request_block(block->height-4, from);
-				request_block(block->height-5, from);
+//				request_block(block->height-1, from);
+//				request_block(block->height-2, from);
+//				request_block(block->height-3, from);
+//				request_block(block->height-4, from);
+//				request_block(block->height-5, from);
+				get_blocks(from, me->blocks, me->new_chain);
 				return chain_head;
 			}
 			if(tmp->prev==NULL){break;}
-			fprintf(stderr, "test\n");
 		}
 		fprintf(stderr, "check in new_chain finished\n");
 		if(block->height <= head->height){
@@ -175,11 +174,12 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 		(me->new_chain)->next	= NULL;
 		(me->new_chain)->prev	= NULL;
 		fprintf(stderr, "will request for it's prev blocks\n");
-		request_block(block->height-1, from);
-		request_block(block->height-2, from);
-		request_block(block->height-3, from);
-		request_block(block->height-4, from);
-		request_block(block->height-5, from);
+//		request_block(block->height-1, from);
+//		request_block(block->height-2, from);
+//		request_block(block->height-3, from);
+//		request_block(block->height-4, from);
+//		request_block(block->height-5, from);
+		get_blocks(from, me->blocks, me->new_chain);
 
 		return chain_head;
     }
@@ -207,11 +207,12 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 		(me->new_chain)->next = NULL;
 		(me->new_chain)->prev = NULL;
 		fprintf(stderr, "will request for it's prev block\n");
-		request_block(block->height-1, from);
-		request_block(block->height-2, from);
-		request_block(block->height-3, from);
-		request_block(block->height-4, from);
-		request_block(block->height-5, from);
+//		request_block(block->height-1, from);
+//		request_block(block->height-2, from);
+//		request_block(block->height-3, from);
+//		request_block(block->height-4, from);
+//		request_block(block->height-5, from);
+		get_blocks(from, me->blocks, me->new_chain);
 		return chain_head;
 	}
 	fprintf(stderr, "block received not added\n");

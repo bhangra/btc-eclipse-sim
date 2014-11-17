@@ -36,7 +36,7 @@ void remove_links(struct links *will_remove){
 struct links *add_links(unsigned int miner_id, struct link *dest, struct link *new_comer, struct links *links){
 	struct links *tmp, *new;
 	for(tmp=links;; tmp=tmp->next){ //get tail
-		fprintf(stderr, "*links = %p\n", tmp); //debug
+//		fprintf(stderr, "*links = %p\n", tmp); //debug
 		if(tmp==NULL)
 			break;
 /*		if(miner_id==tmp->miner_id){ //already connected 
@@ -73,7 +73,7 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 	pos			= dest->write_pos;
 	tmp			= pos+msg_size-BUF_SIZE;
 	dest_read	= dest->read_pos;
-	fprintf(stderr, "dest->write_pos = %d, dest->read_pos = %d\n", pos, dest->read_pos);
+//	fprintf(stderr, "dest->write_pos = %d, dest->read_pos = %d\n", pos, dest->read_pos);
 	if(pos < dest->read_pos && (pos+msg_size >= dest->read_pos)){
 		fprintf(stderr, "catched up to read_pos\n");
 		return 0;
@@ -82,7 +82,7 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 		fprintf(stderr, "rounded around buffer, catching up to read_pos. tmp = %d\n", tmp);
 		return 0;
 	}
-	fprintf(stderr, "dest->write_pos = %d\n", dest->write_pos);
+//	fprintf(stderr, "dest->write_pos = %d\n", dest->write_pos);
 	pthread_mutex_lock((pthread_mutex_t *)&dest->rcv_mutex);
 	if(pos+msg_size < BUF_SIZE){
 		memcpy(&dest->buf[pos], message, msg_size);
@@ -118,18 +118,18 @@ int read_msg(struct link *link){
 		for(i=0; i+link->read_pos+12<BUF_SIZE; i++){
 //			char_size[i] = link->buf[link->read_pos+12+i]; 
 			memcpy(&char_size[i], &link->buf[link->read_pos+12+i], 1);
-			fprintf(stderr, "link->buf[%d] = %u, char_size[%d] = %u\n", link->read_pos+12+i, link->buf[link->read_pos+12+i], i, char_size[i]);
+//			fprintf(stderr, "link->buf[%d] = %u, char_size[%d] = %u\n", link->read_pos+12+i, link->buf[link->read_pos+12+i], i, char_size[i]);
 		}
 		j = i;
 		for(;i<sizeof(unsigned int); i++){
 //			char_size[i] = link->buf[i-j];
 			memcpy(&char_size[i], &link->buf[(i-j)+link->read_pos+12-BUF_SIZE], 1);
-			fprintf(stderr, "link->buf[%d] = %u, char_size[%d] = %u\n", i-j, link->buf[i-j], i, char_size[i]);
+//			fprintf(stderr, "link->buf[%d] = %u, char_size[%d] = %u\n", i-j, link->buf[i-j], i, char_size[i]);
 		}
 		memcpy(&tmp_size, &char_size[0], sizeof(unsigned int));
 		read_size	= HDR_SIZE + tmp_size;
 	}
-	fprintf(stderr, "read_pos = %d, read_size = %d\n", link->read_pos, read_size);
+//	fprintf(stderr, "read_pos = %d, read_size = %d\n", link->read_pos, read_size);
 //assumes that the BUF_SIZE is large enough for a message
 	if((link->read_pos+read_size)<BUF_SIZE){
 		memcpy(&link->process_buf, hdr, read_size);

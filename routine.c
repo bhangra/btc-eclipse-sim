@@ -30,6 +30,7 @@ void miner_routine(struct miner *miner){
 	int 			i;
 	struct links 	*links;
 	struct link		*link;
+	struct blocks 	*blocks;
 	fprintf(stderr, "entered miner_routine()\n"); //debug
 	if(miner->boot == true && miner->seed == true){
 		for(i=0; i<5; i++){
@@ -92,6 +93,22 @@ void miner_routine(struct miner *miner){
 	if(miner->blocks!=NULL){
 		fprintf(stderr, "height = %d\n", ((miner->blocks)->block)->height);
 	}else{fprintf(stderr, "height = 0\n");}
+	if(miner->blocks!=NULL){
+		for(blocks=miner->blocks; blocks->prev!=NULL; blocks=blocks->prev){}
+		fprintf(stderr, "in main chain: ");
+		for(; blocks!=NULL; blocks=blocks->next){
+			fprintf(stderr, "%d, ", (blocks->block)->height);
+		}
+		fprintf(stderr,"\n");
+	}
+	if(miner->new_chain!=NULL){
+		for(blocks=miner->new_chain; blocks->prev!=NULL; blocks=blocks->prev){}
+		fprintf(stderr, "in new_chain: ");
+		for(; blocks!=NULL; blocks=blocks->next){
+			fprintf(stderr, "%d, ", (blocks->block)->height);
+		}
+		fprintf(stderr, "\n");
+	}
 }
 void links_kill(int miner_id, struct threads *threads){
 	struct threads	*tmp;
