@@ -38,7 +38,7 @@ int main(int argc, char *argv[]){
 		threads=new_thread(1, miner_id, threads);
 	}
 //	thread = new_thread(1, NULL);
-	for(times = 0; times < 100; times++){
+	for(times = 0; times < 10; times++){
 		fprintf(stderr, "times = %d\n", times);//debug
 		for(;threads->prev!=NULL; threads=threads->prev){}
 		for(;;threads=threads->next){

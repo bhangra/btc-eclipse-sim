@@ -61,22 +61,26 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	}
 	return new;
 }
-void free_blocks(struct blocks *blocks){
-	struct blocks    *tmp;
+void free_blocks(struct blocks *blocks, struct blocks *meblocks){
+	struct blocks    *tmp, *tmp2;
 	for(tmp=blocks; tmp->prev!=NULL; tmp=tmp->prev){}
 	for(; tmp!=NULL;){
 		free(tmp->block);
-		tmp=tmp->next;
-		free(tmp->prev);
+		tmp2=tmp->next;
+		if(tmp!=meblocks)
+			free(tmp);
+		tmp=tmp2;
 	} 
 }
-void free_links(struct links *links){
-	struct links	*tmp;
+void free_links(struct links *links, struct links *melinks){
+	struct links	*tmp, *tmp2;
 	for(tmp=links; tmp->prev!=NULL; tmp=tmp->prev){}
-	for(; tmp!=NULL;){
+	for(; tmp!=NULL; ){
 		free(tmp->link);
-		tmp=tmp->next;
-		free(tmp->prev);
+		tmp2=tmp->next;
+		if(tmp!=melinks)
+			free(tmp);
+		tmp=tmp2;
 	}	
 }
 struct threads *cancel_thread(struct threads *will_kill){
@@ -96,8 +100,8 @@ struct threads *cancel_thread(struct threads *will_kill){
 		after	= NULL;
 	}
 	tmp = will_kill->miner;
-	free_links(tmp->links);
-	free_blocks(tmp->blocks);
+	free_links(tmp->links, (struct links*)&tmp->links);
+	free_blocks(tmp->blocks, (struct blocks*)&tmp->blocks);
 	free(will_kill->miner);
 	free(will_kill);
 	if(before==NULL){
