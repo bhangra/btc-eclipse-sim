@@ -17,6 +17,7 @@
 #include"routine.c"
 #include"bad-routine.c"
 
+#define NUM_DNS 5
 #define BAD_DNS 0
 #define ATTACKER 0
 #define INIT_NODES 1000
@@ -30,15 +31,18 @@ int main(int argc, char *argv[]){
 	srand(time(NULL));
 
 //DNS nodes initialization
-	memset(&dns, 0, 5*sizeof(struct dns));
-
+	memset(&dns, 0, NUM_DNS*sizeof(struct dns));
+	for(i=0; i<NUM_DNS; i++){
+		is_bad_dns[i] = false;
+	}
+	bad_links = NULL;
 
 	threads = NULL;
 	for(miner_id=0; miner_id<INIT_NODES; miner_id++){
 		threads=new_thread(1, miner_id, threads);
 	}
 //	thread = new_thread(1, NULL);
-	for(times = 0; times < 10; times++){
+	for(times = 0; times < 50; times++){
 		fprintf(stderr, "times = %d\n", times);//debug
 		for(;threads->prev!=NULL; threads=threads->prev){}
 		for(;;threads=threads->next){
@@ -47,7 +51,7 @@ int main(int argc, char *argv[]){
 			if(threads->next==NULL)
 				break;
 		}
-		for(i=0; i<5; i++){
+		for(i=0; i<NUM_DNS; i++){
 			dns_routine(&dns[i]);
 		}
 	}

@@ -24,6 +24,7 @@ struct link{
 };
 
 struct links{
+	unsigned int		group;
 	unsigned int		miner_id;
 	struct link			*new_comer;
 	struct link			*link;
