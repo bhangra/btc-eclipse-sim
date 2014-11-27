@@ -272,7 +272,8 @@ void propagate_block(struct block *block, struct miner *me){
 }
 
 struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, struct miner *me){
-	int				x, y, times, mined;
+	int				x,/* y,*/ times, mined;
+	double			y;
 	struct block	*head, *current;
 	struct blocks	*tmp;
 	struct link		*link;
@@ -284,13 +285,16 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, stru
 	}else{
 		current = NULL;
 	}
-	fprintf(stderr, "start mining on current: %p\n", current);
+//	fprintf(stderr, "start mining on current: %p\n", current);
 	mined = 0;
-	for(times = 0;times < 1/*000*/;times++){
-		x = rand()%10;  // /(RAND_MAX);
-		y = rand()%10;  // /(RAND_MAX);
-		if((x*x+y*y)>161/*0.5 0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001*/){
-			fprintf(stdout,"mined block in %d times\n", times);
+	for(times = 0;times < 1;times++){
+//		x = rand()%10;  // /(RAND_MAX);
+//		y = rand()%10;  // /(RAND_MAX);
+/*		if((x*x+y*y)>161*//*0.5 0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001*/
+		x = rand()%601;
+		y = (double )rand() /(RAND_MAX);
+		if(x > 599 && y < me->hash_rate){
+//			fprintf(stdout,"mined block in %d times\n", times);
 			mined			= 1;
 			head			= malloc(sizeof(struct block));
 			memset(head, 0, sizeof(struct block));
@@ -314,11 +318,11 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, stru
 		}
 	}
 	if(mined){
-		fprintf(stderr, "will propagate block with height: %d\n", head->height); //debug
+//		fprintf(stderr, "will propagate block with height: %d\n", head->height); //debug
 		tmp = add_block(head, tmp);
 		propagate_block(head, me);
 	}
-	fprintf(stderr, "finished mining for the turn\n"); //debug
+//	fprintf(stderr, "finished mining for the turn\n"); //debug
 	return tmp;
 }
 

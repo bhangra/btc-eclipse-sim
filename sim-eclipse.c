@@ -41,8 +41,9 @@ int main(int argc, char *argv[]){
 	for(miner_id=0; miner_id<INIT_NODES; miner_id++){
 		threads=new_thread(1, miner_id, threads);
 	}
+	keep_total_hash_rate_1(threads);
 //	thread = new_thread(1, NULL);
-	for(times = 0; times < 50; times++){
+	for(times = 0; times < 2000; times++){
 		fprintf(stderr, "times = %d\n", times);//debug
 		for(;threads->prev!=NULL; threads=threads->prev){}
 		for(;;threads=threads->next){

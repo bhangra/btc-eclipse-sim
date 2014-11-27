@@ -44,6 +44,7 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	miner->boot		= true;
 	miner->links	= NULL;
 	miner->blocks	= NULL;
+	miner->hash_rate= (double)rand() / (RAND_MAX);
 	if(threads!=NULL){
 		tmp = threads;
 		for(;tmp->next!=NULL; tmp=tmp->next){
@@ -63,6 +64,9 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 }
 void free_blocks(struct blocks *blocks, struct blocks *meblocks){
 	struct blocks    *tmp, *tmp2;
+	if(blocks==meblocks){
+		return;
+	}
 	for(tmp=blocks; tmp->prev!=NULL; tmp=tmp->prev){}
 	for(; tmp!=NULL;){
 		free(tmp->block);
@@ -74,6 +78,9 @@ void free_blocks(struct blocks *blocks, struct blocks *meblocks){
 }
 void free_links(struct links *links, struct links *melinks){
 	struct links	*tmp, *tmp2;
+	if(links=melinks){
+		return;
+	}
 	for(tmp=links; tmp->prev!=NULL; tmp=tmp->prev){}
 	for(; tmp!=NULL; ){
 		free(tmp->link);
@@ -129,5 +136,19 @@ void cancel_all(struct threads *head){
 	}
 }
 
+void keep_total_hash_rate_1(struct threads *threads){
+	struct threads	*tmp;
+	double 			sum;
+	sum = 0;
+	for(tmp=threads; tmp->prev!=NULL; tmp=tmp->prev){}
+	for(; tmp!=NULL; tmp=tmp->next){
+		sum += (tmp->miner)->hash_rate;
+	}
+	for(tmp=threads; tmp->prev!=NULL; tmp=tmp->prev){}
+	for(; tmp!=NULL; tmp=tmp->next){
+		(tmp->miner)->hash_rate = (tmp->miner)->hash_rate/sum;
+//		fprintf(stdout, "hash_rate = %f\n", (tmp->miner)->hash_rate);
+	}
+}
 
 #endif

@@ -69,17 +69,17 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 //	hexDump("sending msg", message, msg_size);
 	int 			tmp, dest_read;
 	unsigned int 	pos, over_size;
-	fprintf(stderr, "sending msg_size: %d %s\n", msg_size, message); //debug
+//	fprintf(stderr, "sending msg_size: %d %s\n", msg_size, message); //debug
 	pos			= dest->write_pos;
 	tmp			= pos+msg_size-BUF_SIZE;
 	dest_read	= dest->read_pos;
 //	fprintf(stderr, "dest->write_pos = %d, dest->read_pos = %d\n", pos, dest->read_pos);
 	if(pos < dest->read_pos && (pos+msg_size >= dest->read_pos)){
-		fprintf(stderr, "catched up to read_pos\n");
+//		fprintf(stderr, "catched up to read_pos\n");
 		return 0;
 	}
 	else if((pos > dest->read_pos) && (tmp >= dest_read)){
-		fprintf(stderr, "rounded around buffer, catching up to read_pos. tmp = %d\n", tmp);
+//		fprintf(stderr, "rounded around buffer, catching up to read_pos. tmp = %d\n", tmp);
 		return 0;
 	}
 //	fprintf(stderr, "dest->write_pos = %d\n", dest->write_pos);
@@ -143,7 +143,7 @@ int read_msg(struct link *link){
 	}
 	link->num_msg -= 1;
 	pthread_mutex_unlock(&link->rcv_mutex);
-	fprintf(stderr, "reading msg, size: %d type: %s\n", read_size, link->process_buf);
+//	fprintf(stderr, "reading msg, size: %d type: %s\n", read_size, link->process_buf);
 	return 1;
 }
 
