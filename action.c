@@ -11,11 +11,14 @@
 #include<sys/sem.h>
 #include<time.h>
 
+#include"global.c"
 #include"block.c"
 #include"thread.c"
 #include"connection.c"
 #include"proto-node.h"
 
+
+void add_record(struct miner *me, struct block *new, struct blocks *mine);
 
 //totally for debugging
 void hexDump (char *desc, void *addr, int len) {
@@ -321,6 +324,7 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, stru
 //		fprintf(stderr, "will propagate block with height: %d\n", head->height); //debug
 		tmp = add_block(head, tmp);
 		propagate_block(head, me);
+		add_record(me, head, tmp);
 	}
 //	fprintf(stderr, "finished mining for the turn\n"); //debug
 	return tmp;

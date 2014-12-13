@@ -14,6 +14,7 @@
 #include"connection.h"
 #include"proto-node.h"
 #include"thread.h"
+#include"global.c"
 
 #define HDR_SIZE	16
 void hexDump (char *desc, void *addr, int len);

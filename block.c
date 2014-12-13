@@ -11,6 +11,7 @@
 #include<sys/ipc.h>
 #include<sys/sem.h>
 
+#include"global.c"
 #include"block.h"
 #include"connection.h"
 #include"proto-node.h"
@@ -18,6 +19,78 @@
 void get_blocks(struct link *dest, struct blocks *main_chain, struct blocks *new_chain);
 void request_block(unsigned int wanted_height, struct link *dest);
 void propagate_block(struct block *block, struct miner *me);
+
+void add_record(struct miner *me, struct block *new, struct blocks *blocks){
+	struct block_record *new_rec, *tmp;
+	struct blocks *mine;
+	unsigned int height;
+
+	height = new->height;	
+	for(mine = blocks; mine->prev!=NULL; mine = mine->prev){}
+
+	new_rec = malloc(sizeof(struct block_record));
+	memset(new_rec, 0, sizeof(struct block_record));
+	new_rec->mined_time = sim_time;
+	new_rec->height		= new->height;
+	new_rec->miner_id	= me->miner_id;
+	new_rec->hash_rate	= me->hash_rate;
+	new_rec->num_nodes	= 1;
+//	memcpy(new_rec->hash, new->hash, SHA256_DIGEST_LENGTH);
+
+	if(record==NULL&&height==1){
+		record = new_rec;
+	}
+	else{
+		for(tmp=record; ; tmp=tmp->next){
+			if(tmp==NULL)
+				return;
+			if(tmp->height==height){
+				for(;tmp->same!=NULL; tmp=tmp->same){}
+				tmp->same = new_rec;
+				return;
+			}
+			for(;;tmp=tmp->same){
+				if(tmp->miner_id==(mine->block)->miner_id)
+					break;
+				if(tmp==NULL)
+					return;
+			}
+			if(tmp->next!=NULL && tmp->height==height-1)
+				tmp->next = new_rec;
+			mine=mine->next;
+		}
+	}
+}
+
+void join_record(struct block *new, struct blocks *blocks){
+	struct block_record *tmp;
+	struct blocks *mine;
+	unsigned int height, miner_id;
+
+	for(mine=blocks; mine->prev!=NULL; mine=mine->prev){}
+	height		= new->height;
+	miner_id	= new->miner_id;
+
+	for(tmp=record; ; tmp=tmp->next){
+		if(tmp==NULL)
+			return;
+		if(tmp->height==height){
+			for(;tmp->same!=NULL; tmp=tmp->same){
+				if(tmp->miner_id==miner_id){
+					tmp->num_nodes++;
+					return;
+				}
+			}
+		}
+		for(;;tmp=tmp->same){
+			if(tmp->miner_id==(mine->block)->miner_id)
+				break;
+			if(tmp==NULL)
+        		return;
+		}
+		mine=mine->next;
+	}
+}
 
 struct blocks *add_block(struct block *block, struct blocks *chain_head){
 	struct blocks *tmp, *tmp2;
@@ -39,12 +112,13 @@ struct blocks *add_block(struct block *block, struct blocks *chain_head){
 struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head, struct miner *me, struct link *from){
 	struct block	*accept, *head;
 	struct blocks	*tmp, *tmp2, *tmp3;
-	fprintf(stderr, "will process block: chain_head= %p new_chain=%p\n", chain_head, me->new_chain);
+//	fprintf(stderr, "will process block: chain_head= %p new_chain=%p\n", chain_head, me->new_chain);
 	if(chain_head==NULL&&block->height==1){
 		fprintf(stderr, "genesis block received\n"); //debug
 		accept = malloc(sizeof(struct block));
 		memcpy(accept, block, sizeof(struct block));
 		propagate_block(accept, me);
+		join_record(accept, me->blocks);
 		return add_block(accept, chain_head);
 	}
 	if(chain_head!=NULL){
@@ -56,6 +130,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 			accept = malloc(sizeof(struct block));
 			memcpy(accept, block, sizeof(struct block));
 			propagate_block(accept, me);
+			join_record(accept, me->blocks);
 			return add_block(accept, chain_head);
 		}
 	}
@@ -111,6 +186,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 					for(tmp=tmp3; tmp->next!=NULL; tmp=tmp->next){}
 					me->new_chain = NULL;
 					propagate_block(tmp->block, me);
+					join_record(tmp->block, me->blocks);
 					return tmp;
 				}
 				else{
@@ -128,6 +204,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 						for(tmp=tmp2; tmp->next!=NULL;  tmp=tmp->next){}
 						me->new_chain=NULL;
 						propagate_block(tmp->block, me);
+						join_record(tmp->block, me->blocks);
 						return tmp;
 					}
 				}

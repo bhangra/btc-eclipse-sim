@@ -11,11 +11,11 @@
 #include<sys/sem.h>
 
 #include"action.c"
-
+#include"global.c"
 #define GROUPS 2
 
-struct links	*bad_links;
-bool	is_bad_dns[NUM_DNS];	
+//struct links	*bad_links;
+//bool	is_bad_dns[NUM_DNS];	
 
 void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	unsigned int			payload_size, set_size, sets;	
