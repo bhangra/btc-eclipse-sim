@@ -20,7 +20,7 @@
 
 int main(int argc, char *argv[]){
 //	struct dns	dns[5];
-	unsigned int miner_id, i;
+	unsigned int /*miner_id,*/ i;
 	struct threads *threads;
 
 // random seed
@@ -49,10 +49,12 @@ int main(int argc, char *argv[]){
 // sim_time=1 : 1 second
 	for(sim_time = 0; sim_time < SIM_TIME; sim_time++){
 		fprintf(stderr, "sim_time = %d\n", sim_time);//debug
+
 // killing/creating nodes, managing total hash-rate
-//		for(;threads->next!=NULL; threads=threads->next){}
 		threads= cancel_by_TTL(sim_time, threads);
+		keep_total_nodes(threads);
 		keep_total_hash_rate_1(threads);
+
 // routine
 		for(;threads->next!=NULL; threads=threads->next){}
 		for(;;threads=threads->prev){

@@ -41,10 +41,13 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	memset(miner, 0, sizeof(struct miner));
 	//times, TTL = 1 : 1 second
 	if(now>=0){
-		miner->TTL	= (unsigned int)sim_time+((rand()%(AVE_TTL)));
+		miner->TTL	= (unsigned int)sim_time+((rand()%(AVE_TTL*2)));
 	}
 	fprintf(stderr, "miner->TTL = %d\n", miner->TTL);
 	miner->miner_id = miner_id;
+	miner->max		= 1+rand()%5;//will fix 
+	miner->least	= rand()%5;//will fix
+	miner->neighbor = 0;
 	miner->seed		= seed;//rand()%2;
 	miner->boot		= true;
 	miner->links	= NULL;
@@ -67,6 +70,21 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	}
 	return new;
 }
+
+void keep_total_nodes(struct threads *threads){
+	unsigned int	current=0;
+	struct threads	*tmp;
+	for(tmp=threads; tmp->next!=NULL; tmp=tmp->next){}
+	for(; tmp!=NULL; tmp=tmp->prev){
+		current++;
+	}
+	tmp=threads;
+	for(; current<TOTAL_NODES; current++){
+		miner_id++;
+		tmp = new_thread(1, miner_id, tmp, 1, sim_time);
+	}
+}
+
 void free_blocks(struct blocks *blocks, struct blocks *meblocks){
 	struct blocks    *tmp, *tmp2;
 	if(blocks==meblocks){

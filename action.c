@@ -506,10 +506,13 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 					}				
 				}
 			}
+			if(me->neighbor > me->max)
+				connect = false;
 			if(connect){
 				connected = true;
 				fprintf(stderr, "will send version to dest: %p, id: %d\n", dest, miner_id);
 				me->links = version(me->miner_id, miner_id, dest, &me->new_comer, me->links);
+				me->neighbor++;
 			}
 		}
 		if(!connected){
@@ -547,10 +550,12 @@ struct links *process_new(struct link *new_comer, struct miner *me){
 			fprintf(stderr, "will not send version to me\n");
 			return NULL;
 		}
+		me->neighbor++;
 		return version(me->miner_id, miner_id, dest, &me->new_comer, me->links);
     }
 	else if(strncmp(hdr->command, "version", 7)==0){
 		fprintf(stderr, "version received\n");
+		me->neighbor++;
         return verack(new_comer, me->links);
     }
     return me->links;

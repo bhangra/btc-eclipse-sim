@@ -248,7 +248,8 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 					for(tmp=tmp3; tmp->next!=NULL; tmp=tmp->next){}
 					me->new_chain = NULL;
 					propagate_block(tmp->block, me);
-					join_record(tmp->block, me->blocks);
+					me->blocks=tmp;
+					join_record(tmp->block, tmp);
 					return tmp;
 				}
 				else{
@@ -266,6 +267,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 						for(tmp=tmp2; tmp->next!=NULL;  tmp=tmp->next){}
 						me->new_chain=NULL;
 						propagate_block(tmp->block, me);
+						me->blocks=tmp;
 						join_record(tmp->block, me->blocks);
 						return tmp;
 					}

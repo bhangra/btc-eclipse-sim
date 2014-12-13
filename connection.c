@@ -27,6 +27,7 @@ void free_link(struct links *will_remove, struct miner *miner){
 	before	= will_remove->prev;
 	free(will_remove->link);
 	free(will_remove);
+	miner->neighbor--;
 	if(after!=NULL&&before!=NULL){
 		after->prev	= before;
 		before->next= after;

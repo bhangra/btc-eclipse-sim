@@ -16,11 +16,15 @@
 struct miner{
 	unsigned int	TTL;
 	unsigned int	group; 	//for attacker to classify nodes
+	unsigned int	max;
+	unsigned int	least;
+	unsigned int	neighbor;
 	bool			one_way;
 	bool            boot;
 	bool            seed;
 
 	unsigned int	miner_id;
+
 	double			hash_rate;
 	struct blocks	*blocks;
 	struct blocks	*new_chain;
