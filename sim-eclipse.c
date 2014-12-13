@@ -61,9 +61,8 @@ int main(int argc, char *argv[]){
 		fprintf(stderr, "sim_time = %d\n", sim_time);//debug
 // killing/creating nodes, managing total hash-rate
 		for(;threads->next!=NULL; threads=threads->next){}
-		cancel_by_TTL(sim_time, threads);
+		threads= cancel_by_TTL(sim_time, threads);
 		keep_total_hash_rate_1(threads);
-
 // routine
 		for(;;threads=threads->prev){
 			fprintf(stderr, "\nminer: %d\n", (threads->miner)->miner_id);

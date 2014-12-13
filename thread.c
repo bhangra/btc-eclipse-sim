@@ -24,7 +24,7 @@ struct threads *search_head(struct threads *thread){
 //will add variable for threads
 struct threads *new_thread(int type, unsigned int miner_id,  struct threads *threads, unsigned int seed, unsigned int now){
 	struct miner	*miner;
-	struct threads	*new, *tmp;
+	struct threads	*new, *tmp=NULL;
 	new 		= malloc(sizeof(struct threads));
 	if(new == NULL){
 		perror("malloc()");
@@ -71,6 +71,8 @@ void free_blocks(struct blocks *blocks, struct blocks *meblocks){
 	if(blocks==meblocks){
 		return;
 	}
+	if(blocks==NULL)
+		return;
 	for(tmp=blocks; tmp->prev!=NULL; tmp=tmp->prev){}
 	for(; tmp!=NULL;){
 		free(tmp->block);
@@ -85,6 +87,8 @@ void free_node_s_links(struct links *links, struct links *melinks){
 	if(links=melinks){
 		return;
 	}
+	if(tmp==NULL)
+		return;
 	for(tmp=links; tmp->prev!=NULL; tmp=tmp->prev){}
 	for(; tmp!=NULL; ){
 		free(tmp->link);
@@ -99,7 +103,9 @@ void free_node_s_links(struct links *links, struct links *melinks){
 //for cancel_all()
 struct threads *cancel_thread(struct threads *will_kill){
 	struct miner	*tmp;
-	struct threads *before, *after;
+	struct threads *before, *after, *killed;
+	if(will_kill==killed)
+		return NULL;
 	if(will_kill==NULL){
 		return NULL;
 	}
@@ -110,6 +116,7 @@ struct threads *cancel_thread(struct threads *will_kill){
 	free_blocks(tmp->blocks, (struct blocks*)&tmp->blocks);
 	free(will_kill->miner);
 	free(will_kill);
+	killed = will_kill;
 	if(before!=NULL && after!=NULL){
 		before->next	= after;
 		after->prev		= before;
@@ -119,9 +126,12 @@ struct threads *cancel_thread(struct threads *will_kill){
 		before->next	= NULL;
 		return before;
 	}
-	else{
+	else if(after!=NULL){
 		after->prev	= NULL;
 		return after;
+	}
+	else{
+		return NULL;
 	}
 }
 
@@ -145,14 +155,17 @@ struct threads *cancel_by_TTL(unsigned int now, struct threads *list){
 }
 
 void cancel_all(struct threads *head){
-	struct threads *tmp;
+	struct threads *tmp, *tmp2;
 	if(head->prev!=NULL){
 		tmp = search_head(head);
 	}else{
 		tmp = head;
 	}
 	for(;tmp!=NULL;){
+		tmp2 = tmp;
 		tmp = cancel_thread(tmp);
+		if(tmp==tmp2)
+			break;
 	}
 }
 

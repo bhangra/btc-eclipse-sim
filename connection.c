@@ -20,6 +20,9 @@
 void hexDump (char *desc, void *addr, int len);
 void free_link(struct links *will_remove, struct miner *miner){
 	struct links *after, *before;
+	if(will_remove==NULL){
+		return;
+	}
 	after	= will_remove->next;
 	before	= will_remove->prev;
 	free(will_remove->link);
@@ -31,14 +34,19 @@ void free_link(struct links *will_remove, struct miner *miner){
 	else if(after!=NULL){
 		after->prev	= NULL;
 	}
-	else{
+	else if(before!=NULL){
 		before->next= NULL;
+	}
+	else{
+		miner->links=NULL;
 	}
 	if(miner->links==will_remove){
 		if(after!=NULL)
 			miner->links=after;
-		else
+		else if(before!=NULL)
 			miner->links=before;
+		else
+			miner->links=NULL;
 	}
 }
 
@@ -49,9 +57,12 @@ void free_links(struct threads *will_kill){
 	struct links    *links, *after, *before;
 	
 	miner_id = (will_kill->miner)->miner_id;
-
-	for(tmp = will_kill; tmp->next==NULL;tmp=tmp->next){}
+	
+	for(tmp = will_kill; tmp->next!=NULL;tmp=tmp->next){}
 	for(miner=tmp->miner; tmp!=NULL; tmp=tmp->prev){
+		if(miner->links==NULL){
+			continue;
+		}
 		for(links=miner->links; links->next!=NULL; links=links->next){}
 		for(; links!=NULL; links=links->prev){
 			if(links->miner_id==miner_id){
