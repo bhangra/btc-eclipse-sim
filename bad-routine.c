@@ -13,7 +13,6 @@
 #include"action.c"
 
 #define GROUPS 2
-#define NUM_DNS 5
 
 struct links	*bad_links;
 bool	is_bad_dns[NUM_DNS];	

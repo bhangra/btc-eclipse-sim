@@ -110,21 +110,5 @@ void miner_routine(struct miner *miner){
 		fprintf(stderr, "\n");
 	}
 }
-void links_kill(int miner_id, struct threads *threads){
-	struct threads	*tmp;
-	struct miner	*miner;
-	struct links	*links, *after, *before;
-	for(tmp = threads; tmp->prev==NULL;tmp=tmp->prev){}
-	for(miner=tmp->miner; tmp!=NULL; tmp=tmp->next){
-		for(links=miner->links; links!=NULL; links=links->next){
-			if(links->miner_id==miner_id){
-				remove_links(links);
-			}
-		}
-	}
-}
-void miner_kill(struct miner *miner){
-	
-}
 
 #endif

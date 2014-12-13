@@ -12,10 +12,12 @@
 #include<pthread.h>
 
 #include"connection.h"
+#include"proto-node.h"
+#include"thread.h"
 
 #define HDR_SIZE	16
 void hexDump (char *desc, void *addr, int len);
-void remove_links(struct links *will_remove){
+void free_link(struct links *will_remove, struct miner *miner){
 	struct links *after, *before;
 	after	= will_remove->next;
 	before	= will_remove->prev;
@@ -30,6 +32,31 @@ void remove_links(struct links *will_remove){
 	}
 	else{
 		before->next= NULL;
+	}
+	if(miner->links==will_remove){
+		if(after!=NULL)
+			miner->links=after;
+		else
+			miner->links=before;
+	}
+}
+
+void free_links(struct threads *will_kill){
+	unsigned int miner_id;
+	struct threads  *tmp;
+	struct miner    *miner;
+	struct links    *links, *after, *before;
+	
+	miner_id = (will_kill->miner)->miner_id;
+
+	for(tmp = will_kill; tmp->next==NULL;tmp=tmp->next){}
+	for(miner=tmp->miner; tmp!=NULL; tmp=tmp->prev){
+		for(links=miner->links; links->next!=NULL; links=links->next){}
+		for(; links!=NULL; links=links->prev){
+			if(links->miner_id==miner_id){
+				free_link(links, miner);
+			}
+		}
 	}
 }
 

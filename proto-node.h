@@ -12,6 +12,7 @@
 
 #include"block.h"
 #include"connection.h"
+#include"params.h"
 
 struct miner{
 	unsigned int	TTL;
@@ -33,6 +34,6 @@ struct dns{
 	struct link		new_comer;
 };
 
-struct dns dns[5];
+struct dns dns[NUM_DNS];
 
 #endif

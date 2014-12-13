@@ -13,7 +13,7 @@
 
 #include"proto-node.h"
 #include"thread.h"
-
+#include"connection.c"
 
 struct threads *search_head(struct threads *thread){
 	struct threads *tmp;
@@ -22,7 +22,7 @@ struct threads *search_head(struct threads *thread){
 }
 
 //will add variable for threads
-struct threads *new_thread(int type, unsigned int miner_id,  struct threads *threads){
+struct threads *new_thread(int type, unsigned int miner_id,  struct threads *threads, unsigned int seed, unsigned int now){
 	struct miner	*miner;
 	struct threads	*new, *tmp;
 	new 		= malloc(sizeof(struct threads));
@@ -39,8 +39,12 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	}
 	miner=new->miner;
 	memset(miner, 0, sizeof(struct miner));
+	//times, TTL = 1 : 1 second
+	if(now>=0){
+		miner->TTL	= (unsigned int)(double)(rand()/RAND_MAX)*(60*60*24);
+	}
 	miner->miner_id = miner_id;
-	miner->seed		= 1;//rand()%2;
+	miner->seed		= seed;//rand()%2;
 	miner->boot		= true;
 	miner->links	= NULL;
 	miner->blocks	= NULL;
@@ -76,7 +80,7 @@ void free_blocks(struct blocks *blocks, struct blocks *meblocks){
 		tmp=tmp2;
 	} 
 }
-void free_links(struct links *links, struct links *melinks){
+void free_node_s_links(struct links *links, struct links *melinks){
 	struct links	*tmp, *tmp2;
 	if(links=melinks){
 		return;
@@ -90,38 +94,54 @@ void free_links(struct links *links, struct links *melinks){
 		tmp=tmp2;
 	}	
 }
+
+
+//for cancel_all()
 struct threads *cancel_thread(struct threads *will_kill){
 	struct miner	*tmp;
 	struct threads *before, *after;
 	if(will_kill==NULL){
 		return NULL;
 	}
-	if(will_kill->prev != NULL){
-		before	= will_kill->prev;
-	}else{
-		before 	= NULL;
-	}
-	if(will_kill->next != NULL){
-		after	= will_kill->next;
-	}else{
-		after	= NULL;
-	}
+	before	= will_kill->prev;
+	after	= will_kill->next;
 	tmp = will_kill->miner;
-	free_links(tmp->links, (struct links*)&tmp->links);
+	free_node_s_links(tmp->links, (struct links*)&tmp->links);
 	free_blocks(tmp->blocks, (struct blocks*)&tmp->blocks);
 	free(will_kill->miner);
 	free(will_kill);
-	if(before==NULL){
-		return after;
-	}
-	else if(after==NULL){
-		return NULL;
-	}
-	else{
+	if(before!=NULL && after!=NULL){
 		before->next	= after;
 		after->prev		= before;
 		return after;
 	}
+	else if(before!=NULL){
+		before->next	= NULL;
+		return before;
+	}
+	else{
+		after->prev	= NULL;
+		return after;
+	}
+}
+
+//for cancel_by_TTL
+struct threads *cancel_one_thread(struct threads *will_kill){
+	free_links(will_kill);
+	return cancel_thread(will_kill);
+}
+
+struct threads *cancel_by_TTL(unsigned int now, struct threads *list){
+	struct threads *thread;
+	for(thread = list; thread->next!=NULL; thread=thread->next){}
+	for(;thread!=NULL; thread=thread->prev){
+		if((thread->miner)->TTL == now){
+			thread=cancel_one_thread(thread);
+		}
+		if(thread->prev==NULL)
+			break;
+	}
+	return thread;
 }
 
 void cancel_all(struct threads *head){
