@@ -34,5 +34,10 @@ struct block_record{
 	unsigned int		num_nodes;
 };
 
+struct record_printer{
+	struct block_record *record;
+	struct record_printer *same;
+
+};
 
 #endif

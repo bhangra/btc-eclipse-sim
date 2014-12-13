@@ -41,8 +41,9 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	memset(miner, 0, sizeof(struct miner));
 	//times, TTL = 1 : 1 second
 	if(now>=0){
-		miner->TTL	= (unsigned int)(double)(rand()/RAND_MAX)*(60*60*24);
+		miner->TTL	= (unsigned int)sim_time+((rand()%(AVE_TTL)));
 	}
+	fprintf(stderr, "miner->TTL = %d\n", miner->TTL);
 	miner->miner_id = miner_id;
 	miner->seed		= seed;//rand()%2;
 	miner->boot		= true;
@@ -104,13 +105,12 @@ void free_node_s_links(struct links *links, struct links *melinks){
 struct threads *cancel_thread(struct threads *will_kill){
 	struct miner	*tmp;
 	struct threads *before, *after, *killed;
-	if(will_kill==killed)
-		return NULL;
 	if(will_kill==NULL){
 		return NULL;
 	}
 	before	= will_kill->prev;
 	after	= will_kill->next;
+
 	tmp = will_kill->miner;
 	free_node_s_links(tmp->links, (struct links*)&tmp->links);
 	free_blocks(tmp->blocks, (struct blocks*)&tmp->blocks);
@@ -145,7 +145,7 @@ struct threads *cancel_by_TTL(unsigned int now, struct threads *list){
 	struct threads *thread;
 	for(thread = list; thread->next!=NULL; thread=thread->next){}
 	for(;thread!=NULL; thread=thread->prev){
-		if((thread->miner)->TTL == now){
+		if((thread->miner)->TTL <= now){
 			thread=cancel_one_thread(thread);
 		}
 		if(thread->prev==NULL)

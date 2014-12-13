@@ -17,17 +17,6 @@
 #include"routine.c"
 #include"bad-routine.c"
 #include"params.h"
-/*
-#define SIM_DAYS	1
-#define SIM_TIME	60*60*24*SIM_DAYS
-#define NUM_DNS		5
-#define BAD_DNS		0
-#define ATTACKER	0
-#define INIT_NODES	1000
-#define SEED_NUM	10
-*/
-//global variables:
-//		struct dns dns[]; proto-node.h
 
 int main(int argc, char *argv[]){
 //	struct dns	dns[5];
@@ -55,15 +44,17 @@ int main(int argc, char *argv[]){
 	}
 	keep_total_hash_rate_1(threads);
 
+
 // the main routine	
 // sim_time=1 : 1 second
 	for(sim_time = 0; sim_time < SIM_TIME; sim_time++){
 		fprintf(stderr, "sim_time = %d\n", sim_time);//debug
 // killing/creating nodes, managing total hash-rate
-		for(;threads->next!=NULL; threads=threads->next){}
+//		for(;threads->next!=NULL; threads=threads->next){}
 		threads= cancel_by_TTL(sim_time, threads);
 		keep_total_hash_rate_1(threads);
 // routine
+		for(;threads->next!=NULL; threads=threads->next){}
 		for(;;threads=threads->prev){
 			fprintf(stderr, "\nminer: %d\n", (threads->miner)->miner_id);
 			miner_routine(threads->miner);
@@ -76,6 +67,7 @@ int main(int argc, char *argv[]){
 	}
 	fprintf(stderr, "will cancel_all()\n"); //debug
 	cancel_all(threads);
+	print_record();
 	return EXIT_SUCCESS;
 }
 
