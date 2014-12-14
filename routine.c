@@ -68,9 +68,20 @@ void miner_routine(struct miner *miner){
 				for(link=links->link; link->num_msg!=0;){
 //					fprintf(stderr, "will read msg from miner: %d\n", links->miner_id); //debug
 					read_msg(link);	
-					process_msg(&miner->new_comer, links, miner);
+					if(process_msg(&miner->new_comer, links, miner)==-1){
+						links = miner->links;
+						break;
+					}
+					if(link->num_msg==0 && link->fgetblock==true && miner->new_chain!=NULL){
+						link->fgetblock=false;
+						get_blocks(link, miner->blocks, miner->new_chain);
+					}
+					else
+						link->fgetblock=false;
 				} 
 				i++; //debug
+				if(links==NULL)
+					break;
 				if(links->next==NULL)
 					break;
 			}
@@ -86,34 +97,39 @@ void miner_routine(struct miner *miner){
 				n = rand()%(i);
 				for(links=miner->links; links->prev!=NULL; links=links->prev){}
 				for(i=0; i<n; i++){
+					if(links->next==NULL)
+						break;
 					links=links->next;
 				}
-				getaddr(links->link, miner->miner_id);
+				if(links!=NULL)
+					getaddr(links->link, miner->miner_id);
 			}
 		}
 	}
 	miner->blocks = mine_block(miner->blocks, miner->miner_id, miner);
-//	fprintf(stderr, "miner->blocks = %p ", miner->blocks);
-/*	if(miner->blocks!=NULL){
-		fprintf(stderr, "height = %d\n", ((miner->blocks)->block)->height);
-	}else{fprintf(stderr, "height = 0\n");}
-	if(miner->blocks!=NULL){
-		for(blocks=miner->blocks; blocks->prev!=NULL; blocks=blocks->prev){}
-		fprintf(stderr, "in main chain: ");
-		for(; blocks!=NULL; blocks=blocks->next){
-			fprintf(stderr, "%d, ", (blocks->block)->height);
+	
+	if(sim_time>=SIM_TIME-1){
+		fprintf(stderr, "miner->blocks = %p ", miner->blocks);
+		if(miner->blocks!=NULL){
+			fprintf(stderr, "height = %d\n", ((miner->blocks)->block)->height);
+		}else{fprintf(stderr, "height = 0\n");}
+/*		if(miner->blocks!=NULL){
+			for(blocks=miner->blocks; blocks->prev!=NULL; blocks=blocks->prev){}
+			fprintf(stderr, "in main chain: ");
+			for(; blocks!=NULL; blocks=blocks->next){
+				fprintf(stderr, "%d, ", (blocks->block)->height);
+			}
+			fprintf(stderr,"\n");
 		}
-		fprintf(stderr,"\n");
-	}
-*//*if(miner->new_chain!=NULL){
-		for(blocks=miner->new_chain; blocks->prev!=NULL; blocks=blocks->prev){}
-		fprintf(stderr, "in new_chain: ");
-		for(; blocks!=NULL; blocks=blocks->next){
-			fprintf(stderr, "%d, ", (blocks->block)->height);
+*//*		if(miner->new_chain!=NULL){
+			for(blocks=miner->new_chain; blocks->prev!=NULL; blocks=blocks->prev){}
+			fprintf(stderr, "in new_chain: ");
+			for(; blocks!=NULL; blocks=blocks->next){
+				fprintf(stderr, "%d, ", (blocks->block)->height);
+			}
+			fprintf(stderr, "\n");
 		}
-		fprintf(stderr, "\n");
-	}
-*/
+*/	}
 }
 
 #endif

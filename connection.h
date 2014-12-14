@@ -21,6 +21,7 @@ struct link{
 	unsigned char	sbuf[BUF_SIZE];
 	unsigned char	process_buf[BUF_SIZE];
 	struct link		*dest;
+	bool			fgetblock;
 };
 
 struct links{

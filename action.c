@@ -185,6 +185,8 @@ void addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	size	= 0;
 	set		= sizeof(struct link*) + sizeof(unsigned int);
 	memcpy(&link->sbuf[0], "addr", 4);
+	if(me->links==NULL)
+		return;
 	for(links=me->links; links->prev!=NULL; links=links->prev){}
 	for(i=0; links!=NULL; i++){
 		if(links->miner_id!=dest_id){
@@ -223,6 +225,26 @@ struct links *version(unsigned int my_id, unsigned int dest_id, struct link *des
 	send_msg(dest, link->sbuf, 16+payload_size);
 //	fprintf(stderr, "sent version to dest: %p, id: %d with mylink: %p\n", link->dest, new->miner_id, link); //debug
 	return new;
+}
+
+struct links *nat(struct link *new_comer, struct links *links, struct miner *me){
+	unsigned int miner_id;
+	struct links *tmp, *prev, *new;
+	struct link *link, *dest, *dest_new_comer;
+	unsigned int size;
+	size = sizeof(struct link*);
+	memcpy(&dest, &new_comer->process_buf[16], size);
+	memcpy(&miner_id, &new_comer->process_buf[16+size], sizeof(unsigned int));
+	memcpy(&dest_new_comer, &new_comer->process_buf[16+size+sizeof(unsigned int)], sizeof(struct link*));
+	tmp         = add_links(miner_id, dest, dest_new_comer, links);
+	link        = tmp->link;
+
+	size = 0;
+	memcpy(&link->sbuf[0], "nat", 3);
+	memcpy(&link->sbuf[12], &size, 4);
+	send_msg(link->dest, link->sbuf, 16);
+	free_link(tmp, me);
+	return me->links;
 }
 
 struct links *verack(struct link *new_comer, struct links *links){
@@ -417,7 +439,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	char				*payload;
 	unsigned int		height, height2, i, miner_id, size, set, num_addr, payload_size;
 	struct link			*link, *dest;
-	struct links		*tmp;
+	struct links		*tmp, *prev;
 	const struct msg_hdr *hdr;
 	struct block		*block;
 	struct blocks		*blocks;
@@ -524,6 +546,11 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 		memcpy(&link->dest, &link->process_buf[16], sizeof(struct link*));
 //		fprintf(stderr, "received verack with link: %p\n", link->dest);
 	}
+	else if(strncmp(hdr->command, "nat", 3)==0){
+		free_link(links, me);
+		me->neighbor--;
+		return -1;
+	}
 	return 0;
 }
 
@@ -555,8 +582,18 @@ struct links *process_new(struct link *new_comer, struct miner *me){
     }
 	else if(strncmp(hdr->command, "version", 7)==0){
 //		fprintf(stderr, "version received\n");
-		me->neighbor++;
-        return verack(new_comer, me->links);
+		if(me->one_way==false && me->neighbor < me->max){
+			me->neighbor++;
+        	me->links = verack(new_comer, me->links);
+			if(me->blocks!=NULL){
+				for(blocks=me->blocks; blocks->next!=NULL; blocks=blocks->next){}
+				send_block(blocks->block, (me->links)->link);	
+			}
+			return me->links;
+		}
+		else{
+			return nat(new_comer, me->links, me);
+		}
     }
     return me->links;
 }

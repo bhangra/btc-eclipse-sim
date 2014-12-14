@@ -65,7 +65,8 @@ int main(int argc, char *argv[]){
 				bad_miner_routine(threads->miner);
 			}
 			else{
-//				fprintf(stderr, "\nminer: %d\n", (threads->miner)->miner_id);
+				if(sim_time>=SIM_TIME-1)
+					fprintf(stderr, "\nminer: %d\n", (threads->miner)->miner_id);
 				miner_routine(threads->miner);
 			}
 			if(threads->prev==NULL)
@@ -77,8 +78,8 @@ int main(int argc, char *argv[]){
 	}
 	fprintf(stderr, "will cancel_all()\n"); //debug
 	cancel_all(threads);
-	print_link_record();
-	print_block_record();
+//	print_link_record();
+//	print_block_record();
 	return EXIT_SUCCESS;
 }
 

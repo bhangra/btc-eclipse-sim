@@ -85,7 +85,8 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 //			request_block(head->height-3, from);
 //			request_block(head->height-4, from);
 //			request_block(head->height-5, from);
-			get_blocks(from, me->blocks, me->new_chain);
+			//get_blocks(from, me->blocks, me->new_chain);	
+			from->fgetblock=true;
 			return chain_head;
 		}
 //		fprintf(stderr, "will check, if it's previous one to new_chain\n");
@@ -148,7 +149,8 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 //				request_block(block->height-3, from);
 //				request_block(block->height-4, from);
 //				request_block(block->height-5, from);
-				get_blocks(from, me->blocks, me->new_chain);
+				//get_blocks(from, me->blocks, me->new_chain);
+				from->fgetblock=true;
 				return chain_head;
 			}
 			if(tmp->prev==NULL){break;}
@@ -190,7 +192,8 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 //		request_block(block->height-3, from);
 //		request_block(block->height-4, from);
 //		request_block(block->height-5, from);
-		get_blocks(from, me->blocks, me->new_chain);
+		//get_blocks(from, me->blocks, me->new_chain);
+		from->fgetblock=true;
 
 		return chain_head;
     }
@@ -223,7 +226,8 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 //		request_block(block->height-3, from);
 //		request_block(block->height-4, from);
 //		request_block(block->height-5, from);
-		get_blocks(from, me->blocks, me->new_chain);
+		//get_blocks(from, me->blocks, me->new_chain);
+		from->fgetblock=true;
 		return chain_head;
 	}
 //	fprintf(stderr, "block received not added\n");
