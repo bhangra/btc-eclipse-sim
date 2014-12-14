@@ -17,7 +17,7 @@
 #define LEAST_NEIGHBOR 8
 
 void dns_routine(struct dns *dns){
-	fprintf(stderr, "\n");
+//	fprintf(stderr, "\n");
 	for(; (&dns->new_comer)->num_msg!=0;){
 //		fprintf(stderr, "num of msgs to dns: %d\n", (&dns->new_comer)->num_msg);
 		read_msg(&dns->new_comer);
@@ -27,7 +27,7 @@ void dns_routine(struct dns *dns){
 }
 
 void miner_routine(struct miner *miner){
-	int 			i;
+	int 			i, n;
 	struct links 	*links;
 	struct link		*link;
 	struct blocks 	*blocks;
@@ -82,15 +82,19 @@ void miner_routine(struct miner *miner){
 				link = links->link;
 //				fprintf(stderr, "links dest: %p, new: %p, id: %d\n", link->dest, links->new_comer, links->miner_id);
 			}
-			if(i<LEAST_NEIGHBOR && miner->links!=NULL && ((miner->links)->link)->dest!=(miner->links)->new_comer){
-				getaddr((miner->links)->link, miner->miner_id);
-//				fprintf(stderr, "sending getaddr to dest: %p, id: %d\n", (miner->links)->link, (miner->links)->miner_id);
+			if(i<miner->least && miner->links!=NULL && ((miner->links)->link)->dest!=(miner->links)->new_comer){
+				n = rand()%(i);
+				for(links=miner->links; links->prev!=NULL; links=links->prev){}
+				for(i=0; i<n; i++){
+					links=links->next;
+				}
+				getaddr(links->link, miner->miner_id);
 			}
 		}
 	}
 	miner->blocks = mine_block(miner->blocks, miner->miner_id, miner);
-	fprintf(stderr, "miner->blocks = %p ", miner->blocks);
-	if(miner->blocks!=NULL){
+//	fprintf(stderr, "miner->blocks = %p ", miner->blocks);
+/*	if(miner->blocks!=NULL){
 		fprintf(stderr, "height = %d\n", ((miner->blocks)->block)->height);
 	}else{fprintf(stderr, "height = 0\n");}
 	if(miner->blocks!=NULL){
@@ -101,7 +105,7 @@ void miner_routine(struct miner *miner){
 		}
 		fprintf(stderr,"\n");
 	}
-	if(miner->new_chain!=NULL){
+*//*if(miner->new_chain!=NULL){
 		for(blocks=miner->new_chain; blocks->prev!=NULL; blocks=blocks->prev){}
 		fprintf(stderr, "in new_chain: ");
 		for(; blocks!=NULL; blocks=blocks->next){
@@ -109,6 +113,7 @@ void miner_routine(struct miner *miner){
 		}
 		fprintf(stderr, "\n");
 	}
+*/
 }
 
 #endif

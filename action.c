@@ -18,7 +18,7 @@
 #include"proto-node.h"
 
 
-void add_record(struct miner *me, struct block *new, struct blocks *mine);
+void add_block_record(struct miner *me, struct block *new, struct blocks *mine);
 
 //totally for debugging
 void hexDump (char *desc, void *addr, int len) {
@@ -85,7 +85,7 @@ struct links *seed_receive(struct link *new_comer, struct links *seeds){
 	size = sizeof(struct link*);
 	memcpy(&link, &new_comer->process_buf[16], size);
 	memcpy(&miner_id, &new_comer->process_buf[16+size], sizeof(unsigned int));
-	fprintf(stderr, "seed link: %p, id: %d\n", link, miner_id);
+//	fprintf(stderr, "seed link: %p, id: %d\n", link, miner_id);
 //	fprintf(stderr, "seed_receive(): will add_links()\n");
 	return add_links(miner_id, link, link, seeds);
 }
@@ -126,9 +126,9 @@ void dns_roundrobin(struct link *new_comer, struct links *seeds){
 	for(; ;){
 		i=num_seeds;
 		random=rand();
-		fprintf(stderr, "i = %d, random = %d\n", i, random);
+//		fprintf(stderr, "i = %d, random = %d\n", i, random);
 		if(num_seeds<=0){
-			fprintf(stderr, "no seeds\n");
+//			fprintf(stderr, "no seeds\n");
 			return;
 		}
 		if(i==1){
@@ -153,14 +153,14 @@ void dns_roundrobin(struct link *new_comer, struct links *seeds){
 			}
 		}
 	}
-	fprintf(stderr, "seed: %d %p\n", tmp->miner_id, tmp->new_comer);
+//	fprintf(stderr, "seed: %d %p\n", tmp->miner_id, tmp->new_comer);
 	memcpy(&link->dest, &link->process_buf[16], size);
 	memcpy(&link->sbuf[0], "roundrobin", 10);
 	memcpy(&link->sbuf[12], &payload_size, 4);
 	memcpy(&link->sbuf[16], &tmp->new_comer, size);
 	memcpy(&link->sbuf[16+size], &tmp->miner_id, sizeof(unsigned int));
 	send_msg(link->dest, link->sbuf, 16+payload_size);
-	fprintf(stderr, "sent DNS round robin\n");
+//	fprintf(stderr, "sent DNS round robin\n");
 }
 
 void getaddr(struct link *dest, unsigned int my_id){
@@ -189,7 +189,7 @@ void addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	for(i=0; links!=NULL; i++){
 		if(links->miner_id!=dest_id){
 //			link=links->link;
-			fprintf(stderr, "adding to addr dest: %p, id: %d\n", links->new_comer, links->miner_id);
+//			fprintf(stderr, "adding to addr dest: %p, id: %d\n", links->new_comer, links->miner_id);
 			memcpy(&link->sbuf[16+(i*set)], &links->miner_id, sizeof(unsigned int));	
 			memcpy(&link->sbuf[16+(i*set)+sizeof(unsigned int)], &links->new_comer, sizeof(struct link*));
 		}
@@ -221,7 +221,7 @@ struct links *version(unsigned int my_id, unsigned int dest_id, struct link *des
 	memcpy(&link->sbuf[16+size], &my_id, sizeof(unsigned int));
 	memcpy(&link->sbuf[16+size+sizeof(unsigned int)], &tmp, sizeof(struct link*));
 	send_msg(dest, link->sbuf, 16+payload_size);
-	fprintf(stderr, "sent version to dest: %p, id: %d with mylink: %p\n", link->dest, new->miner_id, link); //debug
+//	fprintf(stderr, "sent version to dest: %p, id: %d with mylink: %p\n", link->dest, new->miner_id, link); //debug
 	return new;
 }
 
@@ -239,7 +239,7 @@ struct links *verack(struct link *new_comer, struct links *links){
 	memcpy(&dest_new_comer, &new_comer->process_buf[16+size+sizeof(unsigned int)], sizeof(struct link*));
 	tmp			= add_links(miner_id, dest, dest_new_comer, links);
 	link		= tmp->link;
-	fprintf(stderr, "verack to dest: %p, id: %d with mylink: %p\n", dest, miner_id, link);
+//	fprintf(stderr, "verack to dest: %p, id: %d with mylink: %p\n", dest, miner_id, link);
 	memcpy(&link->sbuf[0], "verack", 6);
 	memcpy(&link->sbuf[12], &size, 4);
 	memcpy(&link->sbuf[16], &link, size);
@@ -268,10 +268,10 @@ void propagate_block(struct block *block, struct miner *me){
 	for(links=me->links; links->prev!=NULL;links=links->prev){}
 	for(; links!=NULL; links=links->next){
 		link = links->link;
-		fprintf(stderr, "sent block with height: %d to miner: %d\n", block->height, links->miner_id);
+//		fprintf(stderr, "sent block with height: %d to miner: %d\n", block->height, links->miner_id);
 		send_block(block, link);
 	}
-	fprintf(stderr, "propagated block\n"); //debug
+//	fprintf(stderr, "propagated block\n"); //debug
 }
 
 struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, struct miner *me){
@@ -324,7 +324,7 @@ struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, stru
 //		fprintf(stderr, "will propagate block with height: %d\n", head->height); //debug
 		tmp = add_block(head, tmp);
 		propagate_block(head, me);
-		add_record(me, head, tmp);
+		add_block_record(me, head, tmp);
 	}
 //	fprintf(stderr, "finished mining for the turn\n"); //debug
 	return tmp;
@@ -343,7 +343,7 @@ void request_block(unsigned int wanted_height, struct link *dest){
 void get_blocks(struct link *dest, struct blocks *main_chain, struct blocks *new_chain){
 	unsigned int	payload_size, sets, height, height2;
 	struct blocks	*tmp, *tmp1, *tmp2;
-	fprintf(stderr, "will send getblocks\n");
+//	fprintf(stderr, "will send getblocks\n");
 	if(main_chain!=NULL)
 		for(tmp=main_chain; tmp->next!=NULL; tmp=tmp->next){}
 	for(tmp1=new_chain; tmp1->prev!=NULL; tmp1=tmp1->prev){}
@@ -396,7 +396,7 @@ struct links *process_dns(struct link *new_comer, struct links *seeds){
 	hdr		= (struct msg_hdr*)(link->process_buf);
 	payload	= (char *)(hdr+sizeof(struct msg_hdr));
 	if(strncmp(hdr->command, "dnsseed", 7)==0){
-		fprintf(stderr, "seed request received\n");
+//		fprintf(stderr, "seed request received\n");
 		tmp = seed_receive(link, seeds);
 		if(tmp!=NULL)
 			return tmp;
@@ -404,7 +404,7 @@ struct links *process_dns(struct link *new_comer, struct links *seeds){
 			return seeds;
 	}
 	else if(strncmp(hdr->command, "dnsquery", 8)==0){
-		fprintf(stderr, "dnsquery received\n"); //debug
+//		fprintf(stderr, "dnsquery received\n"); //debug
 		dns_roundrobin(link, seeds);
 		return seeds;
 	}
@@ -425,10 +425,10 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	link = links->link;
 	hdr = (struct msg_hdr*)(link->process_buf);
 	payload = (char *)(hdr +sizeof(struct msg_hdr));
-	fprintf(stderr, "command: %s\n", hdr->command); //debug
+//	fprintf(stderr, "command: %s\n", hdr->command); //debug
 	if(strncmp(hdr->command, "block", 5)==0){
 		block=(struct block*)&link->process_buf[16];
-		fprintf(stderr, "received block with height: %d from %d\n", block->height, links->miner_id); //debug
+//		fprintf(stderr, "received block with height: %d from %d\n", block->height, links->miner_id); //debug
 		me->blocks = process_new_blocks(block, me->blocks, me, link);
 	}
 /*	else if(strncmp(hdr->command, "newhead", 7)==0){
@@ -436,10 +436,10 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	}
 */
 	else if(strncmp(hdr->command, "getblocks", 9)==0){
-		fprintf(stderr, "getblocks received\n");
+//		fprintf(stderr, "getblocks received\n");
 		memcpy(&height, &link->process_buf[16], sizeof(unsigned int));
 		memcpy(&height2, &link->process_buf[16+sizeof(unsigned int)], sizeof(unsigned int));
-		fprintf(stderr, "getblocks received. height: %d, height2: %d\n", height, height2);
+//		fprintf(stderr, "getblocks received. height: %d, height2: %d\n", height, height2);
 		for(blocks=me->blocks; (blocks->block)->height!=height2; blocks=blocks->prev){}
 		for(set=0; blocks!=NULL; blocks=blocks->prev){
 			if(!memcmp(&link->process_buf[16+sizeof(unsigned int)+sizeof(unsigned int)+(set*SHA256_DIGEST_LENGTH)], (blocks->block)->hash, SHA256_DIGEST_LENGTH)){
@@ -449,15 +449,15 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 			set++;
 		}
 		if(blocks!=NULL){
-			fprintf(stderr, "connecting block found\n");
+//			fprintf(stderr, "connecting block found\n");
 			send_blocks(link, me->blocks, height2, height);
 		}
 	}
 	else if(strncmp(hdr->command, "getblock", 8)==0){
-		fprintf(stderr, "getblock received from: %d\n", links->miner_id);
+//		fprintf(stderr, "getblock received from: %d\n", links->miner_id);
 		memcpy(&height, &link->process_buf[16], sizeof(unsigned int));
-		fprintf(stderr, "trying to find requested block: %d\n", height);
-		fprintf(stderr, "me->blocks = %p\n", me->blocks);
+//		fprintf(stderr, "trying to find requested block: %d\n", height);
+//		fprintf(stderr, "me->blocks = %p\n", me->blocks);
 		if(me->blocks==NULL)
 			return;
 		for(blocks=me->blocks; blocks->next!=NULL; blocks=blocks->next){}
@@ -472,11 +472,11 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 			return;
 		else{
 			send_block(block, link);
-			fprintf(stderr, "sent block with height: %d to miner: %d\n", block->height, links->miner_id);
+//			fprintf(stderr, "sent block with height: %d to miner: %d\n", block->height, links->miner_id);
 		}
 	}
 	else if(strncmp(hdr->command, "getaddr", 7)==0){
-		fprintf(stderr, "getaddr received\n");
+//		fprintf(stderr, "getaddr received\n");
 		memcpy(&miner_id, &link->process_buf[16], sizeof(unsigned int));
 		addr(link, me, miner_id);
 	}
@@ -486,7 +486,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 		size		= sizeof(struct link*);
 		set			= size + sizeof(unsigned int);
 		num_addr    = payload_size/set;
-		fprintf(stderr, "num_addr = %d\n", num_addr);
+//		fprintf(stderr, "num_addr = %d\n", num_addr);
 		if(num_addr == 0)
 			me->boot = true;
 		connected = false;
@@ -510,7 +510,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 				connect = false;
 			if(connect){
 				connected = true;
-				fprintf(stderr, "will send version to dest: %p, id: %d\n", dest, miner_id);
+//				fprintf(stderr, "will send version to dest: %p, id: %d\n", dest, miner_id);
 				me->links = version(me->miner_id, miner_id, dest, &me->new_comer, me->links);
 				me->neighbor++;
 			}
@@ -522,7 +522,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	else if(strncmp(hdr->command, "verack", 6)==0){
 //		link->dest = (struct link*)payload;
 		memcpy(&link->dest, &link->process_buf[16], sizeof(struct link*));
-		fprintf(stderr, "received verack with link: %p\n", link->dest);
+//		fprintf(stderr, "received verack with link: %p\n", link->dest);
 	}
 	return 0;
 }
@@ -547,14 +547,14 @@ struct links *process_new(struct link *new_comer, struct miner *me){
 		memcpy(&dest, &link->process_buf[16], size);
 		memcpy(&miner_id, &link->process_buf[16+size], sizeof(unsigned int));
 		if(miner_id==me->miner_id){
-			fprintf(stderr, "will not send version to me\n");
+//			fprintf(stderr, "will not send version to me\n");
 			return NULL;
 		}
 		me->neighbor++;
 		return version(me->miner_id, miner_id, dest, &me->new_comer, me->links);
     }
 	else if(strncmp(hdr->command, "version", 7)==0){
-		fprintf(stderr, "version received\n");
+//		fprintf(stderr, "version received\n");
 		me->neighbor++;
         return verack(new_comer, me->links);
     }

@@ -43,7 +43,8 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	if(now>=0){
 		miner->TTL	= (unsigned int)sim_time+((rand()%(AVE_TTL*2)));
 	}
-	fprintf(stderr, "miner->TTL = %d\n", miner->TTL);
+//	fprintf(stderr, "miner->TTL = %d\n", miner->TTL);
+//	miner->group	= rand()%2;
 	miner->miner_id = miner_id;
 	miner->max		= 1+rand()%5;//will fix 
 	miner->least	= rand()%5;//will fix

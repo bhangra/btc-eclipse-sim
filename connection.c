@@ -18,6 +18,7 @@
 
 #define HDR_SIZE	16
 void hexDump (char *desc, void *addr, int len);
+
 void free_link(struct links *will_remove, struct miner *miner){
 	struct links *after, *before;
 	if(will_remove==NULL){

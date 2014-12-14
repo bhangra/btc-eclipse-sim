@@ -23,21 +23,5 @@ struct blocks{
 	struct blocks	*next;
 };
 
-struct block_record{
-	struct block_record	*next;
-	struct block_record	*same;
-//	unsigned char		hash[SHA256_DIGEST_LENGTH];
-	unsigned int		mined_time;
-	unsigned int		height;
-	unsigned int		miner_id;
-	double				hash_rate;
-	unsigned int		num_nodes;
-};
-
-struct record_printer{
-	struct block_record *record;
-	struct record_printer *same;
-
-};
 
 #endif
