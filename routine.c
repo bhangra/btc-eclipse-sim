@@ -27,20 +27,20 @@ void dns_routine(struct dns *dns){
 }
 
 void miner_routine(struct miner *miner){
+	bool			getblocks_sent=0;
 	int 			i, n;
 	struct links 	*links;
 	struct link		*link;
-	struct blocks 	*blocks;
 //	fprintf(stderr, "entered miner_routine()\n"); //debug
 	if(miner->boot == true && miner->seed == true){
-		for(i=0; i<5; i++){
+		for(i=0; i<NUM_DNS; i++){
 			dns_seed(miner->miner_id, &dns[i], &miner->new_comer);
 		}
-//		for(i=0; i<rand()%6; i++){}
-//		dns_query(&dns[i], &miner->new_comer, miner->miner_id);
+		for(i=0; i<rand()%NUM_DNS; i++){}
+		dns_query(&dns[i], &miner->new_comer, miner->miner_id);
 //		fprintf(stderr, "sent dns_query\n");
-//		miner->boot = false;
-		miner->seed = false;
+		miner->boot = false;
+//		miner->seed = false;
 	}
 	else if(miner->boot == true){
 //		for(i=0; i<rand()%6; i++){}
@@ -62,6 +62,7 @@ void miner_routine(struct miner *miner){
 		}
 //			return;
 		else{
+			getblocks_sent=0;
 			for(;links->prev!=NULL; links=links->prev){}
 			for(i=0/*debug*/; links!=NULL; links=links->next){
 //				fprintf(stderr, "link->num_msg = %d\n", link->num_msg);//debug
@@ -75,10 +76,23 @@ void miner_routine(struct miner *miner){
 					if(link->num_msg==0 && link->fgetblock==true && miner->new_chain!=NULL){
 						link->fgetblock=false;
 						get_blocks(link, miner->blocks, miner->new_chain);
+						getblocks_sent=true;
 					}
 					else
 						link->fgetblock=false;
 				} 
+				if(miner->new_chain!=NULL && getblocks_sent !=true && miner->links!=NULL){
+					i = 0;
+					for(links=miner->links; links->next!=NULL; links=links->next){
+						i++;
+					}
+					if(i>0)
+						n = rand()%i;
+					else
+						n = 0;
+					for(i=0; i<n && links->prev!=NULL; links=links->prev){}
+					get_blocks(links->link, miner->blocks, miner->new_chain);
+				}
 				i++; //debug
 				if(links==NULL)
 					break;
@@ -86,14 +100,17 @@ void miner_routine(struct miner *miner){
 					break;
 			}
 		}
-//		fprintf(stderr, "num of links: %d\n", i);//debug
+#ifdef DEBUG
+//		if(sim_time >= SIM_TIME-1)
+			fprintf(stderr, "num of links: %d\n", i);//debug
+#endif
 		if(miner->links!=NULL){
 			for(links=miner->links; links->prev!=NULL; links=links->prev){}
 			for(; links!=NULL; links=links->next){
 				link = links->link;
 //				fprintf(stderr, "links dest: %p, new: %p, id: %d\n", link->dest, links->new_comer, links->miner_id);
 			}
-			if(i<miner->least && miner->links!=NULL && ((miner->links)->link)->dest!=(miner->links)->new_comer){
+			if(i<miner->least && ((miner->links)->link)->dest!=(miner->links)->new_comer){
 				n = rand()%(i);
 				for(links=miner->links; links->prev!=NULL; links=links->prev){}
 				for(i=0; i<n; i++){
@@ -107,8 +124,8 @@ void miner_routine(struct miner *miner){
 		}
 	}
 	miner->blocks = mine_block(miner->blocks, miner->miner_id, miner);
-	
-	if(sim_time>=SIM_TIME-1){
+#ifdef DEBUG	
+//	if(sim_time>=SIM_TIME-1){
 		fprintf(stderr, "miner->blocks = %p ", miner->blocks);
 		if(miner->blocks!=NULL){
 			fprintf(stderr, "height = %d\n", ((miner->blocks)->block)->height);
@@ -121,7 +138,9 @@ void miner_routine(struct miner *miner){
 			}
 			fprintf(stderr,"\n");
 		}
-*//*		if(miner->new_chain!=NULL){
+*/
+#ifdef DEBUG
+		if(miner->new_chain!=NULL){
 			for(blocks=miner->new_chain; blocks->prev!=NULL; blocks=blocks->prev){}
 			fprintf(stderr, "in new_chain: ");
 			for(; blocks!=NULL; blocks=blocks->next){
@@ -129,7 +148,9 @@ void miner_routine(struct miner *miner){
 			}
 			fprintf(stderr, "\n");
 		}
-*/	}
+#endif
+//	}
+#endif
 }
 
 #endif

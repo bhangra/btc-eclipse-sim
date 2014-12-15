@@ -65,19 +65,16 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	}
 	payload_size = set_size*sets;
 	memcpy(&link->sbuf[12], &payload_size, sizeof(unsigned int));
-	send_msg(link->dest, link->sbuf, 16+payload_size);
+	send_msg(link->dest, (char *)link->sbuf, 16+payload_size);
 }
 
 struct links *process_bad_dns(struct link *new_comer, struct links *seeds){
 	bool					exists;
-	char                    *payload;
-	unsigned int            dest_id;
 	struct link             *link;
 	struct links            *tmp, *tmp_bad;
 	const struct msg_hdr    *hdr;
 	link    = new_comer;
 	hdr     = (struct msg_hdr*)(link->process_buf);
-	payload = (char *)(hdr+sizeof(struct msg_hdr));
 	if(strncmp(hdr->command, "dnsseed", 7)==0){
 		fprintf(stderr, "seed request received\n");
 		tmp = seed_receive(link, seeds);
@@ -125,17 +122,13 @@ void bad_dns_routine(struct dns *dns){
 
 int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me){
 	bool                connect, connected;
-	char                *payload;
-	unsigned int        height, height2, i, miner_id, size, set, num_addr, payload_size;
+	unsigned int        i, miner_id, size, set, num_addr, payload_size;
 	struct link         *link, *dest;
 	struct links        *tmp;
 	const struct msg_hdr *hdr;
-	struct block        *block;
-	struct blocks       *blocks;
 
 	link = links->link;
 	hdr = (struct msg_hdr*)(link->process_buf);
-	payload = (char *)(hdr +sizeof(struct msg_hdr));
 	fprintf(stderr, "command: %s\n", hdr->command); //debug
 //ignore block related commands
 
@@ -185,16 +178,13 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 		memcpy(&link->dest, &link->process_buf[16], sizeof(struct link*));
 		fprintf(stderr, "received verack with link: %p\n", link->dest);
     }
-	
+	return 1;
 }
 
 struct links *process_bad_new(struct link *new_comer, struct miner *me){
-	char                *payload;
-	unsigned int        height, i, miner_id, size, payload_size;
+	unsigned int        miner_id, size, payload_size;
 	struct link         *link, *dest;
 	struct msg_hdr *hdr;
-	struct block        *block;
-	struct blocks       *blocks;
 
 	bool				exists;
 	struct links 		*tmp, *tmp_bad;
@@ -204,7 +194,6 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 	size = sizeof(struct link*);
 	link = new_comer;
 	hdr = (struct msg_hdr*)(link->process_buf);
-	payload = (char *)(hdr +sizeof(struct msg_hdr));
 	memcpy(&payload_size, &link->process_buf[12], 4);
 //	fprintf(stderr, "check command\n"); //debug
 //	hexDump("Message received", link->process_buf, 16+hdr->message_size);
@@ -270,7 +259,6 @@ void bad_miner_routine(struct miner *miner){
 	int				i;
 	struct links	*links;
 	struct link		*link;
-	struct blocks	*blocks;
 /*	if(miner->boot == true && miner->seed == true){
 		for(i=0; i<5; i++){
 			dns_seed(miner->miner_id, &dns[i], &miner->new_comer);

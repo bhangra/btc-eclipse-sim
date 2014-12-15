@@ -12,6 +12,7 @@ unsigned int		sim_time = 0, miner_id;
 bool				is_bad_dns[NUM_DNS];
 struct links		*bad_links = NULL;
 struct dns 			dns[NUM_DNS];
+struct killed		*dead = NULL;
 
 //for recording blocks
 struct block_record *record = NULL;

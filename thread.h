@@ -18,7 +18,13 @@ struct threads{
 	struct miner	*miner;
 	int				type;
 	struct threads	*next;
+	unsigned int	time;
 //will add TTL and make main thread kill it
+};
+
+struct killed{
+	struct killed	*next;
+	unsigned int	id;
 };
 
 #endif

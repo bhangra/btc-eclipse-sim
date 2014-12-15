@@ -53,12 +53,12 @@ void free_link(struct links *will_remove, struct miner *miner){
 }
 
 void free_links(struct threads *will_kill){
-	unsigned int miner_id;
+	unsigned int kill_id;
 	struct threads  *tmp;
 	struct miner    *miner;
-	struct links    *links, *after, *before;
+	struct links    *links;
 	
-	miner_id = (will_kill->miner)->miner_id;
+	kill_id = (will_kill->miner)->miner_id;
 	
 	for(tmp = will_kill; tmp->next!=NULL;tmp=tmp->next){}
 	for(miner=tmp->miner; tmp!=NULL; tmp=tmp->prev){
@@ -67,8 +67,39 @@ void free_links(struct threads *will_kill){
 		}
 		for(links=miner->links; links->next!=NULL; links=links->next){}
 		for(; links!=NULL; links=links->prev){
-			if(links->miner_id==miner_id){
+			if(links->miner_id==kill_id){
 				free_link(links, miner);
+			}
+		}
+	}
+}
+void free_dns_rec(struct threads *will_kill){
+	unsigned int 	kill_id, i;
+	struct links	*tmp, *next, *prev;
+	kill_id = (will_kill->miner)->miner_id;
+	for(i=0; i<NUM_DNS; i++){
+		if(dns[i].seeds==NULL)
+			continue;
+		for(tmp = dns[i].seeds; tmp->next!=NULL; tmp=tmp->next){}
+		for(; tmp!=NULL; tmp=tmp->prev){
+			if(tmp->miner_id == kill_id){
+				next = tmp->next;
+				prev = tmp->prev;
+				free(tmp->link);
+				free(tmp);
+				if(next!=NULL)
+					next->prev = prev;
+				if(prev!=NULL)
+					prev->next = next;
+				if(dns[i].seeds == tmp){
+					if(next!=NULL)
+						dns[i].seeds = next;
+					else if(prev!=NULL)
+						dns[i].seeds = prev;
+					else
+						dns[i].seeds = NULL;
+				}
+				break;
 			}
 		}
 	}
@@ -80,11 +111,13 @@ struct links *add_links(unsigned int miner_id, struct link *dest, struct link *n
 //		fprintf(stderr, "*links = %p\n", tmp); //debug
 		if(tmp==NULL)
 			break;
-/*		if(miner_id==tmp->miner_id){ //already connected 
+		if(miner_id==tmp->miner_id){ //already connected 
+#ifdef DEBUG
 			fprintf(stderr, "already connected\n");
+#endif
 			return links;
 		}
-*/		if(tmp->next == NULL){
+		if(tmp->next == NULL){
 			break;
 		}
 	}
@@ -108,19 +141,26 @@ struct links *add_links(unsigned int miner_id, struct link *dest, struct link *n
 
 int send_msg(struct link *dest, char *message, unsigned int msg_size){
 //	hexDump("sending msg", message, msg_size);
-	int 			tmp, dest_read;
+	int 			tmp;
 	unsigned int 	pos, over_size;
-//	fprintf(stderr, "sending msg_size: %d %s\n", msg_size, message); //debug
-	pos			= dest->write_pos;
-	tmp			= pos+msg_size-BUF_SIZE;
-	dest_read	= dest->read_pos;
+#ifdef DEBUG
+	fprintf(stderr, "sending msg_size: %d %s\n", msg_size, message); //debug
+#endif
+
+	pos			= dest->write_pos;	
+	tmp			= pos + msg_size;
+	if(pos+msg_size >=BUF_SIZE)
+		tmp			= pos+msg_size-BUF_SIZE;
 //	fprintf(stderr, "dest->write_pos = %d, dest->read_pos = %d\n", pos, dest->read_pos);
-	if(pos < dest->read_pos && (pos+msg_size >= dest->read_pos)){
+	if(pos < dest->read_pos && (pos+msg_size >= dest->read_pos) && pos+msg_size <BUF_SIZE){
 //		fprintf(stderr, "catched up to read_pos\n");
 		return 0;
 	}
-	else if((pos > dest->read_pos) && (tmp >= dest_read)){
+	if((pos < dest->read_pos) && (tmp <= dest->read_pos) && pos+msg_size>BUF_SIZE){
 //		fprintf(stderr, "rounded around buffer, catching up to read_pos. tmp = %d\n", tmp);
+		return 0;
+	}
+	if(pos > dest->read_pos && tmp >= dest->read_pos && pos+msg_size > BUF_SIZE){
 		return 0;
 	}
 //	fprintf(stderr, "dest->write_pos = %d\n", dest->write_pos);
@@ -170,7 +210,17 @@ int read_msg(struct link *link){
 		memcpy(&tmp_size, &char_size[0], sizeof(unsigned int));
 		read_size	= HDR_SIZE + tmp_size;
 	}
+	if(read_size >BUF_SIZE){
+#ifdef DEBUG
+		fprintf(stderr, "read_msg: over buf size\n");
+#endif
+		memset(link->buf, 0, sizeof(link->buf));
+		link->num_msg = 0;
+		return -1;		
+	}
+//#ifdef DEBUG
 //	fprintf(stderr, "read_pos = %d, read_size = %d\n", link->read_pos, read_size);
+//#endif
 //assumes that the BUF_SIZE is large enough for a message
 	if((link->read_pos+read_size)<BUF_SIZE){
 		memcpy(&link->process_buf, hdr, read_size);
@@ -187,6 +237,4 @@ int read_msg(struct link *link){
 //	fprintf(stderr, "reading msg, size: %d type: %s\n", read_size, link->process_buf);
 	return 1;
 }
-
-
 #endif

@@ -22,7 +22,7 @@ struct threads *search_head(struct threads *thread){
 }
 
 //will add variable for threads
-struct threads *new_thread(int type, unsigned int miner_id,  struct threads *threads, unsigned int seed, unsigned int now){
+struct threads *new_thread(int type, unsigned int miner_id,  struct threads *threads, unsigned int seed){
 	struct miner	*miner;
 	struct threads	*new, *tmp=NULL;
 	new 		= malloc(sizeof(struct threads));
@@ -32,6 +32,7 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	}
 	memset(new, 0, sizeof(struct threads));
 	new->type = type;	//distinguish miner/attacker
+	new->time = sim_time; //debug
 	if((new->miner=malloc(sizeof(struct miner)))==NULL){
 		perror("malloc()");
 		free(new);
@@ -40,22 +41,22 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	miner=new->miner;
 	memset(miner, 0, sizeof(struct miner));
 	//times, TTL = 1 : 1 second
-	if(now>=0){
-		miner->TTL	= (unsigned int)sim_time+((rand()%(AVE_TTL*2)));
-	}
+	miner->TTL	= (unsigned int)sim_time+((rand()%(AVE_TTL*2)));
+	
 //	fprintf(stderr, "miner->TTL = %d\n", miner->TTL);
 //	miner->group	= rand()%2;	
 	miner->one_way	= rand()%2;
-	if(seed=true)
+	if((seed=true))
 		miner->one_way=false;
 	miner->miner_id = miner_id;
-	miner->max		= 1+rand()%5;//will fix 
-	miner->least	= rand()%5;//will fix
+	miner->max		= 10+rand()%5;//will fix 
+	miner->least	= 3+rand()%5;//will fix
 	miner->neighbor = 0;
 	miner->seed		= seed;//rand()%2;
 	miner->boot		= true;
 	miner->links	= NULL;
 	miner->blocks	= NULL;
+	miner->new_chain= NULL;
 	miner->hash_rate= (double)rand() / (RAND_MAX);
 	if(threads!=NULL){
 		tmp = threads;
@@ -74,10 +75,31 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	}
 	return new;
 }
-
+void keep_total_seeds(struct threads *threads){
+#ifndef SEED_NUM
+#define SEED_NUM 10
+#endif
+	unsigned int seed;
+	unsigned int current;
+	struct threads *tmp;
+	current = 0;
+	seed 	= true;
+	for(tmp=threads; tmp->next!=NULL; tmp=tmp->next){}
+	for(; tmp!=NULL; tmp=tmp->prev){
+		if((tmp->miner)->seed == true)
+			current++;
+	}
+	for(tmp=threads; tmp->next!=NULL; tmp=tmp->next){}
+	for(;current<=SEED_NUM; current++){
+		new_thread(1, miner_id, tmp, seed);
+	}
+		
+}
 void keep_total_nodes(struct threads *threads){
-	unsigned int	current=0;
+	unsigned int	current=0, seed=false;
+
 	struct threads	*tmp;
+
 	for(tmp=threads; tmp->next!=NULL; tmp=tmp->next){}
 	for(; tmp!=NULL; tmp=tmp->prev){
 		current++;
@@ -85,7 +107,7 @@ void keep_total_nodes(struct threads *threads){
 	tmp=threads;
 	for(; current<TOTAL_NODES; current++){
 		miner_id++;
-		tmp = new_thread(1, miner_id, tmp, 1, sim_time);
+		tmp = new_thread(1, miner_id, tmp, seed);
 	}
 }
 
@@ -107,11 +129,9 @@ void free_blocks(struct blocks *blocks, struct blocks *meblocks){
 }
 void free_node_s_links(struct links *links, struct links *melinks){
 	struct links	*tmp, *tmp2;
-	if(links=melinks){
+	if((links=melinks)){
 		return;
 	}
-	if(tmp==NULL)
-		return;
 	for(tmp=links; tmp->prev!=NULL; tmp=tmp->prev){}
 	for(; tmp!=NULL; ){
 		free(tmp->link);
@@ -126,7 +146,7 @@ void free_node_s_links(struct links *links, struct links *melinks){
 //for cancel_all()
 struct threads *cancel_thread(struct threads *will_kill){
 	struct miner	*tmp;
-	struct threads *before, *after, *killed;
+	struct threads *before, *after, *ret;
 	if(will_kill==NULL){
 		return NULL;
 	}
@@ -138,36 +158,52 @@ struct threads *cancel_thread(struct threads *will_kill){
 	free_blocks(tmp->blocks, (struct blocks*)&tmp->blocks);
 	free(will_kill->miner);
 	free(will_kill);
-	killed = will_kill;
 	if(before!=NULL && after!=NULL){
 		before->next	= after;
 		after->prev		= before;
-		return after;
+		ret =  after;
 	}
 	else if(before!=NULL){
 		before->next	= NULL;
-		return before;
+		ret =  before;
 	}
 	else if(after!=NULL){
 		after->prev	= NULL;
-		return after;
+		ret =  after;
 	}
 	else{
-		return NULL;
+		ret = NULL;
 	}
+//	fprintf(stderr, "cancel_thread returned: %p\n", ret);//debug
+	return ret;
 }
 
 //for cancel_by_TTL
 struct threads *cancel_one_thread(struct threads *will_kill){
+	struct killed *killed, *tmp;
+	killed = malloc(sizeof(struct killed));
+	killed->next	= NULL;
+	killed->id		= (will_kill->miner)->miner_id;
+#ifdef DEBUG
+	fprintf(stderr, "dead updated\n");
+#endif
+
+	if(dead==NULL)
+		dead = killed;
+	else{
+		for(tmp=dead; tmp->next!=NULL; tmp=tmp->next){}
+		tmp->next=killed;
+	}
 	free_links(will_kill);
+	free_dns_rec(will_kill);
 	return cancel_thread(will_kill);
 }
 
-struct threads *cancel_by_TTL(unsigned int now, struct threads *list){
+struct threads *cancel_by_TTL(struct threads *list){
 	struct threads *thread;
 	for(thread = list; thread->next!=NULL; thread=thread->next){}
 	for(;thread!=NULL; thread=thread->prev){
-		if((thread->miner)->TTL <= now){
+		if((thread->miner)->TTL <= sim_time){
 			thread=cancel_one_thread(thread);
 		}
 		if(thread->prev==NULL)

@@ -23,6 +23,9 @@ int main(int argc, char *argv[]){
 //	struct dns	dns[5];
 	unsigned int /*miner_id,*/ i;
 	struct threads *threads;
+	struct killed	*killed, *k_next;
+
+	dead = NULL;
 
 // random seed
 	srand(time(NULL));
@@ -41,18 +44,29 @@ int main(int argc, char *argv[]){
 
 //initial seed nodes creation
 	for(miner_id=0; miner_id<SEED_NUM; miner_id++){
-		threads=new_thread(1, miner_id, threads, 1, sim_time);
+		threads=new_thread(1, miner_id, threads, 1);
 	}
 	keep_total_hash_rate_1(threads);
 
-
+/////////////////////////////////////////////////////////////////////
 // the main routine	
+/////////////////////////////////////////////////////////////////////
 // sim_time=1 : 1 second
 	for(sim_time = 0; sim_time < SIM_TIME; sim_time++){
-//		fprintf(stderr, "sim_time = %d\n", sim_time);//debug
+#ifdef DEBUG
+		fprintf(stderr, "sim_time = %d\n", sim_time);//debug
+#endif
+		if(dead!=NULL){
+			for(killed=dead; killed!=NULL; killed=k_next){
+				dead=NULL;
+				k_next=killed->next;
+				free(killed);
+			}
+		}
 
 // kill/create nodes, manage total hash-rate
-		threads= cancel_by_TTL(sim_time, threads);
+		threads= cancel_by_TTL(threads);
+//		keep_total_seeds(threads);
 		keep_total_nodes(threads);
 		keep_total_hash_rate_1(threads);
 		if(sim_time%600==0){
@@ -65,8 +79,12 @@ int main(int argc, char *argv[]){
 				bad_miner_routine(threads->miner);
 			}
 			else{
-				if(sim_time>=SIM_TIME-1)
+//				if(sim_time>=SIM_TIME-1){
+#ifdef DEBUG
 					fprintf(stderr, "\nminer: %d\n", (threads->miner)->miner_id);
+					fprintf(stderr, "created at: %d\n", threads->time);
+#endif
+//				}
 				miner_routine(threads->miner);
 			}
 			if(threads->prev==NULL)
@@ -79,7 +97,7 @@ int main(int argc, char *argv[]){
 	fprintf(stderr, "will cancel_all()\n"); //debug
 	cancel_all(threads);
 //	print_link_record();
-//	print_block_record();
+	print_block_record();
 	return EXIT_SUCCESS;
 }
 

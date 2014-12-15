@@ -25,14 +25,13 @@ struct blocks *add_block(struct block *block, struct blocks *chain_head){
 	tmp = malloc(sizeof(struct blocks));
 	memset(tmp, 0, sizeof(struct blocks));
 	tmp->block          = block;
+	tmp->next			= NULL;
 	if(chain_head!=NULL){
 		for(tmp2=chain_head; tmp2->next!=NULL; tmp2=tmp2->next){}
 		tmp2->next			= tmp;
 		tmp->prev           = tmp2;
-		tmp->next           = NULL;
 	}else{
 		tmp->prev           = NULL;
-		tmp->next           = NULL;
 	}
 	return tmp;
 }
@@ -55,7 +54,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 //		fprintf(stderr, "will check if it's next block\n");
 		for(tmp=chain_head; tmp->next!=NULL; tmp=tmp->next){}
 		head = chain_head->block;
-		if(block->height == head->height+1 && !memcmp(block->hash, SHA256((char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
+		if(block->height == head->height+1 && !memcmp(block->hash, SHA256((const unsigned char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
 //			fprintf(stderr, "next block received\n"); //debug
 			accept = malloc(sizeof(struct block));
 			memcpy(accept, block, sizeof(struct block));
@@ -73,7 +72,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 		}
 		head=tmp->block;
 //		fprintf(stderr, "will check, if it's next one to new_chain\n");
-		if(block->height == head->height + 1 && !memcmp(block->hash, SHA256((char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
+		if(block->height == head->height + 1 && !memcmp(block->hash, SHA256((const unsigned char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
 //			fprintf(stderr, "new block added to new_chain's head\n"); //debug
 			accept = malloc(sizeof(struct block));
 			memcpy(accept, block, sizeof(struct block));
@@ -96,7 +95,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 				return chain_head;
 			}
 			head = tmp->block;
-			if(head->height == block->height+1 && !memcmp(head->hash, SHA256((char *)block, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
+			if(head->height == block->height+1 && !memcmp(head->hash, SHA256((const unsigned char *)block, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
 //				fprintf(stderr,"new block added to tail of new_chain\n"); //debug
 				accept = malloc(sizeof(struct block));
 				memcpy(accept, block, sizeof(struct block));
@@ -107,7 +106,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 				tmp->prev	= tmp2;
 				tmp3		= tmp;
 				if(accept->height == 1){
-					for(tmp=me->blocks; tmp->next=NULL; tmp=tmp->next){
+					for(tmp=me->blocks; (tmp->next=NULL); tmp=tmp->next){
 						if(tmp==NULL||tmp->next==NULL){break;}
 					}
 					for(; tmp!=NULL; tmp=tmp2){
@@ -118,15 +117,15 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 					}			
 					for(tmp=tmp3; tmp->next!=NULL; tmp=tmp->next){}
 					me->new_chain = NULL;
-					propagate_block(tmp->block, me);
 					me->blocks=tmp;
+					propagate_block(tmp->block, me);
 					join_record(tmp->block, tmp);
 					return tmp;
 				}
 				else{
 				for(tmp=chain_head; tmp!=NULL; tmp=tmp->prev){
 					head=tmp->block;
-					if(accept->height==head->height+1 && !memcmp(accept->hash, SHA256((char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
+					if(accept->height==head->height+1 && !memcmp(accept->hash, SHA256((const unsigned char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
 						tmp3		= tmp->next;
 						tmp->next	= tmp2;
 						tmp2->prev	= tmp;
@@ -169,7 +168,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 	if(block->height > 1 && chain_head==NULL){
 		if(me->new_chain!=NULL){
 //			fprintf(stderr, "free new_chain\n");
-			for(tmp=me->new_chain; tmp->next=NULL; tmp=tmp->next){
+			for(tmp=me->new_chain; (tmp->next=NULL); tmp=tmp->next){
 				if(tmp==NULL||tmp->next==NULL){break;}
 			}
 			for(; tmp!=NULL; tmp=tmp2){
