@@ -43,8 +43,8 @@ int main(int argc, char *argv[]){
 	bad_links = NULL;
 
 //initial seed nodes creation
-	for(miner_id=0; miner_id<SEED_NUM; miner_id++){
-		threads=new_thread(1, miner_id, threads, 1);
+	for(global_id=0; global_id<SEED_NUM; global_id++){
+		threads=new_thread(1, global_id, threads, 1);
 	}
 	keep_total_hash_rate_1(threads);
 
@@ -79,12 +79,12 @@ int main(int argc, char *argv[]){
 				bad_miner_routine(threads->miner);
 			}
 			else{
-				if(sim_time>=SIM_TIME-1){
-//#ifdef DEBUG
+//				if(sim_time>=SIM_TIME-1){
+#ifdef DEBUG
 					fprintf(stderr, "\nminer: %d\n", (threads->miner)->miner_id);
 					fprintf(stderr, "created at: %d\n", threads->time);
-//#endif
-				}
+#endif
+//				}
 				miner_routine(threads->miner);
 			}
 			if(threads->prev==NULL)

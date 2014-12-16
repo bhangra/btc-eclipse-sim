@@ -68,6 +68,20 @@ void print_block_record(){
 	}
 }
 
+void print_node_s_blocks(struct miner *miner){
+	struct blocks *blocks;
+	if(miner->blocks!=NULL){
+		fprintf(stderr, "height = %d\n", ((miner->blocks)->block)->height);
+	}else{fprintf(stderr, "height = 0\n");}
+	if(miner->blocks!=NULL){
+		for(blocks=miner->blocks; blocks->prev!=NULL; blocks=blocks->prev){}
+		fprintf(stderr, "in main chain: ");
+		for(; blocks!=NULL; blocks=blocks->next){
+			fprintf(stderr, "h= %d i= %d, ", (blocks->block)->height, (blocks->block)->miner_id);
+		}
+		fprintf(stderr,"\n");
+	}
+}
 
 void add_block_record(struct miner *me, struct block *new, struct blocks *blocks){
 	struct block_record *new_rec, *tmp;
@@ -105,10 +119,18 @@ void add_block_record(struct miner *me, struct block *new, struct blocks *blocks
 				return;
 			}
 			for(;;tmp=tmp->same){
+				if(tmp==NULL){
+					print_block_record();
+					struct blocks *blocks;
+					for(blocks=me->blocks; blocks->prev!=NULL; blocks=blocks->prev){}
+					fprintf(stderr, "in main chain: ");
+					for(; blocks!=NULL; blocks=blocks->next){
+						fprintf(stderr, "%d, ", (blocks->block)->height);
+					}
+						fprintf(stderr,"\n");
+				}
 				if(tmp->miner_id==(mine->block)->miner_id)
 					break;
-//			if(tmp->same==NULL)
-//				return;
 			}
 			if(tmp->height==height-1 && tmp->miner_id==(mine->block)->miner_id){
 				if(tmp->next==NULL)
@@ -135,8 +157,6 @@ void join_record(struct block *new, struct blocks *blocks){
 	for(tmp=record; ; tmp=tmp->next){
 		if(tmp->height==height){
 			for(;;tmp=tmp->same){
-				if(tmp==NULL)
-					return;
 				if(tmp->miner_id==id){
 					tmp->num_nodes++;
 					return;
@@ -144,8 +164,6 @@ void join_record(struct block *new, struct blocks *blocks){
 			}
 		}
 		for(;;tmp=tmp->same){
-			if(tmp==NULL)
-				return;
 			if(tmp->miner_id==(mine->block)->miner_id)
 				break;
 		}

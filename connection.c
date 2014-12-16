@@ -26,8 +26,13 @@ void free_link(struct links *will_remove, struct miner *miner){
 	}
 	after	= will_remove->next;
 	before	= will_remove->prev;
-	free(will_remove->link);
-	free(will_remove);
+	if(will_remove!=NULL){
+		if(will_remove->link!=NULL)
+			free(will_remove->link);
+		will_remove->link = NULL;
+		free(will_remove);
+		will_remove = NULL;
+	}
 	miner->neighbor--;
 	if(after!=NULL&&before!=NULL){
 		after->prev	= before;
@@ -39,34 +44,33 @@ void free_link(struct links *will_remove, struct miner *miner){
 	else if(before!=NULL){
 		before->next= NULL;
 	}
-	else{
-		miner->links=NULL;
-	}
-	if(miner->links==will_remove){
+//	if(miner->links==will_remove){
 		if(after!=NULL)
 			miner->links=after;
 		else if(before!=NULL)
 			miner->links=before;
 		else
 			miner->links=NULL;
-	}
+//	}
 }
 
 void free_links(struct threads *will_kill){
 	unsigned int kill_id;
 	struct threads  *tmp;
 	struct miner    *miner;
-	struct links    *links;
+	struct links    *links, *prev;
 	
 	kill_id = (will_kill->miner)->miner_id;
 	
 	for(tmp = will_kill; tmp->next!=NULL;tmp=tmp->next){}
 	for(miner=tmp->miner; tmp!=NULL; tmp=tmp->prev){
+		miner=tmp->miner;
 		if(miner->links==NULL){
 			continue;
 		}
 		for(links=miner->links; links->next!=NULL; links=links->next){}
-		for(; links!=NULL; links=links->prev){
+		for(; links!=NULL; links=prev){
+			prev = links->prev;
 			if(links->miner_id==kill_id){
 				free_link(links, miner);
 			}
@@ -155,7 +159,12 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 	fprintf(stderr, "sending msg_size: %d %s\n", msg_size, message); //debug
 #endif
 
-	pos			= dest->write_pos;	
+	if(dest->write_pos > BUF_SIZE){
+		dest->read_pos = 0;
+		dest->write_pos= 0;
+		memset(dest->buf, 0, sizeof(dest->buf));
+	}
+	pos			= dest->write_pos;
 	tmp			= pos + msg_size;
 	if(pos+msg_size >=BUF_SIZE)
 		tmp			= pos+msg_size-BUF_SIZE;

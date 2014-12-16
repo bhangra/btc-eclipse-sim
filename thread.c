@@ -36,6 +36,7 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	if((new->miner=malloc(sizeof(struct miner)))==NULL){
 		perror("malloc()");
 		free(new);
+		new=NULL;
 		return NULL;
 	}
 	miner=new->miner;
@@ -46,7 +47,7 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 //	fprintf(stderr, "miner->TTL = %d\n", miner->TTL);
 //	miner->group	= rand()%2;	
 	miner->one_way	= rand()%2;
-	if((seed=true))
+	if((seed==true))
 		miner->one_way=false;
 	miner->miner_id = miner_id;
 	miner->max		= 10+rand()%5;//will fix 
@@ -91,7 +92,8 @@ void keep_total_seeds(struct threads *threads){
 	}
 	for(tmp=threads; tmp->next!=NULL; tmp=tmp->next){}
 	for(;current<=SEED_NUM; current++){
-		new_thread(1, miner_id, tmp, seed);
+		global_id++;
+		new_thread(1, global_id, tmp, seed);
 	}
 		
 }
@@ -106,8 +108,8 @@ void keep_total_nodes(struct threads *threads){
 	}
 	tmp=threads;
 	for(; current<TOTAL_NODES; current++){
-		miner_id++;
-		tmp = new_thread(1, miner_id, tmp, seed);
+		global_id++;
+		tmp = new_thread(1, global_id, tmp, seed);
 	}
 }
 
@@ -121,9 +123,11 @@ void free_blocks(struct blocks *blocks, struct blocks *meblocks){
 	for(tmp=blocks; tmp->prev!=NULL; tmp=tmp->prev){}
 	for(; tmp!=NULL;){
 		free(tmp->block);
+		tmp->block = NULL;
 		tmp2=tmp->next;
 		if(tmp!=meblocks)
 			free(tmp);
+		tmp=NULL;
 		tmp=tmp2;
 	} 
 }
@@ -135,9 +139,11 @@ void free_node_s_links(struct links *links, struct links *melinks){
 	for(tmp=links; tmp->prev!=NULL; tmp=tmp->prev){}
 	for(; tmp!=NULL; ){
 		free(tmp->link);
+		tmp->link=NULL;
 		tmp2=tmp->next;
-		if(tmp!=melinks)
+//		if(tmp!=melinks)
 			free(tmp);
+		tmp=NULL;
 		tmp=tmp2;
 	}	
 }
@@ -157,7 +163,9 @@ struct threads *cancel_thread(struct threads *will_kill){
 	free_node_s_links(tmp->links, (struct links*)&tmp->links);
 	free_blocks(tmp->blocks, (struct blocks*)&tmp->blocks);
 	free(will_kill->miner);
+	will_kill->miner=NULL;
 	free(will_kill);
+	will_kill=NULL;
 	if(before!=NULL && after!=NULL){
 		before->next	= after;
 		after->prev		= before;
@@ -205,6 +213,9 @@ struct threads *cancel_by_TTL(struct threads *list){
 	for(;thread!=NULL; thread=thread->prev){
 		if((thread->miner)->TTL <= sim_time){
 			thread=cancel_one_thread(thread);
+#ifdef DEBUG
+			fprintf(stderr, "will kill %d\n", thread->miner->miner_id);
+#endif
 		}
 		if(thread->prev==NULL)
 			break;

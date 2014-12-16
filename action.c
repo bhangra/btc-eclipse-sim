@@ -79,10 +79,18 @@ void dns_seed(unsigned int my_id, struct dns *dns, struct link *new_comer){
 }
 struct links *seed_receive(struct link *new_comer, struct links *seeds){
 	unsigned int	miner_id, size;
-	struct link		*link;
+	struct link		*link; 
+	struct links	*tmp;
 	size = sizeof(struct link*);
 	memcpy(&link, &new_comer->process_buf[16], size);
 	memcpy(&miner_id, &new_comer->process_buf[16+size], sizeof(unsigned int));
+	if(seeds!=NULL){
+		for(tmp=seeds; tmp->next!=NULL; tmp=tmp->next){}
+		for(; tmp!=NULL; tmp=tmp->prev){
+			if(tmp->miner_id == miner_id)
+				return seeds;
+		}
+	}
 //	fprintf(stderr, "seed link: %p, id: %d\n", link, miner_id);
 //	fprintf(stderr, "seed_receive(): will add_links()\n");
 	return add_links(miner_id, link, link, seeds);
@@ -250,12 +258,18 @@ struct links *verack(struct link *new_comer, struct links *links){
 	struct links *tmp;
 	struct link *link, *dest, *dest_new_comer;
 	unsigned int size;
+	struct killed *killed;
 //	fprintf(stderr, "will send verack msg\n"); //debug
 	size = sizeof(struct link*);
 //	dest		= (struct link*)&new_comer->process_buf[16];
 
 	memcpy(&dest, &new_comer->process_buf[16], size);
 	memcpy(&miner_id, &new_comer->process_buf[16+size], sizeof(unsigned int));
+	if(dead!=NULL)
+            for(killed=dead; killed!=NULL; killed=killed->next){
+                if(killed->id == miner_id)
+                    return links;
+            }
 	memcpy(&dest_new_comer, &new_comer->process_buf[16+size+sizeof(unsigned int)], sizeof(struct link*));
 	tmp			= add_links(miner_id, dest, dest_new_comer, links);
 	link		= tmp->link;
@@ -466,9 +480,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 //		fprintf(stderr, "getblocks received. height: %d, height2: %d\n", height, height2);
 		if(me->blocks==NULL)
 			return 1;
-		for(blocks=me->blocks; (blocks->block)->height!=height2; blocks=blocks->prev){
-			if(blocks->prev==NULL)
-				break;
+		for(blocks=me->blocks; (blocks->block)->height!=height2 && blocks->prev!=NULL; blocks=blocks->prev){
 		}
 		for(set=0; blocks!=NULL; blocks=blocks->prev){
 			if(!memcmp(&link->process_buf[16+sizeof(unsigned int)+sizeof(unsigned int)+(set*SHA256_DIGEST_LENGTH)], (blocks->block)->hash, SHA256_DIGEST_LENGTH)){
@@ -566,6 +578,9 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 //		fprintf(stderr, "received verack with link: %p\n", link->dest);
 	}
 	else if(strncmp(hdr->command, "nat", 3)==0){
+#ifdef DEBUG
+		fprintf(stderr, "nat received\n");
+#endif
 		free_link(links, me);
 		me->neighbor--;
 		return -1;
@@ -576,6 +591,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 struct links *process_new(struct link *new_comer, struct miner *me){
     unsigned int        size, payload_size, dest_id;
     struct link         *link, *dest;
+	struct links		*tmp;
 	struct msg_hdr *hdr;
     struct blocks       *blocks;
 	struct killed		*killed;
@@ -605,14 +621,15 @@ struct links *process_new(struct link *new_comer, struct miner *me){
     }
 	else if(strncmp(hdr->command, "version", 7)==0){
 //		fprintf(stderr, "version received\n");
-		if(dead!=NULL)
-            for(killed=dead; killed!=NULL; killed=killed->next){
-                if(killed->id == dest_id)
-                    return me->links;
-            }
 		if(me->one_way==false && me->neighbor < me->max){
 			me->neighbor++;
-        	me->links = verack(new_comer, me->links);
+//        	me->links = verack(new_comer, me->links);
+			tmp = me->links;
+			me->links = verack(new_comer, me->links);
+			if(tmp==me->links){
+				me->neighbor--;
+				return me->links;
+			}
 			if(me->blocks!=NULL){
 				for(blocks=me->blocks; blocks->next!=NULL; blocks=blocks->next){}
 				send_block(blocks->block, (me->links)->link);	
@@ -620,6 +637,9 @@ struct links *process_new(struct link *new_comer, struct miner *me){
 			return me->links;
 		}
 		else{
+#ifdef DEBUG
+			fprintf(stderr, "nat sent\n");
+#endif
 			return nat(new_comer, me->links, me);
 		}
     }

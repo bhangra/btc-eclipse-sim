@@ -1,7 +1,7 @@
 #Makefile for sim-eclipse.c
 COMPILER 	= gcc
 CFLAGS		= -g -O0 -pthread -Wall #-Wextra
-LDFLAGS		= -z muldefs
+LDFLAGS		= -lmcheck -z muldefs
 LIBS		=  -lcrypto
 INCLUDE		= -I./
 TARGET		= ./$(shell basename `readlink -f .`)

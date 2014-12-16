@@ -8,7 +8,7 @@ struct dns;
 struct links;
 struct block_record;
 
-unsigned int		sim_time = 0, miner_id;
+unsigned int		sim_time = 0, global_id = 0;
 bool				is_bad_dns[NUM_DNS];
 struct links		*bad_links = NULL;
 struct dns 			dns[NUM_DNS];
