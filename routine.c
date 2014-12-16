@@ -32,6 +32,35 @@ void miner_routine(struct miner *miner){
 	struct links 	*links;
 	struct link		*link;
 //	fprintf(stderr, "entered miner_routine()\n"); //debug
+//#ifdef DEBUG	
+	if(sim_time>=SIM_TIME-1){
+		fprintf(stderr, "miner->blocks = %p ", miner->blocks);
+		if(miner->blocks!=NULL){
+			fprintf(stderr, "height = %d\n", ((miner->blocks)->block)->height);
+		}else{fprintf(stderr, "height = 0\n");}
+/*		if(miner->blocks!=NULL){
+			for(blocks=miner->blocks; blocks->prev!=NULL; blocks=blocks->prev){}
+			fprintf(stderr, "in main chain: ");
+			for(; blocks!=NULL; blocks=blocks->next){
+				fprintf(stderr, "%d, ", (blocks->block)->height);
+			}
+			fprintf(stderr,"\n");
+		}
+*/
+//#endif
+//#ifdef DEBUG
+		if(miner->new_chain!=NULL){
+			struct blocks *blocks;
+			for(blocks=miner->new_chain; blocks->prev!=NULL; blocks=blocks->prev){}
+			fprintf(stderr, "in new_chain: ");
+			for(; blocks!=NULL; blocks=blocks->next){
+				fprintf(stderr, "%d, ", (blocks->block)->height);
+			}
+			fprintf(stderr, "\n");
+		}
+	}
+//#endif
+
 	if(miner->boot == true && miner->seed == true){
 		for(i=0; i<NUM_DNS; i++){
 			dns_seed(miner->miner_id, &dns[i], &miner->new_comer);
@@ -100,10 +129,10 @@ void miner_routine(struct miner *miner){
 					break;
 			}
 		}
-#ifdef DEBUG
-//		if(sim_time >= SIM_TIME-1)
+//#ifdef DEBUG
+		if(sim_time >= SIM_TIME-1)
 			fprintf(stderr, "num of links: %d\n", i);//debug
-#endif
+//#endif
 		if(miner->links!=NULL){
 			for(links=miner->links; links->prev!=NULL; links=links->prev){}
 			for(; links!=NULL; links=links->next){
@@ -124,33 +153,6 @@ void miner_routine(struct miner *miner){
 		}
 	}
 	miner->blocks = mine_block(miner->blocks, miner->miner_id, miner);
-#ifdef DEBUG	
-//	if(sim_time>=SIM_TIME-1){
-		fprintf(stderr, "miner->blocks = %p ", miner->blocks);
-		if(miner->blocks!=NULL){
-			fprintf(stderr, "height = %d\n", ((miner->blocks)->block)->height);
-		}else{fprintf(stderr, "height = 0\n");}
-/*		if(miner->blocks!=NULL){
-			for(blocks=miner->blocks; blocks->prev!=NULL; blocks=blocks->prev){}
-			fprintf(stderr, "in main chain: ");
-			for(; blocks!=NULL; blocks=blocks->next){
-				fprintf(stderr, "%d, ", (blocks->block)->height);
-			}
-			fprintf(stderr,"\n");
-		}
-*/
-#ifdef DEBUG
-		if(miner->new_chain!=NULL){
-			for(blocks=miner->new_chain; blocks->prev!=NULL; blocks=blocks->prev){}
-			fprintf(stderr, "in new_chain: ");
-			for(; blocks!=NULL; blocks=blocks->next){
-				fprintf(stderr, "%d, ", (blocks->block)->height);
-			}
-			fprintf(stderr, "\n");
-		}
-#endif
-//	}
-#endif
 }
 
 #endif

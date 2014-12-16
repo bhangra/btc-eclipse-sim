@@ -26,7 +26,7 @@ void print_block_record(){
 	next=NULL;
 	printer = malloc(sizeof(struct record_printer));
 	printer->same=NULL;
-	for(printer->record=record;printer!=NULL;printer=next){
+	for(printer->record=(struct block_record *)record;printer!=NULL;printer=next){
 		next=NULL;
 		//malloc for next height records
 		for(save=printer;printer!=NULL; printer=printer->same){
@@ -135,6 +135,8 @@ void join_record(struct block *new, struct blocks *blocks){
 	for(tmp=record; ; tmp=tmp->next){
 		if(tmp->height==height){
 			for(;;tmp=tmp->same){
+				if(tmp==NULL)
+					return;
 				if(tmp->miner_id==id){
 					tmp->num_nodes++;
 					return;
@@ -142,6 +144,8 @@ void join_record(struct block *new, struct blocks *blocks){
 			}
 		}
 		for(;;tmp=tmp->same){
+			if(tmp==NULL)
+				return;
 			if(tmp->miner_id==(mine->block)->miner_id)
 				break;
 		}

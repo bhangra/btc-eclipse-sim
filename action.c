@@ -362,10 +362,14 @@ void get_blocks(struct link *dest, struct blocks *main_chain, struct blocks *new
 	unsigned int	payload_size, sets, height, height2;
 	struct blocks	*tmp, *tmp1;
 //	fprintf(stderr, "will send getblocks\n");
+	height = 0;
+	height2 = 0;
 	if(main_chain!=NULL)
 		for(tmp=main_chain; tmp->next!=NULL; tmp=tmp->next){}
-	for(tmp1=new_chain; tmp1->prev!=NULL; tmp1=tmp1->prev){}
-	height	= (tmp1->block)->height;
+	if(new_chain!=NULL){
+		for(tmp1=new_chain; tmp1->prev!=NULL; tmp1=tmp1->prev){}
+		height	= (tmp1->block)->height;
+	}
 	if(main_chain==NULL){
 		height2 = 1;
 		memcpy(&dest->sbuf[0], "getblocks", 9);
@@ -398,9 +402,12 @@ void get_blocks(struct link *dest, struct blocks *main_chain, struct blocks *new
 void send_blocks(struct link *from, struct blocks *main_chain, unsigned int height2, unsigned int height){
 	struct blocks	*tmp;
 	for(tmp=main_chain; tmp->prev!=NULL; tmp=tmp->prev){}
-	for(; (tmp->block)->height!=height && tmp->next!=NULL; tmp=tmp->next){}
+	if(height)
+		for(; (tmp->block)->height!=height && tmp->next!=NULL; tmp=tmp->next){}
+	else
+		for(; tmp->next!=NULL; tmp=tmp->next){}
 	tmp=tmp->prev;
-	for(;/*(tmp->block)->height!=height2-1*/0 && tmp!=NULL;tmp=tmp->prev){
+	for(;/*(tmp->block)->height!=height2-1*/ tmp!=NULL;tmp=tmp->prev){
 		send_block(tmp->block, from);
 		if(tmp->prev==NULL)
 			break;
@@ -554,6 +561,8 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	else if(strncmp(hdr->command, "verack", 6)==0){
 //		link->dest = (struct link*)payload;
 		memcpy(&link->dest, &link->process_buf[16], sizeof(struct link*));
+		if(me->blocks==NULL)
+			get_blocks(links->link, me->blocks, me->new_chain);
 //		fprintf(stderr, "received verack with link: %p\n", link->dest);
 	}
 	else if(strncmp(hdr->command, "nat", 3)==0){

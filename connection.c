@@ -124,8 +124,16 @@ struct links *add_links(unsigned int miner_id, struct link *dest, struct link *n
 //	fprintf(stderr, "will malloc\n"); //debug
 
 	new			= malloc(sizeof(struct links));
+	if(new==NULL){
+		perror("malloc");
+		exit(-1);
+	}
 	memset(new, 0, sizeof(struct links));
 	new->link	= malloc(sizeof(struct link));
+	if(new->link==NULL){
+		perror("malloc");
+		exit(-1);
+	}
 	memset(new->link, 0, sizeof(struct link));
 
 	new->next	= NULL;
