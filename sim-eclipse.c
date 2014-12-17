@@ -106,6 +106,7 @@ int main(int argc, char *argv[]){
 	}
 	fprintf(stderr, "will cancel_all()\n"); //debug
 	cancel_all(threads);
+	free_killed();
 //	print_link_record();
 	print_block_record();
 	exit(1);

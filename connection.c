@@ -40,14 +40,14 @@ void free_link(struct links *will_remove, struct miner *miner){
 	if(before!=NULL)
 		before->next=after;
 	
-	if(miner->links==will_remove){
+//	if(miner->links==will_remove){
 		if(after!=NULL)
 			miner->links=after;
 		else if(before!=NULL)
 			miner->links=before;
 		else
 			miner->links=NULL;
-	}
+//	}
 }
 
 void free_links(struct threads *will_kill){

@@ -243,6 +243,14 @@ void cancel_all(struct threads *head){
 	}
 }
 
+void free_killed(){
+	struct killed *killed, *next;
+	for(killed=dead; killed!=NULL; killed=next){
+		next=killed->next;
+		free(killed);
+	}
+}
+
 void keep_total_hash_rate_1(struct threads *threads){
 	struct threads	*tmp;
 	double 			sum;

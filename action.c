@@ -224,14 +224,17 @@ void addr(struct link *dest, struct miner *me, unsigned int dest_id){
 }
 //dest is desination's new_comer
 struct links *version(unsigned int my_id, unsigned int dest_id, struct link *dest, struct link *new_comer, struct links *links){
-	struct links *new;
+	struct links *new, *save;
 	struct link *link, *tmp;
 	unsigned int size, payload_size;
 //	fprintf(stderr, "will send version msg\n"); //debug
 //	fprintf(stderr, "version to link: %p id: \n", dest, dest_id); //debug
 	size = sizeof(struct link*);
 	payload_size = size+sizeof(unsigned int)+size;
+	save = links;
 	new = add_links(dest_id, dest, dest,  links);
+	if(new==save)
+		return links;
 	link = new->link;
 	tmp = new_comer;
 #ifdef MEM_DEBUG
