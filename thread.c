@@ -43,7 +43,8 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	memset(miner, 0, sizeof(struct miner));
 	//times, TTL = 1 : 1 second
 	miner->TTL	= (unsigned int)sim_time+((rand()%(AVE_TTL*2)));
-	
+	if(seed==true)
+		miner->TTL = (unsigned int)sim_time+((rand()%(SEED_TTL*2)));
 //	fprintf(stderr, "miner->TTL = %d\n", miner->TTL);
 //	miner->group	= rand()%2;	
 	miner->one_way	= rand()%2;

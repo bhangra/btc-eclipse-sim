@@ -219,15 +219,18 @@ struct links *version(unsigned int my_id, unsigned int dest_id, struct link *des
 //	fprintf(stderr, "will send version msg\n"); //debug
 //	fprintf(stderr, "version to link: %p id: \n", dest, dest_id); //debug
 	size = sizeof(struct link*);
-	payload_size = size+sizeof(unsigned int)+sizeof(struct link*);
+	payload_size = size+sizeof(unsigned int)+size;
 	new = add_links(dest_id, dest, dest,  links);
 	link = new->link;
 	tmp = new_comer;
+#ifdef MEM_DEBUG
+	fprintf(stderr, "sending new->link: %p\n", new->link);
+#endif
 	memcpy(&link->sbuf[0], "version", 7);
 	memcpy(&link->sbuf[12], &payload_size, 4);
 	memcpy(&link->sbuf[16], &link, size);
 	memcpy(&link->sbuf[16+size], &my_id, sizeof(unsigned int));
-	memcpy(&link->sbuf[16+size+sizeof(unsigned int)], &tmp, sizeof(struct link*));
+	memcpy(&link->sbuf[16+size+sizeof(unsigned int)], &tmp, size);
 	send_msg(dest, (char *)link->sbuf, 16+payload_size);
 //	fprintf(stderr, "sent version to dest: %p, id: %d with mylink: %p\n", link->dest, new->miner_id, link); //debug
 	return new;
@@ -303,6 +306,10 @@ void propagate_block(struct block *block, struct miner *me){
 	for(; links!=NULL; links=links->next){
 		link = links->link;
 //		fprintf(stderr, "sent block with height: %d to miner: %d\n", block->height, links->miner_id);
+		if(link==NULL){
+			free_link(links, me);
+			return;
+		}
 		send_block(block, link);
 	}
 //	fprintf(stderr, "propagated block\n"); //debug

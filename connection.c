@@ -133,11 +133,15 @@ struct links *add_links(unsigned int miner_id, struct link *dest, struct link *n
 		exit(-1);
 	}
 	memset(new, 0, sizeof(struct links));
+
 	new->link	= malloc(sizeof(struct link));
 	if(new->link==NULL){
 		perror("malloc");
 		exit(-1);
 	}
+#ifdef MEM_DEBUG
+	fprintf(stderr, "new->link = %p\n", new->link);
+#endif
 	memset(new->link, 0, sizeof(struct link));
 
 	new->next	= NULL;
@@ -212,16 +216,18 @@ int read_msg(struct link *link){
 		read_size	= HDR_SIZE + hdr->message_size;
 	}
 	else{
-		i=0;
+#ifdef MEM_DEBUG
+		fprintf(stderr, "msg size located around end of buffer\n");
+#endif
 		for(i=0; i+link->read_pos+12<BUF_SIZE; i++){
-//			char_size[i] = link->buf[link->read_pos+12+i]; 
-			memcpy(&char_size[i], &link->buf[link->read_pos+12+i], 1);
+			char_size[i] = link->buf[link->read_pos+12+i]; 
+//			memcpy(&char_size[i], &link->buf[link->read_pos+12+i], 1);
 //			fprintf(stderr, "link->buf[%d] = %u, char_size[%d] = %u\n", link->read_pos+12+i, link->buf[link->read_pos+12+i], i, char_size[i]);
 		}
 		j = i;
 		for(;i<sizeof(unsigned int); i++){
-//			char_size[i] = link->buf[i-j];
-			memcpy(&char_size[i], &link->buf[(i-j)+link->read_pos+12-BUF_SIZE], 1);
+			char_size[i] = link->buf[i-j+link->read_pos+12-BUF_SIZE];
+//			memcpy(&char_size[i], &link->buf[(i-j)+link->read_pos+12-BUF_SIZE], 1);
 //			fprintf(stderr, "link->buf[%d] = %u, char_size[%d] = %u\n", i-j, link->buf[i-j], i, char_size[i]);
 		}
 		memcpy(&tmp_size, &char_size[0], sizeof(unsigned int));
@@ -235,15 +241,18 @@ int read_msg(struct link *link){
 		link->num_msg = 0;
 		return -1;		
 	}
-//#ifdef DEBUG
-//	fprintf(stderr, "read_pos = %d, read_size = %d\n", link->read_pos, read_size);
-//#endif
+#ifdef MEM_DEBUG
+	fprintf(stderr, "read_pos = %d, read_size = %d, tmp_size = %d\n", link->read_pos, read_size, tmp_size);
+#endif
 //assumes that the BUF_SIZE is large enough for a message
 	if((link->read_pos+read_size)<BUF_SIZE){
 		memcpy(&link->process_buf, hdr, read_size);
 		link->read_pos += read_size;
 	}
 	else{
+#ifdef MEMDEBUG
+		fprintf(stderr, "read_msg rounding end of buffre\n");
+#endif
 		over_size = (read_size+link->read_pos) - BUF_SIZE;
 		memcpy(link->process_buf, hdr, read_size-over_size);
 		memcpy(&link->process_buf[read_size-over_size], link->buf, over_size);

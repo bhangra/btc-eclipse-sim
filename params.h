@@ -1,7 +1,9 @@
 #ifndef PARAMS_H
 #define PARAMS_H
 
-#define DEBUG
+//#define DEBUG
+//#define MALLOC_CHECK_ 0
+#define MEM_DEBUG
 
 #define NUM_DNS     6
 #define SEED_NUM   10

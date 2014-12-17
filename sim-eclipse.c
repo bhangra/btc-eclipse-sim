@@ -11,6 +11,7 @@
 #include<pthread.h>
 #include<unistd.h>
 #include<sys/types.h>
+#include<mcheck.h>
 
 //#include"thread.c"
 //#include"node.c"
@@ -23,7 +24,7 @@ int main(int argc, char *argv[]){
 //	struct dns	dns[5];
 	unsigned int /*miner_id,*/ i;
 	struct threads *threads;
-//	struct killed	*killed, *k_next;
+	mcheck(NULL);
 
 	dead = NULL;
 
