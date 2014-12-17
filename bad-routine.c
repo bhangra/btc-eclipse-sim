@@ -230,7 +230,7 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 	else if(strncmp(hdr->command, "version", 7)==0){
 		fprintf(stderr, "version received\n");
 //		return verack(new_comer, me->links);
-		tmp = verack(new_comer, me->links);
+		tmp = verack(new_comer, me->links, me);
 		
 		if(tmp!=NULL){
 			if(bad_links==NULL){

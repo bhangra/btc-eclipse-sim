@@ -164,6 +164,11 @@ void join_record(struct block *new, struct blocks *blocks){
 			}
 		}
 		for(;;tmp=tmp->same){
+#ifdef DEBUG
+			if(tmp==NULL){
+				print_block_record();
+			}
+#endif
 			if(tmp->miner_id==(mine->block)->miner_id)
 				break;
 		}

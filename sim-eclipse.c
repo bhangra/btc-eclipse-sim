@@ -65,6 +65,15 @@ int main(int argc, char *argv[]){
 			}
 		}
 */
+
+#ifdef DEBUG
+		struct killed *killed;
+		fprintf(stderr, "dead nodes: ");
+		for(killed = dead; killed!=NULL; killed = killed->next){
+			fprintf(stderr, "id= %d ", killed->id);
+		}
+#endif
+
 // kill/create nodes, manage total hash-rate
 		threads= cancel_by_TTL(threads);
 		keep_total_seeds(threads);

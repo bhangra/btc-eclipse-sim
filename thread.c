@@ -47,7 +47,11 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 		miner->TTL = (unsigned int)sim_time+((rand()%(SEED_TTL*2)));
 //	fprintf(stderr, "miner->TTL = %d\n", miner->TTL);
 //	miner->group	= rand()%2;	
+
+//represents node under NAT, which stops connection initiated by others
 	miner->one_way	= rand()%2;
+
+	miner->one_way	= false; 
 	if((seed==true))
 		miner->one_way=false;
 	miner->miner_id = miner_id;

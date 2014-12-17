@@ -30,28 +30,24 @@ void free_link(struct links *will_remove, struct miner *miner){
 		if(will_remove->link!=NULL)
 			free(will_remove->link);
 		will_remove->link = NULL;
+//		fprintf(stderr, "freed links: %p, link: %p\n", will_remove, will_remove->link);
 		free(will_remove);
 		will_remove = NULL;
 	}
 	miner->neighbor--;
-	if(after!=NULL&&before!=NULL){
-		after->prev	= before;
-		before->next= after;
-	}
-	else if(after!=NULL){
-		after->prev	= NULL;
-	}
-	else if(before!=NULL){
-		before->next= NULL;
-	}
-//	if(miner->links==will_remove){
+	if(after!=NULL)
+		after->prev=before;
+	if(before!=NULL)
+		before->next=after;
+	
+	if(miner->links==will_remove){
 		if(after!=NULL)
 			miner->links=after;
 		else if(before!=NULL)
 			miner->links=before;
 		else
 			miner->links=NULL;
-//	}
+	}
 }
 
 void free_links(struct threads *will_kill){
@@ -73,6 +69,7 @@ void free_links(struct threads *will_kill){
 			prev = links->prev;
 			if(links->miner_id==kill_id){
 				free_link(links, miner);
+				links=miner->links;
 			}
 		}
 	}
@@ -172,7 +169,9 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 	tmp			= pos + msg_size;
 	if(pos+msg_size >=BUF_SIZE)
 		tmp			= pos+msg_size-BUF_SIZE;
-//	fprintf(stderr, "dest->write_pos = %d, dest->read_pos = %d\n", pos, dest->read_pos);
+#ifdef MEM_DEBUG
+	fprintf(stderr, "dest->write_pos = %d, dest->read_pos = %d\n", pos, dest->read_pos);
+#endif
 	if(pos < dest->read_pos && (pos+msg_size >= dest->read_pos) && pos+msg_size <BUF_SIZE){
 //		fprintf(stderr, "catched up to read_pos\n");
 		return 0;
