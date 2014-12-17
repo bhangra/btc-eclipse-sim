@@ -31,7 +31,6 @@ void miner_routine(struct miner *miner){
 	int 			i, n;
 	struct links 	*links;
 	struct link		*link;
-	struct killed	*killed;
 //	fprintf(stderr, "entered miner_routine()\n"); //debug
 #ifdef DEBUG	
 //	if(sim_time>=SIM_TIME-1){
@@ -99,6 +98,8 @@ void miner_routine(struct miner *miner){
 //				fprintf(stderr, "link->num_msg = %d\n", link->num_msg);//debug
 				for(link=links->link; link!=NULL;){
 //					fprintf(stderr, "will read msg from miner: %d\n", links->miner_id); //debug
+/* //redundunt free_link
+					struct killed	*killed;
 					for(killed=dead; killed!=NULL; killed=killed->next){
 						if(links->miner_id==killed->id){
 							free_link(links, miner);
@@ -109,6 +110,7 @@ void miner_routine(struct miner *miner){
 								link = NULL;
 						}
 					}
+*/
 					if(link->num_msg==0)
 						break;
 					read_msg(link);	

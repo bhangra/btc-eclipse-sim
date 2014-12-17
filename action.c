@@ -188,13 +188,14 @@ void addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	int				i;
 	struct link		*link;
 	struct links 	*links;
-	struct killed	*killed;
 	link	= dest;
 	size	= 0;
 	set		= sizeof(struct link*) + sizeof(unsigned int);
 	memcpy(&link->sbuf[0], "addr", 4);
 	if(me->links==NULL)
 		return;
+/*  //redundunt free_link	
+	struct killed *killed;
 	for(links=me->links; links->next!=NULL;links=links->next){}
 	for(; links!=NULL; links=links->prev){
 		for(killed=dead; killed!=NULL; killed=killed->next){
@@ -205,6 +206,7 @@ void addr(struct link *dest, struct miner *me, unsigned int dest_id){
 			}
 		}
 	}
+*/
 	for(links=me->links; links->prev!=NULL; links=links->prev){}
 	for(i=0; links!=NULL; i++){
 		if(links->miner_id!=dest_id){
@@ -347,10 +349,11 @@ void send_block(struct block *block, struct link *dest){
 void propagate_block(struct block *block, struct miner *me){
 	struct link		*link;
 	struct links	*links;
-	struct killed	*killed;
 //	fprintf(stderr, "me->links = %p\n", me->links);
 	if(me->links==NULL)
 		return;
+/*	//redundunt free_link
+	struct killed *killed;
 	for(links=me->links; links->next!=NULL;links=links->next){}
 	for(; links!=NULL; links=links->prev){
 		for(killed=dead; killed!=NULL; killed=killed->next){
@@ -361,6 +364,7 @@ void propagate_block(struct block *block, struct miner *me){
 			}
 		}
 	}
+*/
 	for(links=me->links; links->next!=NULL; links=links->next){}
 	for(; links!=NULL; links=links->prev){
 		link = links->link;
@@ -617,6 +621,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 					}				
 				}
 			}
+
 			if(dead!=NULL)
 				for(killed=dead; killed!=NULL; killed=killed->next){
 					if(killed->id==miner_id){
@@ -624,6 +629,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 						break;
 					}
 				}
+
 			if(me->neighbor > me->max)
 				connect = false;
 			if(connect){
