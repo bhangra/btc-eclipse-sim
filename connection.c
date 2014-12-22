@@ -125,17 +125,17 @@ struct links *add_links(unsigned int miner_id, struct link *dest, struct link *n
 //	fprintf(stderr, "will malloc\n"); //debug
 
 	new			= malloc(sizeof(struct links));
-	if(new==NULL){
+/*	if(new==NULL){
 		perror("malloc");
 		exit(-1);
 	}
-	memset(new, 0, sizeof(struct links));
+*/	memset(new, 0, sizeof(struct links));
 
 	new->link	= malloc(sizeof(struct link));
-	if(new->link==NULL){
+/*	if(new->link==NULL){
 		perror("malloc");
 		exit(-1);
-	}
+	}*/
 #ifdef MEM_DEBUG
 	fprintf(stderr, "new->link = %p\n", new->link);
 #endif
@@ -184,7 +184,7 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 		return 0;
 	}
 //	fprintf(stderr, "dest->write_pos = %d\n", dest->write_pos);
-	pthread_mutex_lock((pthread_mutex_t *)&dest->rcv_mutex);
+//	pthread_mutex_lock((pthread_mutex_t *)&dest->rcv_mutex);
 	if(pos+msg_size < BUF_SIZE){
 		memcpy(&dest->buf[pos], message, msg_size);
 		dest->write_pos += msg_size;
@@ -196,7 +196,7 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 		dest->write_pos = over_size;
 	}
 	dest->num_msg += 1;
-	pthread_mutex_unlock((pthread_mutex_t *)&dest->rcv_mutex);
+//	pthread_mutex_unlock((pthread_mutex_t *)&dest->rcv_mutex);
 	memset(message, 0, BUF_SIZE);
 	return 1;
 }
@@ -209,7 +209,7 @@ int read_msg(struct link *link){
 	if(!(int)link->num_msg){
 		return 0;
 	}
-	pthread_mutex_lock(&link->rcv_mutex);
+//	pthread_mutex_lock(&link->rcv_mutex);
 	hdr         = (struct msg_hdr*)&link->buf[(link)->read_pos];
 	if((link->read_pos+HDR_SIZE)<BUF_SIZE){
 		read_size	= HDR_SIZE + hdr->message_size;
@@ -258,7 +258,7 @@ int read_msg(struct link *link){
 		link->read_pos = over_size;
 	}
 	link->num_msg -= 1;
-	pthread_mutex_unlock(&link->rcv_mutex);
+//	pthread_mutex_unlock(&link->rcv_mutex);
 //	fprintf(stderr, "reading msg, size: %d type: %s\n", read_size, link->process_buf);
 	return 1;
 }

@@ -207,7 +207,7 @@ void addr(struct link *dest, struct miner *me, unsigned int dest_id){
 		}
 	}
 */
-	for(links=me->links; links->prev!=NULL; links=links->prev){}
+	for(links=me->links; links->next!=NULL; links=links->next){}
 	for(i=0; links!=NULL; i++){
 		if(links->miner_id!=dest_id){
 //			link=links->link;
@@ -218,7 +218,7 @@ void addr(struct link *dest, struct miner *me, unsigned int dest_id){
 		else{
 			i=i-1;
 		}
-		links=links->next;
+		links=links->prev;
 	}
 	size=i*set;
 	memcpy(&link->sbuf[12], &size, 4);
@@ -466,10 +466,11 @@ void get_blocks(struct link *dest, struct blocks *main_chain, struct blocks *new
 		send_msg(dest->dest, (char *)dest->sbuf, 16+payload_size);
 		return;
 	}
-	if(!((tmp->block)->height < height)){
-		for(;tmp->prev!=NULL && (tmp->block)->height!=height-1; tmp=tmp->prev){}
-	}
-	height2 = (tmp->block)->height;
+//	if(!((tmp->block)->height < height)){
+//		for(;tmp->prev!=NULL && (tmp->block)->height!=height-1; tmp=tmp->prev){}
+//	}
+//	height2 = (tmp->block)->height;
+	height2 = 1;
 //	if(height2 >= height-2)
 //		height2=1;
 	memcpy(&dest->sbuf[0], "getblocks", 9);
@@ -486,16 +487,14 @@ void get_blocks(struct link *dest, struct blocks *main_chain, struct blocks *new
 
 void send_blocks(struct link *from, struct blocks *main_chain, unsigned int height2, unsigned int height){
 	struct blocks	*tmp;
-	for(tmp=main_chain; tmp->prev!=NULL; tmp=tmp->prev){}
+//	for(tmp=main_chain; tmp->prev!=NULL; tmp=tmp->prev){}
 	if(height)
-		for(; (tmp->block)->height!=height && tmp->next!=NULL; tmp=tmp->next){}
+		for(tmp=main_chain; (tmp->block)->height!=height && tmp->prev!=NULL; tmp=tmp->prev){}
 	else
-		for(; tmp->next!=NULL; tmp=tmp->next){}
+		for(tmp=main_chain; tmp->next!=NULL; tmp=tmp->next){}
 	tmp=tmp->prev;
 	for(;/*(tmp->block)->height!=height2-1*/ tmp!=NULL;tmp=tmp->prev){
 		send_block(tmp->block, from);
-		if(tmp->prev==NULL)
-			break;
 	}
 }
 
@@ -553,20 +552,20 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 			return 1;
 		for(blocks=me->blocks; (blocks->block)->height!=height2 && blocks->prev!=NULL; blocks=blocks->prev){
 		}
-		for(set=0; blocks!=NULL; blocks=blocks->prev){
-			if(!memcmp(&link->process_buf[16+sizeof(unsigned int)+sizeof(unsigned int)+(set*SHA256_DIGEST_LENGTH)], (blocks->block)->hash, SHA256_DIGEST_LENGTH)){
-				height2=(blocks->block)->height;
-				break;
-			}
-			set++;
-		}
-		if(blocks!=NULL){
+//		for(set=0; blocks!=NULL; blocks=blocks->prev){
+//			if(!memcmp(&link->process_buf[16+sizeof(unsigned int)+sizeof(unsigned int)+(set*SHA256_DIGEST_LENGTH)], (blocks->block)->hash, SHA256_DIGEST_LENGTH)){
+//				height2=(blocks->block)->height;
+//				break;
+//			}
+//			set++;
+//		}
+		if(me->blocks!=NULL){
 //			fprintf(stderr, "connecting block found\n");
 			send_blocks(link, me->blocks, /*height2*/1, height);
 		}
-		if(blocks==NULL){
-			send_blocks(link, me->blocks, 1, height);
-		}
+//		if(blocks==NULL){
+//			send_blocks(link, me->blocks, 1, height);
+//		}
 	}
 	else if(strncmp(hdr->command, "getblock", 8)==0){
 //		fprintf(stderr, "getblock received from: %d\n", links->miner_id);
@@ -703,7 +702,7 @@ struct links *process_new(struct link *new_comer, struct miner *me){
     }
 	else if(strncmp(hdr->command, "version", 7)==0){
 //		fprintf(stderr, "version received\n");
-		if(me->one_way==false && me->neighbor < me->max){ 
+		if(me->one_way==NOT_NAT && me->neighbor < me->max){ 
 			me->neighbor++;
 			tmp = me->links;
 			me->links = verack(new_comer, me->links, me);

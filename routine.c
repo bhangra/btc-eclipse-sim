@@ -93,8 +93,8 @@ void miner_routine(struct miner *miner){
 //			return;
 		else{
 			getblocks_sent=false;
-			for(;links->prev!=NULL; links=links->prev){}
-			for(i=0/*debug*/; links!=NULL; links=links->next){
+			for(;links->next!=NULL; links=links->next){}
+			for(i=0/*debug*/; links!=NULL; links=links->prev){
 //				fprintf(stderr, "link->num_msg = %d\n", link->num_msg);//debug
 				for(link=links->link; link!=NULL;){
 //					fprintf(stderr, "will read msg from miner: %d\n", links->miner_id); //debug
@@ -157,16 +157,18 @@ void miner_routine(struct miner *miner){
 		fprintf(stderr, "num of links: %d\n", i);//debug
 #endif
 		if(miner->links!=NULL){
-			for(links=miner->links; links->prev!=NULL; links=links->prev){}
+			for(links=miner->links; links->next!=NULL; links=links->next){}
 #ifdef DEBUG
 			fprintf(stderr, "links:");
 #endif
-			for(; links!=NULL; links=links->next){
-				link = links->link;
+			for(; links!=NULL; links=links->prev){
 #ifdef DEBUG
+				link = links->link;
+//#ifdef DEBUG
 //				fprintf(stderr, "links dest: %p, new: %p, id: %d\n", link->dest, links->new_comer, links->miner_id);
 				fprintf(stderr, " id= %d", links->miner_id);
 #endif
+				i++;
 			}
 #ifdef DEBUG
 				fprintf(stderr, "\n");
@@ -176,14 +178,14 @@ void miner_routine(struct miner *miner){
 					n = rand()%(i);
 				else
 					n=0;
-				for(links=miner->links; links->prev!=NULL; links=links->prev){}
+				for(links=miner->links; links->next!=NULL; links=links->next){}
 				for(i=0; i<n; i++){
-					if(links->next==NULL)
+					if(links->prev==NULL)
 						break;
-					links=links->next;
+					links=links->prev;
 				}
-				if(links!=NULL){
-					if(links->link == NULL){
+//				if(links!=NULL){
+/*					if(links->link == NULL){
 						struct links *next, *prev;
 						next=links->next;
 						prev=links->prev;
@@ -202,10 +204,11 @@ void miner_routine(struct miner *miner){
 							return;
 						}
 					}
-					if(links->link->dest!=links->new_comer)
-						getaddr(links->link, miner->miner_id);
+*/ // redundunt free links
+				if(links->link->dest!=links->new_comer)
+					getaddr(links->link, miner->miner_id);
 
-				}
+//				}
 			}
 		}
 	}

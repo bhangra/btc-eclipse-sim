@@ -47,9 +47,15 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 	fprintf(stderr, "will process block: chain_head= %p new_chain=%p\n", chain_head, me->new_chain);
 #endif
 	accept = malloc(sizeof(struct block));
-	if(accept == NULL){
+/*	if(accept == NULL){
 		perror("malloc");
 		exit(-1);
+	}
+*/	if(chain_head!=NULL){
+		if(chain_head->block->height > accept->height && me->new_chain==NULL){
+			free(accept);
+			return chain_head;
+		}
 	}
 	memcpy(accept, block, sizeof(struct block));
 	if(chain_head==NULL&&block->height==1){
@@ -93,27 +99,24 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 			from->fgetblock=true;
 			return chain_head;
 		}
-		for(;;tmp=tmp->prev){
-			if(tmp==NULL){
-				return chain_head;
-			}
-			head = tmp->block;
-			if(head->height == block->height+1 && !memcmp(head->hash, SHA256((const unsigned char *)block, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
+		for(;tmp->prev!=NULL;tmp=tmp->prev){}
+		head = tmp->block;
+		if(head->height == block->height+1 && !memcmp(head->hash, SHA256((const unsigned char *)block, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
 #ifdef DEBUG
-				fprintf(stderr,"new block added to tail of new_chain\n"); //debug
+			fprintf(stderr,"new block added to tail of new_chain\n"); //debug
 #endif
-				tmp2 = malloc(sizeof(struct blocks));
-				tmp2->block	= accept;
-				tmp2->prev	= NULL;
-				tmp2->next	= tmp;
-				tmp->prev	= tmp2;
-				tmp3		= tmp;
-				if(accept->height == 1){
+			tmp2 = malloc(sizeof(struct blocks));
+			tmp2->block	= accept;
+			tmp2->prev	= NULL;
+			tmp2->next	= tmp;
+			tmp->prev	= tmp2;
+			tmp3		= tmp;
+			if(accept->height == 1){
 #ifdef DEBUG
-					fprintf(stderr, "new block was height 1\n");
+				fprintf(stderr, "new block was height 1\n");
 #endif
-					for(tmp=me->blocks; (tmp->next==NULL); tmp=tmp->next){
-						if(tmp==NULL||tmp->next==NULL){break;}
+				for(tmp=me->blocks; (tmp->next==NULL); tmp=tmp->next){
+					if(tmp==NULL||tmp->next==NULL){break;}
 					for(; tmp!=NULL; tmp=tmp2){
 						tmp2 = tmp->prev;
 						free(tmp->block);
@@ -121,18 +124,19 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 						free(tmp);
 						tmp=NULL;
 						}
-					}			
-					for(tmp=tmp3; tmp->next!=NULL; tmp=tmp->next){}
-					me->new_chain = NULL;
-					me->blocks=tmp;
-					propagate_block(tmp->block, me);
-					join_record(tmp->block, tmp);
-					return tmp;
-				}
-				else{
-					for(tmp=chain_head; tmp!=NULL; tmp=tmp->prev){
-						head=tmp->block;
-						if(accept->height==head->height+1 && !memcmp(accept->hash, SHA256((const unsigned char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
+				}			
+				for(tmp=tmp3; tmp->next!=NULL; tmp=tmp->next){}
+				me->new_chain = NULL;
+				me->blocks=tmp;
+				propagate_block(tmp->block, me);
+				join_record(tmp->block, tmp);
+				return tmp;
+			}
+			else{
+				for(tmp=chain_head; tmp!=NULL; tmp=tmp->prev){
+					head=tmp->block;
+					if(accept->height==head->height+1){
+						if(/*accept->height==head->height+1 &&*/ !memcmp(accept->hash, SHA256((const unsigned char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
 #ifdef DEBUG
 							fprintf(stderr, "new block connected to main chain\n");
 #endif
@@ -155,13 +159,15 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 						}
 					}
 				}
-#ifdef DEBUG
-				fprintf(stderr, "new_chain still disconnected to main chain\n");
-#endif
-				//get_blocks(from, me->blocks, me->new_chain);
-				from->fgetblock=true;
-				return me->blocks;
+				if(tmp==NULL)
+					return me->blocks;
 			}
+#ifdef DEBUG
+			fprintf(stderr, "new_chain still disconnected to main chain\n");
+#endif
+			//get_blocks(from, me->blocks, me->new_chain);
+			from->fgetblock=true;
+			return me->blocks;
 		}
 	}
 //	fprintf(stderr, "will check if it's lower or equal\n");
@@ -211,9 +217,10 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 		}
 	}
 //	fprintf(stderr, "check if higher than my chain height\n");
-	head = chain_head->block;
+	if(chain_head!=NULL)
+		head = chain_head->block;
 	if(me->new_chain!=NULL){
-		if(block->height > head->height+1 && block->height > me->new_chain->block->height ){
+		if(/*block->height > head->height+1 && */block->height > me->new_chain->block->height ){
 #ifdef DEBUG
 			fprintf(stderr, "need previous block\n"); //debug
 #endif
@@ -241,15 +248,17 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 			return chain_head;
 		}
 	}
-	if(block->height > me->blocks->block->height){
-		me->new_chain = malloc(sizeof(struct blocks));
-		memset(me->new_chain, 0, sizeof(struct blocks));
-		(me->new_chain)->block = accept;
-		(me->new_chain)->next = NULL;
-		(me->new_chain)->prev = NULL;
-//		fprintf(stderr, "will request for it's prev block\n");
-		from->fgetblock=true;
-		return chain_head;
+	if(me->blocks!=NULL){
+		if(block->height > me->blocks->block->height){
+			me->new_chain = malloc(sizeof(struct blocks));
+			memset(me->new_chain, 0, sizeof(struct blocks));
+			(me->new_chain)->block = accept;
+			(me->new_chain)->next = NULL;
+			(me->new_chain)->prev = NULL;
+	//		fprintf(stderr, "will request for it's prev block\n");
+			from->fgetblock=true;
+			return chain_head;
+		}
 	}
 #ifdef DEBUG
 	fprintf(stderr, "block received not added\n");

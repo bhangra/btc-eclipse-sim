@@ -12,28 +12,32 @@
 
 #include"action.c"
 #include"global.c"
-#define GROUPS 2
+//#define GROUPS 2
 
 //struct links	*bad_links;
 //bool	is_bad_dns[NUM_DNS];	
 
+void hexDump (char *desc, void *addr, int len);
+
 void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	unsigned int			payload_size, set_size, sets;	
 //	int 					i;
-	struct link				*link;//, *tmp;
-	struct links			*links, *tmp;
-
+	struct link				*link, *link_tmp;//, *tmp;
+	struct links			/**links,*/ *tmp;
+	struct miner			*miner_tmp;
+//	struct threads			*threads;
+	struct bad_threads		*bad;
 	bool					exists;
 	unsigned int			dest_group;
-	struct links			*tmp_bad;
+	struct links			*tmp_bad = NULL;
 	
 	link			= dest;
 	payload_size	= 0;
 	set_size		= sizeof(struct link*) + sizeof(unsigned int);
-	
+	exists=false;
 	for(tmp_bad=bad_links; bad_links!=NULL; bad_links=bad_links->prev){
 		if(tmp_bad->miner_id==dest_id){
-			exists = 1;
+			exists = true;
 			break;
 		}
 	}
@@ -56,10 +60,20 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	memcpy(&link->sbuf[0], "addr", 4);
 	sets = 0;
 //might change the maximum num of addrs to num of least neighbor
+	if(bad_threads!=NULL)
+	for(bad=bad_threads; bad->prev!=NULL; bad=bad->prev){}
+	for(; bad!=NULL; bad=bad->next){
+		memcpy(&link->sbuf[16+(sets*set_size)], &(bad->thread->miner)->miner_id, sizeof(unsigned int));
+		miner_tmp	= bad->thread->miner;
+		link_tmp	= &miner_tmp->new_comer;
+		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &link_tmp/*&(bad->thread->miner->new_comer)*/, sizeof(struct link*));
+		sets++;
+	}
+	if(bad_links!=NULL)
 	for(tmp_bad=bad_links; tmp_bad!=NULL && 16+sets*set_size<BUF_SIZE; tmp_bad=tmp_bad->prev){
 		if(tmp_bad->miner_id!=dest_id && tmp_bad->group == dest_group){
-			memcpy(&link->sbuf[16+(sets*set_size)], &links->miner_id, sizeof(unsigned int));
-			memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &links->new_comer, sizeof(struct link*));
+			memcpy(&link->sbuf[16+(sets*set_size)], &tmp_bad->miner_id, sizeof(unsigned int));
+			memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &tmp_bad->new_comer, sizeof(struct link*));
 			sets++;
 		}
 	}
@@ -76,7 +90,9 @@ struct links *process_bad_dns(struct link *new_comer, struct links *seeds){
 	link    = new_comer;
 	hdr     = (struct msg_hdr*)(link->process_buf);
 	if(strncmp(hdr->command, "dnsseed", 7)==0){
+#ifdef DEBUG
 		fprintf(stderr, "seed request received\n");
+#endif
 		tmp = seed_receive(link, seeds);
 		if(tmp!=NULL){
 			exists = 0;
@@ -101,7 +117,9 @@ struct links *process_bad_dns(struct link *new_comer, struct links *seeds){
    			return seeds;
 	}
 	else if(strncmp(hdr->command, "dnsquery", 8)==0){
+#ifdef DEBUG
 		fprintf(stderr, "dnsquery received\n"); //debug
+#endif
 		dns_roundrobin(link, seeds);
 		return seeds;
 	}
@@ -129,12 +147,16 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 
 	link = links->link;
 	hdr = (struct msg_hdr*)(link->process_buf);
+#ifdef DEBUG
 	fprintf(stderr, "command: %s\n", hdr->command); //debug
+#endif
 //ignore block related commands
 
 //change addr() to bad_addr()
 	if(strncmp(hdr->command, "getaddr", 7)==0){
+#ifdef DEBUG
 		fprintf(stderr, "getaddr received\n");
+#endif
 		memcpy(&miner_id, &link->process_buf[16], sizeof(unsigned int));
 		bad_addr(link, me, miner_id);
 	}
@@ -144,7 +166,9 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 		size		= sizeof(struct link*);
 		set			= size + sizeof(unsigned int);
 		num_addr	= payload_size/set;
+#ifdef DEBUG
 		fprintf(stderr, "num_addr = %d\n", num_addr);
+#endif
 		if(num_addr == 0)
 			me->boot = true;
 		connected = false;
@@ -166,7 +190,9 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 			}
 			if(connect){
 				connected = true;
+#ifdef DEBUG
 				fprintf(stderr, "will send version to dest: %p, id: %d\n", dest, miner_id);
+#endif
 				me->links = version(me->miner_id, miner_id, dest, &me->new_comer, me->links);
 			}
 		}
@@ -176,7 +202,9 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 	}
 	else if(strncmp(hdr->command, "verack", 6)==0){
 		memcpy(&link->dest, &link->process_buf[16], sizeof(struct link*));
+#ifdef DEBUG
 		fprintf(stderr, "received verack with link: %p\n", link->dest);
+#endif
     }
 	return 1;
 }
@@ -202,7 +230,9 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 		memcpy(&dest, &link->process_buf[16], size);
 		memcpy(&miner_id, &link->process_buf[16+size], sizeof(unsigned int));
 		if(miner_id==me->miner_id){
+#ifdef DEBUG
 			fprintf(stderr, "will not send version to me\n");
+#endif
 			return NULL;
 		}
 		
@@ -213,6 +243,7 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 				bad_links->group = rand()%GROUPS;
 			}
 			else{
+				exists = false;
 				for(tmp_bad=bad_links; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
 					if(tmp_bad->miner_id==tmp->miner_id){
 						exists = true;
@@ -225,10 +256,15 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 				}
 			}
 		}
-		return tmp;
+		if(tmp!=NULL)
+			return tmp;
+		else
+			return me->links;
 	}
 	else if(strncmp(hdr->command, "version", 7)==0){
+#ifdef DEBUG
 		fprintf(stderr, "version received\n");
+#endif
 //		return verack(new_comer, me->links);
 		tmp = verack(new_comer, me->links, me);
 		
@@ -238,6 +274,7 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 				bad_links->group = rand()%GROUPS;
 			}
 			else{
+				exists = false;
 				for(tmp_bad=bad_links; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
 					if(tmp_bad->miner_id==tmp->miner_id){
 						exists = true;
@@ -273,7 +310,9 @@ void bad_miner_routine(struct miner *miner){
 	}
 	else{
 		for(link=&miner->new_comer; link->num_msg!=0;){
+#ifdef DEBUG
 			fprintf(stderr, "new_comer link\n"); //debug
+#endif
 			read_msg(link);
 			miner->links = process_bad_new(&miner->new_comer, miner);
 		}

@@ -21,6 +21,11 @@ struct threads{
 	unsigned int	time;
 //will add TTL and make main thread kill it
 };
+struct bad_threads{
+	struct bad_threads *next;
+	struct bad_threads *prev;
+	struct threads		*thread;
+};
 
 struct killed{
 	struct killed	*next;

@@ -20,18 +20,17 @@ struct threads *search_head(struct threads *thread){
 	for(tmp = thread;tmp->prev!=NULL;tmp=tmp->prev){}
 	return tmp;
 }
-
-//will add variable for threads
-struct threads *new_thread(int type, unsigned int miner_id,  struct threads *threads, unsigned int seed){
-	struct miner	*miner;
-	struct threads	*new, *tmp=NULL;
+/*
+struct threads *bad_new_thread(struct threads *threads){
+	struct threads *bad, *new;
+	struct  miner 	*miner;
 	new 		= malloc(sizeof(struct threads));
 	if(new == NULL){
 		perror("malloc()");
 		return NULL;
 	}
 	memset(new, 0, sizeof(struct threads));
-	new->type = type;	//distinguish miner/attacker
+	new->type = ATTACKER;	//distinguish miner/attacker
 	new->time = sim_time; //debug
 	if((new->miner=malloc(sizeof(struct miner)))==NULL){
 		perror("malloc()");
@@ -41,22 +40,69 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	}
 	miner=new->miner;
 	memset(miner, 0, sizeof(struct miner));
+	miner->TTL	= SIM_TIME;
+	miner->one_way	= NOT_NAT; 
+	miner->miner_id = global_id;
+	miner->max		= TOTAL_NODES; 
+	miner->least	= TOTAL_NODES;
+	miner->neighbor = 0;
+	miner->seed		= 0;//rand()%2;
+	miner->boot		= true;
+	miner->links	= NULL;
+	miner->blocks	= NULL;
+	miner->new_chain= NULL;
+	miner->hash_rate= 0;
+	
+	if(bad_threads!=NULL){
+		for(bad=bad_threads; bad->next!=NULL; bad=bad->next){}
+		bad->next=bad;		
+	}
+	else
+		bad_threads = new;
+	return new;
+}*/
+
+//will add variable for threads
+struct threads *new_thread(int type, unsigned int miner_id,  struct threads *threads, unsigned int seed){
+	struct miner	*miner;
+	struct threads	*new, *tmp=NULL;//, *bad;
+	new 		= malloc(sizeof(struct threads));
+/*	if(new == NULL){
+		perror("malloc()");
+		return NULL;
+	}
+*/	memset(new, 0, sizeof(struct threads));
+	new->type = type;	//distinguish miner/attacker
+
+	new->time = sim_time; //debug
+/*	if((*/new->miner=malloc(sizeof(struct miner));/*)==NULL){*/
+//		perror("malloc()");
+//		free(new);
+//		new=NULL;
+//		return NULL;
+//	}
+	miner=new->miner;
+	memset(miner, 0, sizeof(struct miner));
 	//times, TTL = 1 : 1 second
 	miner->TTL	= (unsigned int)sim_time+((rand()%(AVE_TTL*2)));
 	if(seed==true)
 		miner->TTL = (unsigned int)sim_time+((rand()%(SEED_TTL*2)));
+	if(new->type==ATTACKER)
+		miner->TTL = SIM_TIME;
 //	fprintf(stderr, "miner->TTL = %d\n", miner->TTL);
 //	miner->group	= rand()%2;	
 
 //represents node under NAT, which stops connection initiated by others
-	miner->one_way	= rand()%2;
-
-	miner->one_way	= false; 
-	if((seed==true))
-		miner->one_way=false;
+	miner->one_way	= rand()%(NOT_NAT+1);
+	if((seed==true)||new->type==ATTACKER)
+		miner->one_way=NOT_NAT;
 	miner->miner_id = miner_id;
 	miner->max		= 10+rand()%5;//will fix 
 	miner->least	= 3+rand()%5;//will fix
+	if(new->type==ATTACKER){
+		miner->max		= TOTAL_NODES*2;
+		miner->least	= TOTAL_NODES;
+	}
 	miner->neighbor = 0;
 	miner->seed		= seed;//rand()%2;
 	miner->boot		= true;
@@ -64,6 +110,8 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	miner->blocks	= NULL;
 	miner->new_chain= NULL;
 	miner->hash_rate= (double)rand() / (RAND_MAX);
+	if(new->type==ATTACKER)
+		miner->hash_rate=0;
 	if(threads!=NULL){
 		tmp = threads;
 		for(;tmp->next!=NULL; tmp=tmp->next){
@@ -79,6 +127,26 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 		new->next = NULL;
 		new->prev = NULL;
 	}
+	if(new->type==ATTACKER){
+		struct bad_threads *bad;
+		if(bad_threads!=NULL){
+			for(bad=bad_threads; bad->next!=NULL; bad=bad->next){}
+			bad->next=malloc(sizeof(struct bad_threads));//new;		
+			bad->next->prev=bad;
+			bad=bad->next;
+			bad->next=NULL;
+			bad->thread = new;
+			
+		}
+		else{
+			bad = malloc(sizeof(struct bad_threads));
+			bad->next = NULL;// new;
+			bad->prev = NULL;
+			bad->thread = new;
+			bad_threads=bad;
+		}
+	}
+
 	return new;
 }
 void keep_total_seeds(struct threads *threads){
@@ -111,8 +179,7 @@ void keep_total_nodes(struct threads *threads){
 	for(; tmp!=NULL; tmp=tmp->prev){
 		current++;
 	}
-	tmp=threads;
-	for(; current<TOTAL_NODES; current++){
+	for(tmp=threads; current<=TOTAL_NODES; current++){
 		global_id++;
 		tmp = new_thread(1, global_id, tmp, seed);
 	}
@@ -255,12 +322,12 @@ void keep_total_hash_rate_1(struct threads *threads){
 	struct threads	*tmp;
 	double 			sum;
 	sum = 0;
-	for(tmp=threads; tmp->prev!=NULL; tmp=tmp->prev){}
-	for(; tmp!=NULL; tmp=tmp->next){
+	for(tmp=threads; tmp->next!=NULL; tmp=tmp->next){}
+	for(; tmp!=NULL; tmp=tmp->prev){
 		sum += (tmp->miner)->hash_rate;
 	}
-	for(tmp=threads; tmp->prev!=NULL; tmp=tmp->prev){}
-	for(; tmp!=NULL; tmp=tmp->next){
+	for(tmp=threads; tmp->next!=NULL; tmp=tmp->next){}
+	for(; tmp!=NULL; tmp=tmp->prev){
 		(tmp->miner)->hash_rate = (tmp->miner)->hash_rate/sum;
 //		fprintf(stdout, "hash_rate = %f\n", (tmp->miner)->hash_rate);
 	}

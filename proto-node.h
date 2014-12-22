@@ -19,7 +19,7 @@ struct miner{
 	unsigned int	max;
 	unsigned int	least;
 	unsigned int	neighbor;
-	bool			one_way;
+	unsigned int	one_way;
 	bool            boot;
 	bool            seed;
 

@@ -22,7 +22,7 @@
 
 int main(int argc, char *argv[]){
 //	struct dns	dns[5];
-	unsigned int /*miner_id,*/ i;
+	unsigned int /*miner_id,*/ i, num_nodes;
 	struct threads *threads;
 	mcheck(NULL);
 
@@ -43,9 +43,17 @@ int main(int argc, char *argv[]){
 	}
 	bad_links = NULL;
 
+#ifdef BAD_NODES
+	for(num_nodes=0; num_nodes<BAD_NODES; global_id++){
+		threads=new_thread(ATTACKER, global_id, threads, 1);
+		num_nodes++;
+	}
+#endif 
+
 //initial seed nodes creation
-	for(global_id=0; global_id<SEED_NUM; global_id++){
-		threads=new_thread(1, global_id, threads, 1);
+	for(num_nodes=0; num_nodes<SEED_NUM; global_id++){
+		threads=new_thread(HONEST, global_id, threads, 1);
+		num_nodes++;
 	}
 	keep_total_hash_rate_1(threads);
 
@@ -107,7 +115,7 @@ int main(int argc, char *argv[]){
 	fprintf(stderr, "will cancel_all()\n"); //debug
 	cancel_all(threads);
 	free_killed();
-//	print_link_record();
+	print_link_record();
 	print_block_record();
 	exit(1);
 }
