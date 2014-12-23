@@ -170,17 +170,24 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 	if(pos+msg_size >=BUF_SIZE)
 		tmp			= pos+msg_size-BUF_SIZE;
 #ifdef MEM_DEBUG
-	fprintf(stderr, "dest->write_pos = %d, dest->read_pos = %d\n", pos, dest->read_pos);
+	fprintf(stderr, "dest->num_msg = %d, dest->write_pos = %d, dest->read_pos = %d\n", dest->num_msg, pos, dest->read_pos);
 #endif
-	if(pos < dest->read_pos && (pos+msg_size >= dest->read_pos) && pos+msg_size <BUF_SIZE){
-//		fprintf(stderr, "catched up to read_pos\n");
+	if(pos < dest->read_pos && (pos+msg_size > dest->read_pos) && pos+msg_size <BUF_SIZE){
+#ifdef DEBUG
+		fprintf(stderr, "catched up to read_pos\n");
+#endif
 		return 0;
 	}
-	if((pos < dest->read_pos) && (tmp <= dest->read_pos) && pos+msg_size>BUF_SIZE){
-//		fprintf(stderr, "rounded around buffer, catching up to read_pos. tmp = %d\n", tmp);
+	if((pos < dest->read_pos) && (tmp < dest->read_pos) && pos+msg_size>BUF_SIZE){
+#ifdef DEBUG
+		fprintf(stderr, "rounded around buffer, catching up to read_pos. tmp = %d\n", tmp);
+#endif
 		return 0;
 	}
 	if(pos > dest->read_pos && tmp >= dest->read_pos && pos+msg_size > BUF_SIZE){
+#ifdef DEBUG
+		fprintf(stderr, "was above read pos & rounded around buffer, going above read pos again\n");
+#endif
 		return 0;
 	}
 //	fprintf(stderr, "dest->write_pos = %d\n", dest->write_pos);
@@ -198,6 +205,9 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 	dest->num_msg += 1;
 //	pthread_mutex_unlock((pthread_mutex_t *)&dest->rcv_mutex);
 	memset(message, 0, BUF_SIZE);
+#ifdef DEBUG
+	fprintf(stderr, "succesfully sent message, dest->num_msg: %d\n", dest->num_msg);	
+#endif
 	return 1;
 }
 

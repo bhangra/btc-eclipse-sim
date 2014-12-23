@@ -149,7 +149,7 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 
 	return new;
 }
-void keep_total_seeds(struct threads *threads){
+struct threads *keep_total_seeds(struct threads *threads){
 #ifndef SEED_NUM
 #define SEED_NUM 10
 #endif
@@ -158,31 +158,38 @@ void keep_total_seeds(struct threads *threads){
 	struct threads *tmp;
 	current = 0;
 	seed 	= true;
-	for(tmp=threads; tmp->next!=NULL; tmp=tmp->next){}
-	for(; tmp!=NULL; tmp=tmp->prev){
-		if((tmp->miner)->seed == true)
-			current++;
+	if(threads!=NULL){
+		for(tmp=threads; tmp->next!=NULL; tmp=tmp->next){}
+		for(; tmp!=NULL; tmp=tmp->prev){
+			if((tmp->miner)->seed == true){
+				current++;
+			}
+		}
 	}
-	for(tmp=threads; tmp->next!=NULL; tmp=tmp->next){}
-	for(;current<=SEED_NUM; current++){
+	for(tmp=threads;current<=SEED_NUM; current++){
 		global_id++;
-		new_thread(1, global_id, tmp, seed);
-	}
-		
+		tmp = new_thread(HONEST, global_id, tmp, seed);
+#ifdef DEBUG
+		fprintf(stderr, "added seed node\n");
+#endif
+	}	
+	return tmp;	
 }
-void keep_total_nodes(struct threads *threads){
+struct threads *keep_total_nodes(struct threads *threads){
 	unsigned int	current=0, seed=false;
 
 	struct threads	*tmp;
-
-	for(tmp=threads; tmp->next!=NULL; tmp=tmp->next){}
-	for(; tmp!=NULL; tmp=tmp->prev){
-		current++;
+	if(threads!=NULL){
+		for(tmp=threads; tmp->next!=NULL; tmp=tmp->next){}
+		for(; tmp!=NULL; tmp=tmp->prev){
+			current++;
+		}
 	}
 	for(tmp=threads; current<=TOTAL_NODES; current++){
 		global_id++;
-		tmp = new_thread(1, global_id, tmp, seed);
+		tmp = new_thread(HONEST, global_id, tmp, seed);
 	}
+	return tmp;
 }
 
 void free_blocks(struct blocks *blocks, struct blocks *meblocks){
@@ -281,13 +288,15 @@ struct threads *cancel_one_thread(struct threads *will_kill){
 
 struct threads *cancel_by_TTL(struct threads *list){
 	struct threads *thread;
+	if(list==NULL)
+		return list;
 	for(thread = list; thread->next!=NULL; thread=thread->next){}
 	for(;thread!=NULL; thread=thread->prev){
 		if((thread->miner)->TTL <= sim_time){
-			thread=cancel_one_thread(thread);
 #ifdef DEBUG
 			fprintf(stderr, "will kill %d\n", thread->miner->miner_id);
 #endif
+			thread=cancel_one_thread(thread);
 		}
 		if(thread->prev==NULL)
 			break;

@@ -488,11 +488,11 @@ void get_blocks(struct link *dest, struct blocks *main_chain, struct blocks *new
 void send_blocks(struct link *from, struct blocks *main_chain, unsigned int height2, unsigned int height){
 	struct blocks	*tmp;
 //	for(tmp=main_chain; tmp->prev!=NULL; tmp=tmp->prev){}
-	if(height)
+/*	if(height)
 		for(tmp=main_chain; (tmp->block)->height!=height && tmp->prev!=NULL; tmp=tmp->prev){}
 	else
-		for(tmp=main_chain; tmp->next!=NULL; tmp=tmp->next){}
-	tmp=tmp->prev;
+*/		for(tmp=main_chain; tmp->next!=NULL; tmp=tmp->next){}
+//	tmp=tmp->prev;
 	for(;/*(tmp->block)->height!=height2-1*/ tmp!=NULL;tmp=tmp->prev){
 		send_block(tmp->block, from);
 	}
@@ -536,7 +536,9 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 //	fprintf(stderr, "command: %s\n", hdr->command); //debug
 	if(strncmp(hdr->command, "block", 5)==0){
 		block=(struct block*)&link->process_buf[16];
-//		fprintf(stderr, "received block with height: %d from %d\n", block->height, links->miner_id); //debug
+#ifdef DEBUG
+		fprintf(stderr, "received block with height: %d from %d\n", block->height, links->miner_id); //debug
+#endif
 		me->blocks = process_new_blocks(block, me->blocks, me, link);
 	}
 /*	else if(strncmp(hdr->command, "newhead", 7)==0){

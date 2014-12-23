@@ -29,8 +29,8 @@ void dns_routine(struct dns *dns){
 void miner_routine(struct miner *miner){
 	bool			getblocks_sent=0;
 	int 			i, n;
-	struct links 	*links;
-	struct link		*link;
+	struct links 	*links;//, *tmp_links;
+	struct link		*link;//, *tmp_link;
 //	fprintf(stderr, "entered miner_routine()\n"); //debug
 #ifdef DEBUG	
 //	if(sim_time>=SIM_TIME-1){
@@ -66,7 +66,8 @@ void miner_routine(struct miner *miner){
 		for(i=0; i<NUM_DNS; i++){
 			dns_seed(miner->miner_id, &dns[i], &miner->new_comer);
 		}
-		for(i=0; i<rand()%NUM_DNS; i++){}
+//		for(i=0; i<rand()%NUM_DNS; i++){}
+		i=rand()%NUM_DNS;
 		dns_query(&dns[i], &miner->new_comer, miner->miner_id);
 //		fprintf(stderr, "sent dns_query\n");
 		miner->boot = false;
@@ -87,30 +88,21 @@ void miner_routine(struct miner *miner){
 		}
 		links = miner->links;
 		if(links==NULL){
-			i=0;
+			miner->neighbor=0;
 			miner->boot=true;
 		}
 //			return;
 		else{
 			getblocks_sent=false;
-			for(;links->next!=NULL; links=links->next){}
-			for(i=0/*debug*/; links!=NULL; links=links->prev){
-//				fprintf(stderr, "link->num_msg = %d\n", link->num_msg);//debug
-				for(link=links->link; link!=NULL;){
-//					fprintf(stderr, "will read msg from miner: %d\n", links->miner_id); //debug
-/* //redundunt free_link
-					struct killed	*killed;
-					for(killed=dead; killed!=NULL; killed=killed->next){
-						if(links->miner_id==killed->id){
-							free_link(links, miner);
-							links= miner->links;
-							if(links!=NULL)
-								link = links->link;
-							else
-								link = NULL;
-						}
-					}
-*/
+			for(links=miner->links;links->next!=NULL; links=links->next){}
+			for(i=0/*debug*/; links!=NULL; /*links=links->prev*/){
+#ifdef DEBUG
+				fprintf(stderr, "link->num_msg = %d\n", link->num_msg);//debug
+#endif
+				for(link=links->link;  link->num_msg!=0/*link!=NULL*/;){
+#ifdef DEBUG
+					fprintf(stderr, "will read msg from miner: %d\n", links->miner_id); //debug
+#endif
 					if(link->num_msg==0)
 						break;
 					read_msg(link);	
@@ -121,6 +113,7 @@ void miner_routine(struct miner *miner){
 						else
 							link=NULL;
 						break;
+						
 					}
 					if(link!=NULL){
 						if(link->num_msg==0 && link->fgetblock==true && miner->new_chain!=NULL && getblocks_sent==false){
@@ -129,33 +122,34 @@ void miner_routine(struct miner *miner){
 							getblocks_sent=true;
 						}
 					}
-//					else
-//						link->fgetblock=false;
-					
 				} 
-				if(miner->new_chain!=NULL && getblocks_sent !=true && miner->links!=NULL){
-					i = 0;
-					for(links=miner->links; links->next!=NULL; links=links->next){
-						i++;
-					}
-					if(i>0)
-						n = rand()%i;
-					else
-						n = 0;
-					for(i=0; i<n && links->prev!=NULL; links=links->prev){}
-					get_blocks(links->link, miner->blocks, miner->new_chain);
-					getblocks_sent = true;
+				if(links!=NULL)
+					links=links->prev;
+			}
+			if(miner->new_chain!=NULL && getblocks_sent !=true && miner->links!=NULL){
+				i = 0;
+	//			tmp_links=links;
+				for(links=miner->links; links->next!=NULL; links=links->next){
+					i++;
 				}
-				i++; //debug
-				if(links==NULL)
-					break;
-				if(links->next==NULL)
-					break;
+				if(i>0)
+					n = rand()%i;
+				else
+					n = 0;
+				for(i=0; i<n && links->prev!=NULL; links=links->prev){}
+				get_blocks(links->link, miner->blocks, miner->new_chain);
+				getblocks_sent = true;
+	//			links=tmp_links;
+	//			link=links->link;
 			}
 		}
 #ifdef DEBUG
-		fprintf(stderr, "num of links: %d\n", i);//debug
+		fprintf(stderr, "num of links: %d\n", miner->neighbor);//debug
 #endif
+		if(miner->neighbor==0){
+			miner->boot = true;
+			return;
+		}
 		if(miner->links!=NULL){
 			for(links=miner->links; links->next!=NULL; links=links->next){}
 #ifdef DEBUG
@@ -173,9 +167,9 @@ void miner_routine(struct miner *miner){
 #ifdef DEBUG
 				fprintf(stderr, "\n");
 #endif
-			if(i<miner->least){
-				if(i!=0)
-					n = rand()%(i);
+			if(miner->neighbor<miner->least){
+				if(miner->neighbor!=0)
+					n = rand()%(miner->neighbor+1);
 				else
 					n=0;
 				for(links=miner->links; links->next!=NULL; links=links->next){}

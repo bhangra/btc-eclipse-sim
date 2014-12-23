@@ -51,13 +51,14 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 		perror("malloc");
 		exit(-1);
 	}
-*/	if(chain_head!=NULL){
+*/
+	memcpy(accept, block, sizeof(struct block));
+	if(chain_head!=NULL){
 		if(chain_head->block->height > accept->height && me->new_chain==NULL){
 			free(accept);
 			return chain_head;
 		}
 	}
-	memcpy(accept, block, sizeof(struct block));
 	if(chain_head==NULL&&block->height==1){
 #ifdef DEBUG
 		fprintf(stderr, "genesis block received\n"); //debug
