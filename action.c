@@ -714,7 +714,8 @@ struct links *process_new(struct link *new_comer, struct miner *me){
 			}
 			if(me->blocks!=NULL){
 				for(blocks=me->blocks; blocks->next!=NULL; blocks=blocks->next){}
-				send_block(blocks->block, (me->links)->link);	
+//				send_block(blocks->block, (me->links)->link);	
+				send_blocks(link, me->blocks, /*height2*/1, 1);
 			}
 			return me->links;
 		} 

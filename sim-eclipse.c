@@ -44,6 +44,7 @@ int main(int argc, char *argv[]){
 	bad_links = NULL;
 
 #ifdef BAD_NODES
+	unsigned int num_nodes;
 	for(num_nodes=0; num_nodes<BAD_NODES; global_id++){
 		threads=new_thread(ATTACKER, global_id, threads, 1);
 		num_nodes++;
