@@ -59,29 +59,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 			return chain_head;
 		}
 	}
-	if(chain_head==NULL&&block->height==1){
-#ifdef DEBUG
-		fprintf(stderr, "genesis block received\n"); //debug
-#endif
-		me->blocks=add_block(accept, NULL);
-		propagate_block(accept, me);
-		join_record(accept, me->blocks);
-		return me->blocks;
-	}
-	if(chain_head!=NULL){
-//		fprintf(stderr, "will check if it's next block\n");
-		for(tmp=chain_head; tmp->next!=NULL; tmp=tmp->next){}
-		head = chain_head->block;
-		if(block->height == head->height+1 && !memcmp(block->hash, SHA256((const unsigned char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
-#ifdef DEBUG
-			fprintf(stderr, "next block received\n"); //debug
-#endif
-			tmp = add_block(accept, chain_head);
-			propagate_block(accept, me);
-			join_record(accept, me->blocks);
-			return tmp;
-		}
-	}
+
 	if(me->new_chain!=NULL){
 //		fprintf(stderr, "will check in the new_chain\n");
 		for(tmp=me->new_chain; tmp->next!=NULL; tmp=tmp->next){
@@ -116,16 +94,18 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 #ifdef DEBUG
 				fprintf(stderr, "new block was height 1\n");
 #endif
-				for(tmp=me->blocks; (tmp->next==NULL); tmp=tmp->next){
-					if(tmp==NULL||tmp->next==NULL){break;}
-					for(; tmp!=NULL; tmp=tmp2){
-						tmp2 = tmp->prev;
-						free(tmp->block);
-						tmp->block=NULL;
-						free(tmp);
-						tmp=NULL;
-						}
-				}			
+				if(me->blocks!=NULL){
+					for(tmp=me->blocks; tmp->next==NULL; tmp=tmp->next){
+						if(tmp==NULL||tmp->next==NULL){break;}
+						for(; tmp!=NULL; tmp=tmp2){
+							tmp2 = tmp->prev;
+							free(tmp->block);
+							tmp->block=NULL;
+							free(tmp);
+							tmp=NULL;
+							}
+					}			
+				}
 				for(tmp=tmp3; tmp->next!=NULL; tmp=tmp->next){}
 				me->new_chain = NULL;
 				me->blocks=tmp;
@@ -172,7 +152,29 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 		}
 	}
 //	fprintf(stderr, "will check if it's lower or equal\n");
-
+	if(chain_head==NULL&&block->height==1){
+#ifdef DEBUG
+		fprintf(stderr, "genesis block received\n"); //debug
+#endif
+		me->blocks=add_block(accept, NULL);
+		propagate_block(accept, me);
+		join_record(accept, me->blocks);
+		return me->blocks;
+	}
+	if(chain_head!=NULL){
+//		fprintf(stderr, "will check if it's next block\n");
+		for(tmp=chain_head; tmp->next!=NULL; tmp=tmp->next){}
+		head = chain_head->block;
+		if(block->height == head->height+1 && !memcmp(block->hash, SHA256((const unsigned char *)head, sizeof(struct block), 0), SHA256_DIGEST_LENGTH)){
+#ifdef DEBUG
+			fprintf(stderr, "next block received\n"); //debug
+#endif
+			tmp = add_block(accept, chain_head);
+			propagate_block(accept, me);
+			join_record(accept, me->blocks);
+			return tmp;
+		}
+	}
 	if(block->height > 1 && chain_head==NULL){
 		if(me->new_chain!=NULL){
 			if(block->height < me->new_chain->block->height){
