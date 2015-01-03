@@ -8,9 +8,10 @@
 #include<unistd.h>
 
 #include"protocol.h"
+#include"params.h"
 
 #define MAX_SIZE	100
-#define BUF_SIZE	10000
+//#define BUF_SIZE	10000
 
 struct link{
 	pthread_mutex_t	rcv_mutex;

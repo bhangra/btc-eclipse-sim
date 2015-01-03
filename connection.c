@@ -10,6 +10,7 @@
 #include<unistd.h>
 #include<signal.h>
 #include<pthread.h>
+#include<assert.h>
 
 #include"connection.h"
 #include"proto-node.h"
@@ -41,12 +42,12 @@ void free_link(struct links *will_remove, struct miner *miner){
 		before->next=after;
 	
 //	if(miner->links==will_remove){
-		if(after!=NULL)
-			miner->links=after;
-		else if(before!=NULL)
-			miner->links=before;
-		else
-			miner->links=NULL;
+	if(after!=NULL)
+		miner->links=after;
+	else if(before!=NULL)
+		miner->links=before;
+	else
+		miner->links=NULL;
 //	}
 }
 
@@ -54,7 +55,7 @@ void free_links(struct threads *will_kill){
 	unsigned int kill_id;
 	struct threads  *tmp;
 	struct miner    *miner;
-	struct links    *links, *prev;
+	struct links    *links, *prev, *next;
 	
 	kill_id = (will_kill->miner)->miner_id;
 	
@@ -73,6 +74,22 @@ void free_links(struct threads *will_kill){
 			}
 		}
 	}
+#ifdef BAD_NODES
+	for(links=bad_links; links!=NULL; links=next){
+		prev = links->prev;
+		next = links->next;
+		if(links->miner_id==kill_id){
+			if(links==bad_links)
+				bad_links=next;
+			free(links->link);
+			free(links);
+			if(next!=NULL)
+				next->prev=prev;
+			if(prev!=NULL)
+				prev->next=next;
+		}
+	}
+#endif
 }
 void free_dns_rec(struct threads *will_kill){
 	unsigned int 	kill_id, i;
@@ -156,15 +173,23 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 //	hexDump("sending msg", message, msg_size);
 	int 			tmp;
 	unsigned int 	pos, over_size;
-#ifdef DEBUG
+#ifdef MEM_DEBUG
 	fprintf(stderr, "sending msg_size: %d %s\n", msg_size, message); //debug
 #endif
-
+#ifdef ASSERT
+	assert(msg_size < BUF_SIZE );
+	assert(dest->write_pos<BUF_SIZE);
+#endif
+/*
 	if(dest->write_pos > BUF_SIZE){
 		dest->read_pos = 0;
 		dest->write_pos= 0;
 		memset(dest->buf, 0, sizeof(dest->buf));
 	}
+*/
+#ifdef ASSERT
+	assert(dest->write_pos < BUF_SIZE);
+#endif
 	pos			= dest->write_pos;
 	tmp			= pos + msg_size;
 	if(pos+msg_size >=BUF_SIZE)
@@ -190,7 +215,6 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 #endif
 		return 0;
 	}
-//	fprintf(stderr, "dest->write_pos = %d\n", dest->write_pos);
 //	pthread_mutex_lock((pthread_mutex_t *)&dest->rcv_mutex);
 	if(pos+msg_size < BUF_SIZE){
 		memcpy(&dest->buf[pos], message, msg_size);
@@ -216,6 +240,10 @@ int read_msg(struct link *link){
 	unsigned char			char_size[sizeof(unsigned int)];
 	int						i, j;
 	unsigned int			read_size, tmp_size, over_size;
+#ifdef ASSERT
+	assert(link->read_pos < BUF_SIZE);
+#endif
+
 	if(!(int)link->num_msg){
 		return 0;
 	}
@@ -227,14 +255,28 @@ int read_msg(struct link *link){
 	else{
 #ifdef MEM_DEBUG
 		fprintf(stderr, "msg size located around end of buffer\n");
+		fprintf(stderr, "link->read_pos = %d\n", link->read_pos);
 #endif
 		for(i=0; i+link->read_pos+12<BUF_SIZE; i++){
+#ifdef MEM_DEBUG
+			fprintf(stderr, "i+link->read_pos+12 = %d\n", i+link->read_pos+12);
+#endif
+#ifdef ASSERT
+			assert(i+link->read_pos+12 >= BUF_SIZE-4 && i+link->read_pos+12<BUF_SIZE);
+#endif
 			char_size[i] = link->buf[link->read_pos+12+i]; 
 //			memcpy(&char_size[i], &link->buf[link->read_pos+12+i], 1);
 //			fprintf(stderr, "link->buf[%d] = %u, char_size[%d] = %u\n", link->read_pos+12+i, link->buf[link->read_pos+12+i], i, char_size[i]);
 		}
 		j = i;
 		for(;i<sizeof(unsigned int); i++){
+#ifdef MEM_DEBUG
+			fprintf(stderr, "i = %d, j = %d\n", i, j);
+			fprintf(stderr, "i-j+link->read_pos+12-BUF_SIZE = %d\n", i-j+link->read_pos+12-BUF_SIZE);
+#endif
+#ifdef ASSERT
+			assert(i-j+link->read_pos+12-BUF_SIZE>=0 && i-j+link->read_pos+12-BUF_SIZE < 16);
+#endif
 			char_size[i] = link->buf[i-j+link->read_pos+12-BUF_SIZE];
 //			memcpy(&char_size[i], &link->buf[(i-j)+link->read_pos+12-BUF_SIZE], 1);
 //			fprintf(stderr, "link->buf[%d] = %u, char_size[%d] = %u\n", i-j, link->buf[i-j], i, char_size[i]);
@@ -243,7 +285,7 @@ int read_msg(struct link *link){
 		read_size	= HDR_SIZE + tmp_size;
 	}
 	if(read_size >BUF_SIZE){
-#ifdef DEBUG
+#ifdef MEM_DEBUG
 		fprintf(stderr, "read_msg: over buf size\n");
 #endif
 		memset(link->buf, 0, sizeof(link->buf));
@@ -259,7 +301,7 @@ int read_msg(struct link *link){
 		link->read_pos += read_size;
 	}
 	else{
-#ifdef MEMDEBUG
+#ifdef MEM_DEBUG
 		fprintf(stderr, "read_msg rounding end of buffre\n");
 #endif
 		over_size = (read_size+link->read_pos) - BUF_SIZE;
@@ -268,8 +310,17 @@ int read_msg(struct link *link){
 		link->read_pos = over_size;
 	}
 	link->num_msg -= 1;
+#ifdef MEM_DEBUG
+	fprintf(stderr, "message type: %s\n", link->process_buf);
+#endif
+#ifdef ASSERT
+	assert(read_size < BUF_SIZE);
+#endif
+
 //	pthread_mutex_unlock(&link->rcv_mutex);
-//	fprintf(stderr, "reading msg, size: %d type: %s\n", read_size, link->process_buf);
+#ifdef DEBUG
+	fprintf(stderr, "reading msg, size: %d type: %s\n", read_size, link->process_buf);
+#endif
 	return 1;
 }
 #endif

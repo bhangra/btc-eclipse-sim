@@ -1,6 +1,6 @@
 #Makefile for sim-eclipse.c
 COMPILER 	= gcc
-CFLAGS		= -g -O0 -pthread -Wall #-Wextra
+CFLAGS		= -pthread -Wall# -g -O0 
 LDFLAGS		= -z muldefs #-lmcheck
 LIBS		=  -lcrypto
 INCLUDE		= -I./

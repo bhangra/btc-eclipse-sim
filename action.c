@@ -208,7 +208,7 @@ void addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	}
 */
 	for(links=me->links; links->next!=NULL; links=links->next){}
-	for(i=0; links!=NULL; i++){
+	for(i=0; links!=NULL && (16+i*set) < (BUF_SIZE-set); i++){
 		if(links->miner_id!=dest_id){
 //			link=links->link;
 //			fprintf(stderr, "adding to addr dest: %p, id: %d\n", links->new_comer, links->miner_id);
@@ -370,11 +370,13 @@ void propagate_block(struct block *block, struct miner *me){
 		link = links->link;
 //		fprintf(stderr, "sent block with height: %d to miner: %d\n", block->height, links->miner_id);
 		
-		if(link==NULL){
+/*		if(link==NULL){
 			free_link(links, me);
 			return;
 		}
-		send_block(block, link);
+*/
+		if(links->new_comer != links->link->dest)
+			send_block(block, link);
 	}
 //	fprintf(stderr, "propagated block\n"); //debug
 }
@@ -487,14 +489,16 @@ void get_blocks(struct link *dest, struct blocks *main_chain, struct blocks *new
 
 void send_blocks(struct link *from, struct blocks *main_chain, unsigned int height2, unsigned int height){
 	struct blocks	*tmp;
+	unsigned int	i;
 //	for(tmp=main_chain; tmp->prev!=NULL; tmp=tmp->prev){}
 /*	if(height)
 		for(tmp=main_chain; (tmp->block)->height!=height && tmp->prev!=NULL; tmp=tmp->prev){}
 	else
-*/		for(tmp=main_chain; tmp->next!=NULL; tmp=tmp->next){}
+*/	for(tmp=main_chain; tmp->next!=NULL; tmp=tmp->next){}
 //	tmp=tmp->prev;
-	for(;/*(tmp->block)->height!=height2-1*/ tmp!=NULL;tmp=tmp->prev){
+	for(i=0;(i*80+16)<(BUF_SIZE-80)&&/*(tmp->block)->height!=height2-1*/tmp!=NULL;tmp=tmp->prev){
 		send_block(tmp->block, from);
+		i++;
 	}
 }
 
@@ -715,7 +719,7 @@ struct links *process_new(struct link *new_comer, struct miner *me){
 			if(me->blocks!=NULL){
 				for(blocks=me->blocks; blocks->next!=NULL; blocks=blocks->next){}
 //				send_block(blocks->block, (me->links)->link);	
-				send_blocks(link, me->blocks, /*height2*/1, 1);
+				send_blocks(me->links->link, me->blocks, /*height2*/1, 1);
 			}
 			return me->links;
 		} 

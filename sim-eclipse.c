@@ -27,7 +27,7 @@ int main(int argc, char *argv[]){
 	mcheck(NULL);
 
 	dead = NULL;
-
+	global_id = 0;
 // random seed
 	srand(time(NULL));
 
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]){
 #ifdef BAD_NODES
 	unsigned int num_nodes;
 	for(num_nodes=0; num_nodes<BAD_NODES; global_id++){
-		threads=new_thread(ATTACKER, global_id, threads, 1);
+		threads=new_thread(ATTACKER, global_id, threads, 0);
 		num_nodes++;
 	}
 #endif 
@@ -122,7 +122,9 @@ int main(int argc, char *argv[]){
 			dns_routine(&dns[i]);
 		}
 	}
+#ifdef DEBUG
 	fprintf(stderr, "will cancel_all()\n"); //debug
+#endif
 	cancel_all(threads);
 	free_killed();
 	print_link_record();

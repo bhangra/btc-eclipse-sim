@@ -97,7 +97,7 @@ void miner_routine(struct miner *miner){
 			for(links=miner->links;links->next!=NULL; links=links->next){}
 			for(i=0/*debug*/; links!=NULL; /*links=links->prev*/){
 #ifdef DEBUG
-				fprintf(stderr, "link->num_msg = %d\n", link->num_msg);//debug
+//				fprintf(stderr, "link->num_msg = %d\n", link->num_msg);//debug
 #endif
 				for(link=links->link;  link->num_msg!=0/*link!=NULL*/;){
 #ifdef DEBUG

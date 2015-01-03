@@ -22,9 +22,9 @@ void hexDump (char *desc, void *addr, int len);
 void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	unsigned int			payload_size, set_size, sets;	
 //	int 					i;
-	struct link				*link, *link_tmp;//, *tmp;
+	struct link				*link;//, *link_tmp;//, *tmp;
 	struct links			/**links,*/ *tmp;
-	struct miner			*miner_tmp;
+//	struct miner			*miner_tmp;
 //	struct threads			*threads;
 	struct bad_threads		*bad;
 	bool					exists;
@@ -62,14 +62,16 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 //might change the maximum num of addrs to num of least neighbor
 	if(bad_threads!=NULL)
 	for(bad=bad_threads; bad->prev!=NULL; bad=bad->prev){}
+/*	struct link *link_tmp;
+	struct miner *miner_tmp;
 	for(; bad!=NULL; bad=bad->next){
 		memcpy(&link->sbuf[16+(sets*set_size)], &(bad->thread->miner)->miner_id, sizeof(unsigned int));
 		miner_tmp	= bad->thread->miner;
 		link_tmp	= &miner_tmp->new_comer;
-		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &link_tmp/*&(bad->thread->miner->new_comer)*/, sizeof(struct link*));
+		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &link_tmp, sizeof(struct link*));
 		sets++;
 	}
-	if(bad_links!=NULL)
+*/	if(bad_links!=NULL)
 	for(tmp_bad=bad_links; tmp_bad!=NULL && 16+sets*set_size<BUF_SIZE; tmp_bad=tmp_bad->prev){
 		if(tmp_bad->miner_id!=dest_id && tmp_bad->group == dest_group){
 			memcpy(&link->sbuf[16+(sets*set_size)], &tmp_bad->miner_id, sizeof(unsigned int));
