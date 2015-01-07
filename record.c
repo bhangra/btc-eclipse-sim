@@ -216,29 +216,53 @@ void add_link_record(struct threads *thread){
 	n_rec->prev		= NULL;
 	n_rec->my_id	= me->miner_id;
 	n_rec->my_group	= me->group;
-	if(me->links==NULL)
-		return;
-	for(links=me->links; links->next!=NULL; links=links->next){}
-	for(; links!=NULL; links=links->prev){
-		if(n_rec->record==NULL){
-			n_rec->record = malloc(sizeof(struct link_record));
+	if(me->outbound!=NULL){
+		for(links=me->outbound; links->next!=NULL; links=links->next){}
+		for(; links!=NULL; links=links->prev){
 			if(n_rec->record==NULL){
-				perror("malloc");
-				exit(-1);
+				n_rec->record = malloc(sizeof(struct link_record));
+				if(n_rec->record==NULL){
+					perror("malloc");
+					exit(-1);
+				}
+				l_rec = n_rec->record;
 			}
-			l_rec = n_rec->record;
-		}
-		else{
-			l_rec->next = malloc(sizeof(struct link_record));
-			if(l_rec->next==NULL){
-				perror("malloc");
-				exit(-1);
+			else{
+				l_rec->next = malloc(sizeof(struct link_record));
+				if(l_rec->next==NULL){
+					perror("malloc");
+					exit(-1);
+				}
+				l_rec = l_rec->next;
 			}
-			l_rec = l_rec->next;
+			l_rec->next			= NULL;
+			l_rec->dest_group	= links->group;
+			l_rec->dest_id		= links->miner_id;
 		}
-		l_rec->next			= NULL;
-		l_rec->dest_group	= links->group;
-		l_rec->dest_id		= links->miner_id;
+	}
+	if(me->inbound!=NULL){
+		for(links=me->inbound; links->next!=NULL; links=links->next){}
+		for(; links!=NULL; links=links->prev){
+			if(n_rec->record==NULL){
+				n_rec->record = malloc(sizeof(struct link_record));
+				if(n_rec->record==NULL){
+					perror("malloc");
+					exit(-1);
+				}
+				l_rec = n_rec->record;
+			}
+			else{
+				l_rec->next = malloc(sizeof(struct link_record));
+				if(l_rec->next==NULL){
+					perror("malloc");
+					exit(-1);
+				}
+				l_rec = l_rec->next;
+			}
+			l_rec->next			= NULL;
+			l_rec->dest_group	= links->group;
+			l_rec->dest_id		= links->miner_id;
+		}
 	}
 	if(n_link == NULL)
 		n_link = n_rec;

@@ -97,16 +97,17 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	if((seed==true)||new->type==ATTACKER)
 		miner->one_way=NOT_NAT;
 	miner->miner_id = miner_id;
-	miner->max		= 10+rand()%5;//will fix 
-	miner->least	= 3+rand()%5;//will fix
-	if(new->type==ATTACKER){
-		miner->max		= TOTAL_NODES*2;
-		miner->least	= TOTAL_NODES;
-	}
-	miner->neighbor = 0;
+//	miner->neighbor = 0;
+	miner->n_addrman= 0;
+	miner->n_outbound=0;
+	miner->n_inbound= 0;
 	miner->seed		= seed;//rand()%2;
 	miner->boot		= true;
-	miner->links	= NULL;
+	miner->subnet	= rand();
+//	miner->links	= NULL;
+	memset(&miner->addrman, 0, sizeof(struct addrman));
+	miner->outbound	= NULL;
+	miner->inbound	= NULL;
 	miner->blocks	= NULL;
 	miner->new_chain= NULL;
 	miner->hash_rate= (double)rand() / (RAND_MAX);
@@ -210,23 +211,42 @@ void free_blocks(struct blocks *blocks, struct blocks *meblocks){
 		tmp=tmp2;
 	} 
 }
-void free_node_s_links(struct links *links, struct links *melinks){
+void free_node_s_links(struct links *melinks){
 	struct links	*tmp, *tmp2;
-	if((links=melinks)){
+//	if((links=melinks)){
+//		return;
+//	}
+	if(melinks==NULL)
 		return;
-	}
-	for(tmp=links; tmp->prev!=NULL; tmp=tmp->prev){}
+	for(tmp=melinks; tmp->prev!=NULL; tmp=tmp->prev){}
 	for(; tmp!=NULL; ){
 		free(tmp->link);
 		tmp->link=NULL;
 		tmp2=tmp->next;
 //		if(tmp!=melinks)
-			free(tmp);
+		free(tmp);
 		tmp=NULL;
 		tmp=tmp2;
 	}	
 }
-
+void free_node_s_caddrinfo(struct caddrinfo *melinks){
+	struct caddrinfo	*tmp, *tmp2;
+//	if((links=melinks)){
+//		return;
+//	}
+	if(melinks==NULL)
+		return;
+	for(tmp=melinks; tmp->prev!=NULL; tmp=tmp->prev){}
+	for(; tmp!=NULL; ){
+//		free(tmp->link);
+//		tmp->link=NULL;
+		tmp2=tmp->next;
+//		if(tmp!=melinks)
+		free(tmp);
+		tmp=NULL;
+		tmp=tmp2;
+	}	
+}
 
 //for cancel_all()
 struct threads *cancel_thread(struct threads *will_kill){
@@ -239,7 +259,9 @@ struct threads *cancel_thread(struct threads *will_kill){
 	after	= will_kill->next;
 
 	tmp = will_kill->miner;
-	free_node_s_links(tmp->links, (struct links*)&tmp->links);
+	free_node_s_caddrinfo(tmp->addrman.caddrinfo);
+	free_node_s_links((struct links*)tmp->outbound);
+	free_node_s_links((struct links*)tmp->inbound);
 	free_blocks(tmp->blocks, (struct blocks*)&tmp->blocks);
 	free(will_kill->miner);
 	will_kill->miner=NULL;

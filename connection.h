@@ -28,6 +28,8 @@ struct link{
 struct links{
 	unsigned int		group;
 	unsigned int		miner_id;
+	unsigned int		subnet;
+	unsigned int		n_time;
 	struct link			*new_comer;
 	struct link			*link;
 	struct links		*prev;

@@ -1,8 +1,11 @@
 #Makefile for sim-eclipse.c
-COMPILER 	= gcc
-CFLAGS		= -pthread -Wall# -g -O0 
+COMPILER 	= gcc#
+#COMPILER	= mingw32-gcc.exe
+#LINKER		= ld
+CFLAGS		= -pthread -Wall  -g -O0 
+#LDFLAGS	=  --allow-multiple-definition 
 LDFLAGS		= -z muldefs #-lmcheck
-LIBS		=  -lcrypto
+LIBS		= -lcrypto -lssl  /lib64/libm.so.6 #/lib/i686/nosegneg/libm-2.14.1.so #-lm
 INCLUDE		= -I./
 TARGET		= ./$(shell basename `readlink -f .`)
 OBJDIR		= ./obj
@@ -18,6 +21,9 @@ DEPENDS		= $(OBJECTS:.o=.d)
 
 $(TARGET): $(OBJECTS) $(LIBS)
 	$(COMPILER) -o $@ $^ $(LDFLAGS)
+#$(TARGET): $(OBJECTS) $(LIBS)
+#	$(LINKER) -o $@ $^ $(LDFLAGS)
+
 
 $(OBJDIR)/%.o: %.c
 	@[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)

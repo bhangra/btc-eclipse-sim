@@ -15,6 +15,7 @@
 //#include"proto-node.h"
 
 #define LEAST_NEIGHBOR 8
+#define min(A,B) (((A)<(B))?(A):(B)) 
 
 void dns_routine(struct dns *dns){
 //	fprintf(stderr, "\n");
@@ -61,44 +62,79 @@ void miner_routine(struct miner *miner){
 		}
 //	}
 #endif
-
+	if(miner->boot == true){
+		memset(miner->addrman.v_random, 0, sizeof(miner->addrman.v_random));
+		memset(miner->addrman.vv_new, 0, sizeof(miner->addrman.vv_new));
+		memset(miner->addrman.vv_tried, 0, sizeof(miner->addrman.vv_tried));
+	}
 	if(miner->boot == true && miner->seed == true){
 		for(i=0; i<NUM_DNS; i++){
 			dns_seed(miner->miner_id, &dns[i], &miner->new_comer);
 		}
-//		for(i=0; i<rand()%NUM_DNS; i++){}
 		i=rand()%NUM_DNS;
-		dns_query(&dns[i], &miner->new_comer, miner->miner_id);
-//		fprintf(stderr, "sent dns_query\n");
+		add_fixed_seeds(&miner->addrman);
 		miner->boot = false;
-//		miner->seed = false;
 	}
 	else if(miner->boot == true){
-//		for(i=0; i<rand()%6; i++){}
-		dns_query(&dns[rand()%5], &miner->new_comer, miner->miner_id);
-//		fprintf(stderr, "sent dns_query\n");
+		add_fixed_seeds(&miner->addrman);
 		miner->boot = false;
 	}
 	else{
+		int noutbound=0;
+		if(miner->outbound!=NULL){
+			for(links=miner->outbound; links->next!=NULL; links=links->next){}
+			for(noutbound=0; links!=NULL; links=links->prev){
+				noutbound++;
+			}
+		}
+		struct caddrinfo *addr = addrman_select(&miner->addrman, min(noutbound,8)+10);
+#ifdef DEBUG
+		int k; 
+		for(k=0; k<SEED_NUM; k++)
+			fprintf(stderr, "seed[%d].new_comer = %p\n", k, &seeds[k].new_comer);
+		if(addr!=NULL)
+			fprintf(stderr, "*addr: id = %d, new_comer = %p\n", addr->miner_id, addr->new_comer);
+#endif
+		miner->addrman.n_tries++;
+		if(addr!=NULL){
+			int subnet = addr->subnet;
+			bool subnet_found=false;
+			if(miner->outbound!=NULL){
+				for(links=miner->outbound; links->next!=NULL; links=links->next){}
+				for(; links!=NULL; links=links->prev){
+					if(subnet==links->subnet){
+						subnet_found=true;
+						break;
+					}
+				}
+			}
+			if(subnet_found){}
+			else if(miner->addrman.n_tries > 100){
+				miner->addrman.n_tries = 0;
+//				miner->boot = true;
+			}
+			else if(sim_time - addr->n_last_try < 600 && miner->addrman.n_tries < 30){}
+			else{
+//				fprintf(stderr, "sent version\n");
+				version(miner->miner_id, miner->subnet, addr->miner_id, addr->new_comer, &miner->new_comer, miner);
+			}
+		}
 		for(link=&miner->new_comer; link->num_msg!=0;){
 //			fprintf(stderr, "new_comer link\n"); //debug
 			read_msg(link);
-			miner->links = process_new(&miner->new_comer, miner);
+			process_new(&miner->new_comer, miner);
 //			fprintf(stderr, "miner->links = %p\n", miner->links);
 		}
-		links = miner->links;
+		links = miner->inbound;
 		if(links==NULL){
-			miner->neighbor=0;
-			miner->boot=true;
+			miner->n_inbound=0;
+//			if(miner->addrman==NULL)
+//			miner->boot=true;
 		}
-//			return;
 		else{
 			getblocks_sent=false;
-			for(links=miner->links;links->next!=NULL; links=links->next){}
+			for(links=miner->inbound;links->next!=NULL; links=links->next){}
 			for(i=0/*debug*/; links!=NULL; /*links=links->prev*/){
-#ifdef DEBUG
-//				fprintf(stderr, "link->num_msg = %d\n", link->num_msg);//debug
-#endif
 				for(link=links->link;  link->num_msg!=0/*link!=NULL*/;){
 #ifdef DEBUG
 					fprintf(stderr, "will read msg from miner: %d\n", links->miner_id); //debug
@@ -107,13 +143,12 @@ void miner_routine(struct miner *miner){
 						break;
 					read_msg(link);	
 					if(process_msg(&miner->new_comer, links, miner)==-1){
-						links=miner->links;
+						links=miner->inbound;
 						if(links!=NULL)
 							link=links->link;
 						else
 							link=NULL;
 						break;
-						
 					}
 					if(link!=NULL){
 						if(link->num_msg==0 && link->fgetblock==true && miner->new_chain!=NULL && getblocks_sent==false){
@@ -126,83 +161,79 @@ void miner_routine(struct miner *miner){
 				if(links!=NULL)
 					links=links->prev;
 			}
-			if(miner->new_chain!=NULL && getblocks_sent !=true && miner->links!=NULL){
-				i = 0;
-	//			tmp_links=links;
-				for(links=miner->links; links->next!=NULL; links=links->next){
-					i++;
-				}
-				if(i>0)
-					n = rand()%i;
-				else
-					n = 0;
-				for(i=0; i<n && links->prev!=NULL; links=links->prev){}
-				get_blocks(links->link, miner->blocks, miner->new_chain);
-				getblocks_sent = true;
-	//			links=tmp_links;
-	//			link=links->link;
-			}
 		}
-#ifdef DEBUG
-		fprintf(stderr, "num of links: %d\n", miner->neighbor);//debug
-#endif
-		if(miner->neighbor==0){
-			miner->boot = true;
-			return;
+		links = miner->outbound;
+		if(links==NULL){
+			miner->n_outbound=0;
+//			if(miner->addrman==NULL)
+//			miner->boot=true;
 		}
-		if(miner->links!=NULL){
-			for(links=miner->links; links->next!=NULL; links=links->next){}
+		else{
+			getblocks_sent=false;
+			for(links=miner->outbound;links->next!=NULL; links=links->next){}
+			for(i=0/*debug*/; links!=NULL; /*links=links->prev*/){
+				for(link=links->link;  link->num_msg!=0/*link!=NULL*/;){
 #ifdef DEBUG
-			fprintf(stderr, "links:");
+					fprintf(stderr, "will read msg from miner: %d\n", links->miner_id); //debug
 #endif
-			for(; links!=NULL; links=links->prev){
-#ifdef DEBUG
-				link = links->link;
-//#ifdef DEBUG
-//				fprintf(stderr, "links dest: %p, new: %p, id: %d\n", link->dest, links->new_comer, links->miner_id);
-				fprintf(stderr, " id= %d", links->miner_id);
-#endif
-				i++;
-			}
-#ifdef DEBUG
-				fprintf(stderr, "\n");
-#endif
-			if(miner->neighbor<miner->least){
-				if(miner->neighbor!=0)
-					n = rand()%(miner->neighbor+1);
-				else
-					n=0;
-				for(links=miner->links; links->next!=NULL; links=links->next){}
-				for(i=0; i<n; i++){
-					if(links->prev==NULL)
+					if(link->num_msg==0)
 						break;
-					links=links->prev;
-				}
-//				if(links!=NULL){
-/*					if(links->link == NULL){
-						struct links *next, *prev;
-						next=links->next;
-						prev=links->prev;
-						free(links);
-						if(prev!=NULL)
-							prev->next=next;
-						if(next!=NULL)
-							next->prev=prev;
-						if(next!=NULL)
-							miner->links=next;
-						else if(prev!=NULL)
-							miner->links=prev;
-						else{
-							miner->links=NULL;
-							miner->boot=true;
-							return;
+					read_msg(link);	
+					if(process_msg(&miner->new_comer, links, miner)==-1){
+						links=miner->inbound;
+						if(links!=NULL)
+							link=links->link;
+						else
+							link=NULL;
+						break;
+					}
+					if(link!=NULL){
+						if(link->num_msg==0 && link->fgetblock==true && miner->new_chain!=NULL && getblocks_sent==false){
+							link->fgetblock=false;
+							get_blocks(link, miner->blocks, miner->new_chain);
+							getblocks_sent=true;
 						}
 					}
-*/ // redundunt free links
-				if(links->link->dest!=links->new_comer)
-					getaddr(links->link, miner->miner_id);
+				} 
+				if(links!=NULL)
+					links=links->prev;
+			}
+		}
 
-//				}
+		if(miner->new_chain!=NULL && getblocks_sent !=true && miner->outbound!=NULL){
+			i = 0;
+	//		tmp_links=links;
+			for(links=miner->outbound; links->next!=NULL; links=links->next){
+				i++;
+			}
+			if(i>0)
+				n = rand()%i;
+			else
+				n = 0;
+			for(i=0; i<n && links->prev!=NULL; links=links->prev){}
+			get_blocks(links->link, miner->blocks, miner->new_chain);
+			getblocks_sent = true;
+	//		links=tmp_links;
+	//		link=links->link;
+		}
+#ifdef DEBUG
+		fprintf(stderr, "num of links: %d\n", miner->n_outbound+miner->n_inbound);//debug
+#endif
+//		if(miner->n_addrman==0){
+//			miner->boot = true;
+//			return;
+//		}
+		if(miner->inbound!=NULL){
+			for(links=miner->inbound; links->next!=NULL; links=links->next){}
+#ifdef DEBUG
+			fprintf(stderr, "inbound:");
+			for(; links!=NULL; links=links->prev){
+				fprintf(stderr, " id= %d", links->miner_id);
+				i++;
+			}
+				fprintf(stderr, "\n");
+#endif
+			if(miner->n_outbound<MAX_OUTBOUND_CONNECTIONS){//will fix
 			}
 		}
 	}

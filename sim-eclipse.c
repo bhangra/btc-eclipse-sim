@@ -11,7 +11,7 @@
 #include<pthread.h>
 #include<unistd.h>
 #include<sys/types.h>
-#include<mcheck.h>
+//#include<mcheck.h>
 
 //#include"thread.c"
 //#include"node.c"
@@ -24,7 +24,7 @@ int main(int argc, char *argv[]){
 //	struct dns	dns[5];
 	unsigned int /*miner_id,*/ i;//, num_nodes;
 	struct threads *threads;
-	mcheck(NULL);
+//	mcheck(NULL);
 
 	dead = NULL;
 	global_id = 0;
@@ -34,8 +34,16 @@ int main(int argc, char *argv[]){
 //nodes list initialization
 	threads = NULL;
 
-//DNS nodes initialization
-	memset(&dns, 0, NUM_DNS*sizeof(struct dns));
+//DNS nodes initialization 
+	memset(&dns, 0, NUM_DNS*sizeof(struct dns)); //will delete?
+
+//Seeds Initialization
+ 	for(i=0; i<SEED_NUM; i++){
+		memset(&seeds[i], 0, sizeof(seeds[i]));
+		seeds[i].TTL = SIM_TIME;
+		seeds[i].miner_id = global_id;
+		global_id++;
+	}
 
 //bad nodes/DNS initialization
 	for(i=0; i<NUM_DNS; i++){
@@ -50,6 +58,7 @@ int main(int argc, char *argv[]){
 		num_nodes++;
 	}
 #endif 
+
 
 //initial seed nodes creation
 /*	for(num_nodes=0; num_nodes<SEED_NUM; global_id++){
@@ -78,7 +87,7 @@ int main(int argc, char *argv[]){
 
 // kill/create nodes, manage total hash-rate
 		threads = cancel_by_TTL(threads);
-		threads = keep_total_seeds(threads);
+//		threads = keep_total_seeds(threads);
 		threads = keep_total_nodes(threads);
 		keep_total_hash_rate_1(threads);
 		if(sim_time%600==0){
@@ -114,6 +123,9 @@ int main(int argc, char *argv[]){
 			}
 			if(threads->prev==NULL)
 				break;
+		}
+		for(i=0; i<SEED_NUM; i++){
+			miner_routine(&seeds[i]);
 		}
 		for(i=0; i<NUM_DNS; i++){
 #ifdef DEBUG

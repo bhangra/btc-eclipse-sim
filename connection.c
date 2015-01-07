@@ -20,7 +20,9 @@
 #define HDR_SIZE	16
 void hexDump (char *desc, void *addr, int len);
 
-void free_link(struct links *will_remove, struct miner *miner){
+
+
+void free_link(struct links *will_remove, struct links * *links/*struct miner *miner*/){
 	struct links *after, *before;
 	if(will_remove==NULL){
 		return;
@@ -35,42 +37,64 @@ void free_link(struct links *will_remove, struct miner *miner){
 		free(will_remove);
 		will_remove = NULL;
 	}
-	miner->neighbor--;
+//	miner->neighbor--;
 	if(after!=NULL)
 		after->prev=before;
 	if(before!=NULL)
 		before->next=after;
 	
-//	if(miner->links==will_remove){
-	if(after!=NULL)
-		miner->links=after;
-	else if(before!=NULL)
-		miner->links=before;
-	else
-		miner->links=NULL;
-//	}
+	if(*links==will_remove){
+		if(after!=NULL)
+			*links=after;
+		else if(before!=NULL)
+			*links=before;
+		else
+			*links=NULL;
+	}
 }
 
 void free_links(struct threads *will_kill){
 	unsigned int kill_id;
 	struct threads  *tmp;
 	struct miner    *miner;
-	struct links    *links, *prev, *next;
+	struct links    *links, *prev;//, *next;
 	
 	kill_id = (will_kill->miner)->miner_id;
 	
 	for(tmp = will_kill; tmp->next!=NULL;tmp=tmp->next){}
 	for(miner=tmp->miner; tmp!=NULL; tmp=tmp->prev){
 		miner=tmp->miner;
-		if(miner->links==NULL){
-			continue;
+/*		if(miner->addrman!=NULL){		//will fix
+			for(links=miner->addrman; links->next!=NULL; links=links->next){}
+			for(; links!=NULL; links=prev){
+				prev = links->prev;
+				if(links->miner_id==kill_id){
+					free_link(links, &miner->addrman);
+					links=miner->addrman;
+					miner->n_addrman--;
+				}
+			}
 		}
-		for(links=miner->links; links->next!=NULL; links=links->next){}
-		for(; links!=NULL; links=prev){
-			prev = links->prev;
-			if(links->miner_id==kill_id){
-				free_link(links, miner);
-				links=miner->links;
+*/		if(miner->outbound!=NULL){
+			for(links=miner->outbound; links->next!=NULL; links=links->next){}
+			for(; links!=NULL; links=prev){
+				prev = links->prev;
+				if(links->miner_id==kill_id){
+					free_link(links, &miner->outbound);
+					links=miner->outbound;
+					miner->n_outbound--;
+				}
+			}
+		}
+		if(miner->inbound!=NULL){
+			for(links=miner->inbound; links->next!=NULL; links=links->next){}
+			for(; links!=NULL; links=prev){
+				prev = links->prev;
+				if(links->miner_id==kill_id){
+					free_link(links, &miner->inbound);
+					links=miner->inbound;
+					miner->n_inbound--;
+				}
 			}
 		}
 	}
@@ -139,15 +163,12 @@ struct links *add_links(unsigned int miner_id, struct link *dest, struct link *n
 			break;
 		}
 	}
-//	fprintf(stderr, "will malloc\n"); //debug
-
 	new			= malloc(sizeof(struct links));
 /*	if(new==NULL){
 		perror("malloc");
 		exit(-1);
 	}
 */	memset(new, 0, sizeof(struct links));
-
 	new->link	= malloc(sizeof(struct link));
 /*	if(new->link==NULL){
 		perror("malloc");

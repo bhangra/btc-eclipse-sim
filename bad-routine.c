@@ -46,7 +46,7 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	}
 	else{
 		dest_group = rand()%GROUPS;
-		for(tmp=me->links; tmp->prev!=NULL; tmp=tmp->prev){}
+		for(tmp=me->outbound; tmp->prev!=NULL; tmp=tmp->prev){}
 		for(; tmp!=NULL && tmp->miner_id!=dest_id; tmp=tmp->next){}
 		if(tmp!=NULL){
 			bad_links=add_links(dest_id, tmp->new_comer, tmp->new_comer, bad_links);
@@ -182,7 +182,7 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 				connect	= false;
 			}
 			else{
-				for(tmp=me->links; tmp->prev!=NULL; tmp=tmp->prev){}
+				for(tmp=me->outbound; tmp->prev!=NULL; tmp=tmp->prev){}
 				for(; tmp->next!=NULL; tmp=tmp->next){
 					if(tmp->miner_id==miner_id){
 						connect = false;
@@ -195,7 +195,7 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 #ifdef DEBUG
 				fprintf(stderr, "will send version to dest: %p, id: %d\n", dest, miner_id);
 #endif
-				me->links = version(me->miner_id, miner_id, dest, &me->new_comer, me->links);
+				version(me->miner_id, me->subnet, miner_id, dest, &me->new_comer, me);
 			}
 		}
 		if(!connected){
@@ -238,7 +238,7 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 			return NULL;
 		}
 		
-		/*return*/tmp = version(me->miner_id, miner_id, dest, &me->new_comer, me->links);
+		version(me->miner_id, me->subnet, miner_id, dest, &me->new_comer, me);
 		if(tmp!=NULL){
 			if(bad_links==NULL){
 				bad_links = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
@@ -261,14 +261,14 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 		if(tmp!=NULL)
 			return tmp;
 		else
-			return me->links;
+			return me->outbound;
 	}
 	else if(strncmp(hdr->command, "version", 7)==0){
 #ifdef DEBUG
 		fprintf(stderr, "version received\n");
 #endif
 //		return verack(new_comer, me->links);
-		tmp = verack(new_comer, me->links, me);
+		tmp = verack(new_comer, me->inbound, me);
 		
 		if(tmp!=NULL){
 			if(bad_links==NULL){
@@ -291,7 +291,7 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 		}
 		return tmp;
 	}
-	return me->links;
+	return me->inbound;
 }
 
 void bad_miner_routine(struct miner *miner){
@@ -316,9 +316,9 @@ void bad_miner_routine(struct miner *miner){
 			fprintf(stderr, "new_comer link\n"); //debug
 #endif
 			read_msg(link);
-			miner->links = process_bad_new(&miner->new_comer, miner);
+			miner->inbound = process_bad_new(&miner->new_comer, miner);
 		}
-		links = miner->links;
+		links = miner->outbound;
 		if(links==NULL){
 			i=0;
 			miner->boot=true;
@@ -336,10 +336,10 @@ void bad_miner_routine(struct miner *miner){
 			}
 		}
 	}
-	if(miner->links!=NULL){
+//	if(miner->links!=NULL){
 //		if(i<LEAST_NEIGHBOR && miner->links!=NULL && ((miner->links)->link)->dest!=(miner->links)->new_comer){
 //			getaddr((miner->links)->link, miner->miner_id);
 //		}
-	}
+//	}
 }
 #endif
