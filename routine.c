@@ -32,6 +32,7 @@ void miner_routine(struct miner *miner){
 	int 			i, n;
 	struct links 	*links;//, *tmp_links;
 	struct link		*link;//, *tmp_link;
+	struct killed	*killed;
 //	fprintf(stderr, "entered miner_routine()\n"); //debug
 #ifdef DEBUG	
 //	if(sim_time>=SIM_TIME-1){
@@ -87,7 +88,18 @@ void miner_routine(struct miner *miner){
 				noutbound++;
 			}
 		}
-		struct caddrinfo *addr = addrman_select(&miner->addrman, min(noutbound,8)+10);
+		struct caddrinfo *addr;
+#ifdef ADDR_DEBUG
+		if(miner->addrman.caddrinfo!=NULL){
+			for(addr=miner->addrman.caddrinfo; addr->next!=NULL; addr=addr->next){}
+			fprintf(stderr, "in caddfinfo: ");
+			for(; addr!=NULL; addr=addr->prev){
+				fprintf(stderr, "miner_id: %d, nid; %d new_comer: %p, f_in_tried = %d, ", addr->miner_id, addr->nid, addr->new_comer, addr->f_in_tried);
+			}
+		}
+		fprintf(stderr, "\n");
+#endif
+		addr = addrman_select(&miner->addrman, min(noutbound,8)+10);
 #ifdef DEBUG
 		int k; 
 		for(k=0; k<SEED_NUM; k++)
@@ -102,21 +114,36 @@ void miner_routine(struct miner *miner){
 			if(miner->outbound!=NULL){
 				for(links=miner->outbound; links->next!=NULL; links=links->next){}
 				for(; links!=NULL; links=links->prev){
-					if(subnet==links->subnet){
+					if(subnet==links->subnet || addr->new_comer==links->new_comer){
 						subnet_found=true;
 						break;
 					}
 				}
 			}
+			if(miner->inbound!=NULL){
+				for(links=miner->inbound; links->next!=NULL; links=links->next){}
+				for(; links!=NULL; links=links->prev){
+					if(addr->new_comer==links->new_comer){
+						subnet_found=true;
+					}
+				}
+			}
+			if(dead!=NULL)
+				for(killed=dead; killed!=NULL; killed=killed->next){
+					if(killed->id == addr->miner_id)
+						subnet_found=true;
+				}
+
 			if(subnet_found){}
 			else if(miner->addrman.n_tries > 100){
 				miner->addrman.n_tries = 0;
 //				miner->boot = true;
 			}
-			else if(sim_time - addr->n_last_try < 600 && miner->addrman.n_tries < 30){}
+			else if(miner->n_outbound >= 8||(sim_time - addr->n_last_try < 600 && miner->addrman.n_tries < 30)){}
 			else{
 //				fprintf(stderr, "sent version\n");
 				version(miner->miner_id, miner->subnet, addr->miner_id, addr->new_comer, &miner->new_comer, miner);
+				miner->n_outbound++;
 			}
 		}
 		for(link=&miner->new_comer; link->num_msg!=0;){
@@ -133,33 +160,35 @@ void miner_routine(struct miner *miner){
 		}
 		else{
 			getblocks_sent=false;
-			for(links=miner->inbound;links->next!=NULL; links=links->next){}
-			for(i=0/*debug*/; links!=NULL; /*links=links->prev*/){
-				for(link=links->link;  link->num_msg!=0/*link!=NULL*/;){
-#ifdef DEBUG
-					fprintf(stderr, "will read msg from miner: %d\n", links->miner_id); //debug
+			if(miner->inbound!=NULL){
+				for(links=miner->inbound;links->next!=NULL; links=links->next){}
+				for(i=0/*debug*/; links!=NULL; /*links=links->prev*/){
+					for(link=links->link;  link->num_msg!=0/*link!=NULL*/;){
+#ifdef DEBUG	
+						fprintf(stderr, "will read msg from miner: %d\n", links->miner_id); //debug
 #endif
-					if(link->num_msg==0)
-						break;
-					read_msg(link);	
-					if(process_msg(&miner->new_comer, links, miner)==-1){
-						links=miner->inbound;
-						if(links!=NULL)
-							link=links->link;
-						else
-							link=NULL;
-						break;
-					}
-					if(link!=NULL){
-						if(link->num_msg==0 && link->fgetblock==true && miner->new_chain!=NULL && getblocks_sent==false){
-							link->fgetblock=false;
-							get_blocks(link, miner->blocks, miner->new_chain);
-							getblocks_sent=true;
+						if(link->num_msg==0)
+							break;
+						read_msg(link);	
+						if(process_msg(&miner->new_comer, links, miner)==-1){
+							links=miner->inbound;
+							if(links!=NULL)
+								link=links->link;
+							else
+								link=NULL;
+							break;
 						}
-					}
-				} 
-				if(links!=NULL)
-					links=links->prev;
+						if(link!=NULL){
+							if(link->num_msg==0 && link->fgetblock==true && miner->new_chain!=NULL && getblocks_sent==false){
+								link->fgetblock=false;
+								get_blocks(link, miner->blocks, miner->new_chain);
+								getblocks_sent=true;
+							}
+						}
+					}	 
+					if(links!=NULL)
+						links=links->prev;
+				}
 			}
 		}
 		links = miner->outbound;
@@ -169,34 +198,39 @@ void miner_routine(struct miner *miner){
 //			miner->boot=true;
 		}
 		else{
-			getblocks_sent=false;
-			for(links=miner->outbound;links->next!=NULL; links=links->next){}
-			for(i=0/*debug*/; links!=NULL; /*links=links->prev*/){
-				for(link=links->link;  link->num_msg!=0/*link!=NULL*/;){
 #ifdef DEBUG
-					fprintf(stderr, "will read msg from miner: %d\n", links->miner_id); //debug
+//			fprintf(stderr, "miner->outbound->link->num_msg == %d\n", miner->outbound->link->num_msg);
 #endif
-					if(link->num_msg==0)
-						break;
-					read_msg(link);	
-					if(process_msg(&miner->new_comer, links, miner)==-1){
-						links=miner->inbound;
-						if(links!=NULL)
-							link=links->link;
-						else
-							link=NULL;
-						break;
-					}
-					if(link!=NULL){
-						if(link->num_msg==0 && link->fgetblock==true && miner->new_chain!=NULL && getblocks_sent==false){
-							link->fgetblock=false;
-							get_blocks(link, miner->blocks, miner->new_chain);
-							getblocks_sent=true;
+			getblocks_sent=false;
+			if(miner->outbound!=NULL){
+				for(links=miner->outbound;links->next!=NULL; links=links->next){}
+				for(i=0/*debug*/; links!=NULL; /*links=links->prev*/){
+					for(link=links->link; link->num_msg!=0/*link!=NULL*/;){
+#ifdef DEBUG
+						fprintf(stderr, "will read msg from miner: %d\n", links->miner_id); //debug
+#endif
+						if(link->num_msg==0)
+							break;
+						read_msg(link);	
+						if(process_msg(&miner->new_comer, links, miner)==-1){
+							links=miner->inbound;
+							if(links!=NULL)
+								link=links->link;
+							else
+								link=NULL;
+							break;
 						}
-					}
-				} 
-				if(links!=NULL)
-					links=links->prev;
+						if(link!=NULL){
+							if(link->num_msg==0 && link->fgetblock==true && miner->new_chain!=NULL && getblocks_sent==false){
+								link->fgetblock=false;
+								get_blocks(link, miner->blocks, miner->new_chain);
+								getblocks_sent=true;
+							}
+						}
+					} 
+					if(links!=NULL)
+						links=links->prev;
+				}
 			}
 		}
 

@@ -22,10 +22,27 @@ void hexDump (char *desc, void *addr, int len);
 
 
 
-void free_link(struct links *will_remove, struct links * *links/*struct miner *miner*/){
-	struct links *after, *before;
+void free_link(struct links *will_remove, struct miner *miner/*struct miner *miner*/){
+	struct links *after, *before, *tmp;
+	bool found=false;
 	if(will_remove==NULL){
 		return;
+	}
+	if(miner->outbound!=NULL){
+		for(tmp=miner->outbound; tmp->next!=NULL; tmp=tmp->next){}
+		for(; tmp!=NULL; tmp=tmp->prev){
+			if(tmp==will_remove){
+				miner->n_outbound--;
+			}
+		}
+	}
+	if(miner->inbound!=NULL&&!found){
+		for(tmp=miner->inbound; tmp->next!=NULL; tmp=tmp->next){}
+		for(; tmp!=NULL; tmp=tmp->prev){
+			if(tmp==will_remove){
+				miner->n_outbound--;
+			}
+		}
 	}
 	after	= will_remove->next;
 	before	= will_remove->prev;
@@ -35,26 +52,32 @@ void free_link(struct links *will_remove, struct links * *links/*struct miner *m
 		will_remove->link = NULL;
 //		fprintf(stderr, "freed links: %p, link: %p\n", will_remove, will_remove->link);
 		free(will_remove);
-		will_remove = NULL;
+//		will_remove = NULL;
 	}
 //	miner->neighbor--;
 	if(after!=NULL)
 		after->prev=before;
 	if(before!=NULL)
 		before->next=after;
-	
-	if(*links==will_remove){
+		
+	if(will_remove==miner->outbound){
+//		miner->n_outbound--;
 		if(after!=NULL)
-			*links=after;
-		else if(before!=NULL)
-			*links=before;
+			miner->outbound=after;
+		else 
+			miner->outbound=before;
+	}
+	if(will_remove==miner->inbound){
+//		miner->n_inbound--;
+		if(after!=NULL)
+			miner->inbound=after;
 		else
-			*links=NULL;
+			miner->inbound=before;
 	}
 }
 
 void free_links(struct threads *will_kill){
-	unsigned int kill_id;
+	unsigned int kill_id, i;
 	struct threads  *tmp;
 	struct miner    *miner;
 	struct links    *links, *prev;//, *next;
@@ -64,25 +87,15 @@ void free_links(struct threads *will_kill){
 	for(tmp = will_kill; tmp->next!=NULL;tmp=tmp->next){}
 	for(miner=tmp->miner; tmp!=NULL; tmp=tmp->prev){
 		miner=tmp->miner;
-/*		if(miner->addrman!=NULL){		//will fix
-			for(links=miner->addrman; links->next!=NULL; links=links->next){}
-			for(; links!=NULL; links=prev){
-				prev = links->prev;
-				if(links->miner_id==kill_id){
-					free_link(links, &miner->addrman);
-					links=miner->addrman;
-					miner->n_addrman--;
-				}
-			}
-		}
-*/		if(miner->outbound!=NULL){
+		if(miner->outbound!=NULL){
 			for(links=miner->outbound; links->next!=NULL; links=links->next){}
 			for(; links!=NULL; links=prev){
 				prev = links->prev;
 				if(links->miner_id==kill_id){
-					free_link(links, &miner->outbound);
-					links=miner->outbound;
-					miner->n_outbound--;
+					free_link(links, miner);
+//					links=miner->outbound;
+					break;
+//					miner->n_outbound--;
 				}
 			}
 		}
@@ -91,9 +104,37 @@ void free_links(struct threads *will_kill){
 			for(; links!=NULL; links=prev){
 				prev = links->prev;
 				if(links->miner_id==kill_id){
-					free_link(links, &miner->inbound);
-					links=miner->inbound;
-					miner->n_inbound--;
+					free_link(links, miner);
+//					links=miner->inbound;
+					break;
+//					miner->n_inbound--;
+				}
+			}
+		}
+	}
+	for(i=0; i<SEED_NUM; i++){
+		miner=&seeds[i];
+		if(miner->outbound!=NULL){
+			for(links=miner->outbound; links->next!=NULL; links=links->next){}
+			for(; links!=NULL; links=prev){
+				prev = links->prev;
+				if(links->miner_id==kill_id){
+					free_link(links, miner);
+//					links=miner->outbound;
+					break;
+//					miner->n_outbound--;
+				}
+			}
+		}
+		if(miner->inbound!=NULL){
+			for(links=miner->inbound; links->next!=NULL; links=links->next){}
+			for(; links!=NULL; links=prev){
+				prev = links->prev;
+				if(links->miner_id==kill_id){
+					free_link(links, miner);
+//					links=miner->inbound;
+					break;
+//					miner->n_inbound--;
 				}
 			}
 		}
@@ -153,11 +194,14 @@ struct links *add_links(unsigned int miner_id, struct link *dest, struct link *n
 //		fprintf(stderr, "*links = %p\n", tmp); //debug
 		if(tmp==NULL)
 			break;
+//#ifdef DEBUG
+//			fprintf(stderr, "tmp->miner_id == %d\n", tmp->miner_id);
+//#endif
 		if(miner_id==tmp->miner_id){ //already connected 
 #ifdef DEBUG
 			fprintf(stderr, "already connected\n");
 #endif
-			return links;
+//			return links;
 		}
 		if(tmp->next == NULL){
 			break;

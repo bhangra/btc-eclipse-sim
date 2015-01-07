@@ -125,6 +125,10 @@ int main(int argc, char *argv[]){
 				break;
 		}
 		for(i=0; i<SEED_NUM; i++){
+#ifdef DEBUG
+						fprintf(stderr, "\nminer: %d seed: %d\n", seeds[i].miner_id, seeds[i].seed);
+#endif
+
 			miner_routine(&seeds[i]);
 		}
 		for(i=0; i<NUM_DNS; i++){

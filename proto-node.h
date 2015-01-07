@@ -39,6 +39,7 @@ struct miner{
 	struct links	*inbound;
 	unsigned int	n_outbound;
 	struct links	*outbound;
+	bool			f_propagate;
 };
 
 struct dns{

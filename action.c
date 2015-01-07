@@ -221,9 +221,12 @@ void version(unsigned int my_id, unsigned int my_subnet, unsigned int dest_id,  
 //	fprintf(stderr, "will send version msg\n"); //debug
 //	fprintf(stderr, "version to link: %p id: \n", dest, dest_id); //debug
 	size = sizeof(struct link*);
-	payload_size = size+sizeof(unsigned int)+size;
+	payload_size = size+sizeof(unsigned int)+size+sizeof(unsigned int);
 //	save = links;
 	new = add_links(dest_id, dest, dest, miner->outbound);
+#ifdef DEBUG
+	fprintf(stderr, "version new->link->num_msg == %d\n", new->link->num_msg);
+#endif
 //	if(new==save)
 //		return;
 	link = new->link;
@@ -236,9 +239,13 @@ void version(unsigned int my_id, unsigned int my_subnet, unsigned int dest_id,  
 	memcpy(&link->sbuf[16], &link, size);
 	memcpy(&link->sbuf[16+size], &my_id, sizeof(unsigned int));
 	memcpy(&link->sbuf[16+size+sizeof(unsigned int)], &tmp, size);
+	memcpy(&link->sbuf[16+size*2+sizeof(unsigned int)], &my_subnet, sizeof(unsigned int));
 	send_msg(dest, (char *)link->sbuf, 16+payload_size);
 //	fprintf(stderr, "sent version to dest: %p, id: %d with mylink: %p\n", link->dest, new->miner_id, link); //debug
 	miner->outbound = new;
+#ifdef DEBUG
+	fprintf(stderr, "miner->outbound->link->num_msg == %d\n", miner->outbound->link->num_msg);
+#endif
 }
 
 struct links *nat(struct link *new_comer, struct links *links, struct miner *me){
@@ -284,12 +291,12 @@ struct links *nat(struct link *new_comer, struct links *links, struct miner *me)
 	memcpy(&link->sbuf[12], &size, 4);
 	send_msg(link->dest, (char *)link->sbuf, 16);
 	memset(&link->sbuf, 0, sizeof(link->sbuf));
-	free_link(tmp, &me->inbound);
+	free_link(tmp, me);
 	return me->inbound;
 }
 
 struct links *verack(struct link *new_comer, struct links *links, struct miner *me){
-	unsigned int miner_id;
+	unsigned int miner_id, subnet;
 	struct links *tmp, *save;
 	struct link *link, *dest, *dest_new_comer;
 	unsigned int size;
@@ -308,8 +315,10 @@ struct links *verack(struct link *new_comer, struct links *links, struct miner *
                     return links;
             }
 	memcpy(&dest_new_comer, &new_comer->process_buf[16+size+sizeof(unsigned int)], sizeof(struct link*));
+	memcpy(&subnet, &new_comer->process_buf[16+size*2+sizeof(unsigned int)], sizeof(unsigned int));
 	save		= links;
 	tmp			= add_links(miner_id, dest, dest_new_comer, me->inbound);
+	tmp->subnet	= subnet;
 	if(tmp==save){
 		return nat(new_comer, links, me);
 	}
@@ -604,7 +613,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	else if(strncmp(hdr->command, "addr", 4)==0){
 		memcpy(&payload_size, &link->process_buf[12], sizeof(unsigned int));
 		size		= sizeof(struct link*);
-		set			= size + sizeof(unsigned int)+sizeof(unsigned int);
+		set			= size + sizeof(unsigned int)+sizeof(unsigned int)+sizeof(unsigned int);
 		num_addr    = payload_size/set;
 		if(num_addr == 0)
 			return 0;
@@ -614,6 +623,9 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 			memcpy(&tmp2.new_comer, &link->process_buf[16+i*set+sizeof(unsigned int)], size);
 			memcpy(&tmp2.n_time, &link->process_buf[16+i*set+sizeof(unsigned int)+size], sizeof(unsigned int));
 			memcpy(&tmp2.subnet, &link->process_buf[16+i*set+sizeof(unsigned int)+size+sizeof(unsigned int)], sizeof(unsigned int));
+#ifdef DEBUG
+			fprintf(stderr, "tmp2: miner_id = %d, new_comer = %p, n_time = %d, subnet = %d\n", tmp2.miner_id, tmp2.new_comer, tmp2.n_time, tmp2.subnet);
+#endif
 			connect		= true;
 			if(tmp2.miner_id==me->miner_id){
 				connect = false;
@@ -651,7 +663,6 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 		addrman_add_(&me->addrman, links, links->new_comer, 0);
 		addrman_good(&me->addrman, links->new_comer, sim_time);
 
-		me->n_outbound++;
 		if(me->addrman.v_random_size < THOUSAND){
 			getaddr(link, me->miner_id);
 		}	
@@ -663,9 +674,9 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 #ifdef DEBUG
 		fprintf(stderr, "nat received\n");
 #endif
-		free_link(links, &me->outbound);
-
-		me->n_outbound--;
+		free_link(links, me);
+		
+//		me->n_outbound--;
 		return -1;
 	}
 	return 0;
@@ -715,13 +726,13 @@ void process_new(struct link *new_comer, struct miner *me){
 			}
 		}
 //		me->neighbor++;
-		me->outbound++;
+		me->n_outbound++;
 		version(me->miner_id, me->subnet, dest_id, dest, &me->new_comer, me);
     }
 	else if(strncmp(hdr->command, "version", 7)==0){
 //		fprintf(stderr, "version received\n");
 //		if(me->one_way==NOT_NAT && me->neighbor < me->max){
-		if(me->one_way==NOT_NAT && me->n_inbound < N_MAX_CONNECTIONS - MAX_OUTBOUND_CONNECTIONS){
+		if((me->one_way==NOT_NAT && me->n_inbound < N_MAX_CONNECTIONS - MAX_OUTBOUND_CONNECTIONS)||me->seed==true){
 //			me->neighbor++;//will delete
 			me->n_inbound++;
 			tmp = me->inbound;// me->links;
