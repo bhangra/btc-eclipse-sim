@@ -250,7 +250,7 @@ void version(unsigned int my_id, unsigned int my_subnet, unsigned int dest_id,  
 
 struct links *nat(struct link *new_comer, struct links *links, struct miner *me){
 	unsigned int dest_id;
-	struct links *tmp, *save;
+	struct links *tmp;//, *save;
 	struct link *link, *dest, *dest_new_comer;
 	unsigned int size;
 	size = sizeof(struct link*);
@@ -268,9 +268,9 @@ struct links *nat(struct link *new_comer, struct links *links, struct miner *me)
 #ifdef DEBUG
 	fprintf(stderr, "will send nat to %d\n", dest_id);
 #endif
-	save		= links;
+//	save		= links;
 	tmp         = add_links(dest_id, dest, dest_new_comer, links);
-	if(tmp==save){
+/*	if(tmp==save){
 		link = &me->new_comer;
 		size = 0;
 		link->dest = dest;
@@ -282,11 +282,11 @@ struct links *nat(struct link *new_comer, struct links *links, struct miner *me)
 	
 		return me->inbound;
 	}
-		
+*/		
 	link        = tmp->link;
 
 	size = 0;
-	memset(&link->sbuf, 0, sizeof(link->sbuf));
+	memset(&link->sbuf, 0, 16);
 	memcpy(&link->sbuf[0], "nat", 3);
 	memcpy(&link->sbuf[12], &size, 4);
 	send_msg(link->dest, (char *)link->sbuf, 16);
@@ -641,7 +641,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 */			}
 			if(dead!=NULL){
 				for(killed=dead; killed!=NULL; killed=killed->next){
-					if(killed->id==miner_id){
+					if(killed->id==tmp2.miner_id){
 						connect=false;
 						break;
 					}
@@ -732,8 +732,7 @@ void process_new(struct link *new_comer, struct miner *me){
 	else if(strncmp(hdr->command, "version", 7)==0){
 //		fprintf(stderr, "version received\n");
 //		if(me->one_way==NOT_NAT && me->neighbor < me->max){
-		if((me->one_way==NOT_NAT && me->n_inbound < N_MAX_CONNECTIONS - MAX_OUTBOUND_CONNECTIONS)||me->seed==true){
-//			me->neighbor++;//will delete
+		if((me->one_way==NOT_NAT && me->n_inbound <= N_MAX_CONNECTIONS - MAX_OUTBOUND_CONNECTIONS)||me->seed==true){
 			me->n_inbound++;
 			tmp = me->inbound;// me->links;
 			me->inbound = verack(new_comer, me->inbound, me);

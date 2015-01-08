@@ -40,7 +40,7 @@ void free_link(struct links *will_remove, struct miner *miner/*struct miner *min
 		for(tmp=miner->inbound; tmp->next!=NULL; tmp=tmp->next){}
 		for(; tmp!=NULL; tmp=tmp->prev){
 			if(tmp==will_remove){
-				miner->n_outbound--;
+				miner->n_inbound--;
 			}
 		}
 	}
@@ -80,8 +80,10 @@ void free_links(struct threads *will_kill){
 	unsigned int kill_id, i;
 	struct threads  *tmp;
 	struct miner    *miner;
-	struct links    *links, *prev;//, *next;
-	
+	struct links    *links, *prev;
+#ifdef BAD_NODES
+	struct links	 *next;
+#endif	
 	kill_id = (will_kill->miner)->miner_id;
 	
 	for(tmp = will_kill; tmp->next!=NULL;tmp=tmp->next){}
@@ -280,7 +282,9 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 #endif
 		return 0;
 	}
-//	pthread_mutex_lock((pthread_mutex_t *)&dest->rcv_mutex);
+#ifdef MULTI
+	pthread_mutex_lock((pthread_mutex_t *)&dest->rcv_mutex);
+#endif
 	if(pos+msg_size < BUF_SIZE){
 		memcpy(&dest->buf[pos], message, msg_size);
 		dest->write_pos += msg_size;
@@ -292,7 +296,9 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 		dest->write_pos = over_size;
 	}
 	dest->num_msg += 1;
-//	pthread_mutex_unlock((pthread_mutex_t *)&dest->rcv_mutex);
+#ifdef MULTI
+	pthread_mutex_unlock((pthread_mutex_t *)&dest->rcv_mutex);
+#endif
 	memset(message, 0, BUF_SIZE);
 #ifdef DEBUG
 	fprintf(stderr, "succesfully sent message, dest->num_msg: %d\n", dest->num_msg);	
@@ -312,7 +318,9 @@ int read_msg(struct link *link){
 	if(!(int)link->num_msg){
 		return 0;
 	}
-//	pthread_mutex_lock(&link->rcv_mutex);
+#ifdef	MULTI
+	pthread_mutex_lock(&link->rcv_mutex);
+#endif	//MULTI
 	hdr         = (struct msg_hdr*)&link->buf[(link)->read_pos];
 	if((link->read_pos+HDR_SIZE)<BUF_SIZE){
 		read_size	= HDR_SIZE + hdr->message_size;
@@ -381,8 +389,9 @@ int read_msg(struct link *link){
 #ifdef ASSERT
 	assert(read_size < BUF_SIZE);
 #endif
-
-//	pthread_mutex_unlock(&link->rcv_mutex);
+#ifdef	MULTI
+	pthread_mutex_unlock(&link->rcv_mutex);
+#endif	//MULTI
 #ifdef DEBUG
 	fprintf(stderr, "reading msg, size: %d type: %s\n", read_size, link->process_buf);
 #endif

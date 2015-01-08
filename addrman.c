@@ -487,7 +487,7 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 	if(addrman->caddrinfo ==NULL)
 		return NULL;
 #ifdef ADDR_DEBUG
-	fprintf(stderr, "n_tried = %d, n_new = %d\n", addrman->n_tried, addrman->n_new);
+	fprintf(stderr, "in addrman_select(): n_tried = %d, n_new = %d\n", addrman->n_tried, addrman->n_new);
 #endif
 	unsigned int n;
 	double n_cor_tried	= sqrt(addrman->n_tried) * (100.0-n_unk_bias);
@@ -584,7 +584,7 @@ unsigned int getaddr_(struct addrman *addrman, unsigned char *vaddr){//will fix 
 	for(n=0; n<addrman->v_random_size; n++){
 		fprintf(stderr, "vrandom[%d] = %d\n", n, *addrman->v_random[n]);
 	}
-	fprintf(stderr, "v_random_size == %d\n", addrman->v_random_size);
+	fprintf(stderr, "v_random_size = %d\n", addrman->v_random_size);
 #endif
 	i=0;
 	for(n=0; n < addrman->v_random_size; ){

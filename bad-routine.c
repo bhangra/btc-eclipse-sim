@@ -18,7 +18,9 @@
 //bool	is_bad_dns[NUM_DNS];	
 
 void hexDump (char *desc, void *addr, int len);
-
+#ifdef BAD_NODES
+unsigned int bad_count[BAD_NODES];
+#endif
 void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	unsigned int			payload_size, set_size, sets;	
 //	int 					i;
@@ -33,7 +35,7 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	
 	link			= dest;
 	payload_size	= 0;
-	set_size		= sizeof(struct link*) + sizeof(unsigned int);
+	set_size		= sizeof(struct link*) + sizeof(unsigned int)*3;
 	exists=false;
 	for(tmp_bad=bad_links; bad_links!=NULL; bad_links=bad_links->prev){
 		if(tmp_bad->miner_id==dest_id){
@@ -62,21 +64,16 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 //might change the maximum num of addrs to num of least neighbor
 	if(bad_threads!=NULL)
 	for(bad=bad_threads; bad->prev!=NULL; bad=bad->prev){}
-/*	struct link *link_tmp;
-	struct miner *miner_tmp;
-	for(; bad!=NULL; bad=bad->next){
-		memcpy(&link->sbuf[16+(sets*set_size)], &(bad->thread->miner)->miner_id, sizeof(unsigned int));
-		miner_tmp	= bad->thread->miner;
-		link_tmp	= &miner_tmp->new_comer;
-		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &link_tmp, sizeof(struct link*));
-		sets++;
-	}
-*/	if(bad_links!=NULL)
-	for(tmp_bad=bad_links; tmp_bad!=NULL && 16+sets*set_size<BUF_SIZE; tmp_bad=tmp_bad->prev){
-		if(tmp_bad->miner_id!=dest_id && tmp_bad->group == dest_group){
-			memcpy(&link->sbuf[16+(sets*set_size)], &tmp_bad->miner_id, sizeof(unsigned int));
-			memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &tmp_bad->new_comer, sizeof(struct link*));
-			sets++;
+	if(bad_links!=NULL){
+		for(tmp_bad=bad_links; tmp_bad!=NULL && 16+sets*set_size<BUF_SIZE; tmp_bad=tmp_bad->prev){
+			if(tmp_bad->miner_id!=dest_id && tmp_bad->group == dest_group){
+				memcpy(&link->sbuf[16+(sets*set_size)], &tmp_bad->miner_id, sizeof(unsigned int));
+				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &tmp_bad->new_comer, sizeof(struct link*));
+				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(unsigned int)], &sim_time, sizeof(unsigned int));
+				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(unsigned int)+sizeof(unsigned int)], &tmp_bad->subnet, sizeof(unsigned int));
+
+				sets++;
+			}
 		}
 	}
 	payload_size = set_size*sets;
@@ -141,10 +138,10 @@ void bad_dns_routine(struct dns *dns){
 }
 
 int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me){
-	bool                connect, connected;
-	unsigned int        i, miner_id, size, set, num_addr, payload_size;
+	bool                connect, connected, exists;
+	unsigned int        i, miner_id, size, set, num_addr, payload_size, dgroup;
 	struct link         *link, *dest;
-	struct links        *tmp;
+	struct links        *tmp, *tmp_bad;
 	const struct msg_hdr *hdr;
 
 	link = links->link;
@@ -153,8 +150,6 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 	fprintf(stderr, "command: %s\n", hdr->command); //debug
 #endif
 //ignore block related commands
-
-//change addr() to bad_addr()
 	if(strncmp(hdr->command, "getaddr", 7)==0){
 #ifdef DEBUG
 		fprintf(stderr, "getaddr received\n");
@@ -174,6 +169,16 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 		if(num_addr == 0)
 			me->boot = true;
 		connected = false;
+//int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me)
+		for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
+		for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+			if(tmp_bad->miner_id==links->miner_id){
+				dgroup = tmp_bad->group;
+				break;
+			}
+		}
+		if(tmp_bad==NULL)
+			dgroup=rand()%2;
 		for(i=0; i<num_addr; i++){
 			memcpy(&miner_id, &link->process_buf[16+i*set], sizeof(unsigned int));
 			memcpy(&dest, &link->process_buf[16+i*set+sizeof(unsigned int)], size);
@@ -196,6 +201,17 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 				fprintf(stderr, "will send version to dest: %p, id: %d\n", dest, miner_id);
 #endif
 				version(me->miner_id, me->subnet, miner_id, dest, &me->new_comer, me);
+				exists = false;
+				for(tmp_bad=bad_links; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+					if(tmp_bad->miner_id==tmp->miner_id){
+						exists = true;
+						break;
+					}
+				}
+				if(exists==false){
+					bad_links = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
+					bad_links->group = dgroup;
+				}
 			}
 		}
 		if(!connected){
@@ -298,6 +314,10 @@ void bad_miner_routine(struct miner *miner){
 	int				i;
 	struct links	*links;
 	struct link		*link;
+//	struct links	*tmp;
+	struct links	*tmp_bad=NULL;
+	bool			exists;
+//	unsigned int	dest_group;
 /*	if(miner->boot == true && miner->seed == true){
 		for(i=0; i<5; i++){
 			dns_seed(miner->miner_id, &dns[i], &miner->new_comer);
@@ -305,12 +325,43 @@ void bad_miner_routine(struct miner *miner){
 		miner->seed = false;
 	}
 */	if(miner->boot == true){
-		for(i=0; i<NUM_DNS; i++){
-			dns_query(&dns[i/*rand()%5*/], &miner->new_comer, miner->miner_id);
+		bad_count[miner->miner_id-SEED_NUM]=0;
+		for(i=0; i<SEED_NUM; i++){
+			version(miner->miner_id, miner->subnet, seeds[i]. miner_id, &seeds[i].new_comer, &miner->new_comer, miner);
+			exists = false;
+			if(bad_links!=NULL){
+				for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
+					for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+						if(tmp_bad->miner_id==seeds[i].miner_id){
+							exists = true;
+							break;
+					}
+				}
+				if(exists==false){
+					bad_links=add_links(seeds[i].miner_id, &seeds[i].new_comer, &seeds[i].new_comer, bad_links);
+					bad_links->group = rand()%GROUPS;
+				}
+//			dns_query(&dns[i/*rand()%5*/], &miner->new_comer, miner->miner_id);
+			}
+			miner->boot = false;
 		}
-		miner->boot = false;
 	}
 	else{
+		bad_count[miner->miner_id-SEED_NUM]++;
+		if(bad_count[miner->miner_id-SEED_NUM]==60*0){
+			for(i=0; i<SEED_NUM; i++){
+				for(tmp_bad=miner->outbound; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next);
+				for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+					if(tmp_bad->miner_id==seeds[i].miner_id){
+						bad_addr(tmp_bad->link/*&seeds[i].new_comer*/, miner, seeds[i].miner_id);
+						getaddr(tmp_bad->link, miner->miner_id);
+						break;
+					}
+				}
+				bad_count[miner->miner_id-SEED_NUM]=0;
+			}
+		}
+		
 		for(link=&miner->new_comer; link->num_msg!=0;){
 #ifdef DEBUG
 			fprintf(stderr, "new_comer link\n"); //debug
