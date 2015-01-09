@@ -37,10 +37,13 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	payload_size	= 0;
 	set_size		= sizeof(struct link*) + sizeof(unsigned int)*3;
 	exists=false;
-	for(tmp_bad=bad_links; bad_links!=NULL; bad_links=bad_links->prev){
-		if(tmp_bad->miner_id==dest_id){
-			exists = true;
-			break;
+	if(bad_links!=NULL){
+		for(tmp_bad=bad_links; tmp_bad->prev!=NULL; tmp_bad=tmp_bad->prev){}
+		for(; tmp_bad!=NULL; tmp_bad=tmp_bad->next){
+			if(tmp_bad->miner_id==dest_id){
+				exists = true;
+				break;
+			}
 		}
 	}
 	if(exists==true){
@@ -50,10 +53,14 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 		dest_group = rand()%GROUPS;
 		for(tmp=me->outbound; tmp->prev!=NULL; tmp=tmp->prev){}
 		for(; tmp!=NULL && tmp->miner_id!=dest_id; tmp=tmp->next){}
+		if(tmp==NULL){
+			for(tmp=me->inbound; tmp->prev!=NULL; tmp=tmp->prev){}
+			for(; tmp!=NULL && tmp->miner_id!=dest_id; tmp=tmp->next){}
+		}			
 		if(tmp!=NULL){
-			bad_links=add_links(dest_id, tmp->new_comer, tmp->new_comer, bad_links);
+			tmp_bad=add_links(dest_id, tmp->new_comer, tmp->new_comer, bad_links);
 			dest_group			= rand()%GROUPS;
-			bad_links->group	= dest_group;
+			tmp_bad->group		= dest_group;
 		}
 		else{
 			dest_group = rand()%GROUPS;
@@ -114,11 +121,11 @@ struct links *process_bad_dns(struct link *new_comer, struct links *seeds){
 					}
 				}
 				if(exists==false){
-					bad_links = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
-					bad_links->group = rand()%GROUPS;
+					tmp_bad = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
+					tmp_bad->group = rand()%GROUPS;
 				}
 			}
-			else{
+			else if(bad_links==NULL){
 				bad_links = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
 			}
 			return tmp;
@@ -170,26 +177,28 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 	}
 	else if(strncmp(hdr->command, "addr", 4)==0){
 		memcpy(&payload_size, &link->process_buf[12], sizeof(unsigned int));
-      num_addr	= (hdr->message_size/(size+sizeof(unsigned int)));
 		size		= sizeof(struct link*);
 		set			= size + sizeof(unsigned int)*3;
 		num_addr	= payload_size/set;
-//#ifdef DEBUG
+#ifdef DEBUG
 		fprintf(stderr, "num_addr = %d\n", num_addr);
-//#endif
+#endif
 //		if(num_addr == 0)
 //			me->boot = true;
 //		connected = false;
 //int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me)
-		for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
-		for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
-			if(tmp_bad->miner_id==links->miner_id){
-				dgroup = tmp_bad->group;
-				break;
+		tmp_bad=NULL;
+		if(bad_links!=NULL){
+			for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
+			for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+				if(tmp_bad->miner_id==links->miner_id){
+					dgroup = tmp_bad->group;
+					break;
+				}
 			}
 		}
 		if(tmp_bad==NULL)
-			dgroup=rand()%2;
+			dgroup=rand()%GROUPS;
 		for(i=0; i<num_addr; i++){
 			memcpy(&miner_id, &link->process_buf[16+i*set], sizeof(unsigned int));
 			memcpy(&dest, &link->process_buf[16+i*set+sizeof(unsigned int)], size);
@@ -233,17 +242,19 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 				version(me->miner_id, me->subnet, miner_id, dest, &me->new_comer, me);
 				exists = false;
 				tmp = me->outbound;
-				for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
-				for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
-					if(tmp_bad->miner_id==tmp->miner_id){
-						exists = true;
-						break;
+				if(bad_links!=NULL){
+					for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
+					for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+						if(tmp_bad->miner_id==tmp->miner_id){
+							exists = true;
+							break;
+						}
 					}
 				}
 				if(exists==false){
-					bad_links = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
-					bad_links->group = dgroup;
-					bad_links->subnet= subnet;
+					tmp_bad = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
+					tmp_bad->group = dgroup;
+					tmp_bad->subnet= subnet;
 				}
 			}
 		}
@@ -302,9 +313,10 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 						break;
 					}
 				}
+				struct links *tmp_bad;
 				if(exists==false){
-					bad_links = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
-					bad_links->group = rand()%GROUPS;
+					tmp_bad = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
+					tmp_bad->group = rand()%GROUPS;
 				}
 			}
 		}
@@ -335,8 +347,8 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 					}
 				}
 				if(exists==false){
-					bad_links = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
-					bad_links->group = rand()&GROUPS;
+					tmp_bad = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
+					tmp_bad->group = rand()&GROUPS;
 				}
 			}
 		}
@@ -375,8 +387,8 @@ void bad_miner_routine(struct miner *miner){
 				}
 			}
 			if(exists==false){
-				bad_links=add_links(seeds[i].miner_id, &seeds[i].new_comer, &seeds[i].new_comer, bad_links);
-				bad_links->group = rand()%GROUPS;
+				tmp_bad=add_links(seeds[i].miner_id, &seeds[i].new_comer, &seeds[i].new_comer, bad_links);
+				tmp_bad->group = rand()%GROUPS;
 //				miner->outbound=add_links(seeds[i].miner_id, &seeds[i].new_comer, &seeds[i].new_comer, miner->outbound);
 //				miner->outbound->group = bad_links->group;
 			

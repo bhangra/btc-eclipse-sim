@@ -314,7 +314,8 @@ struct threads *cancel_one_thread(struct threads *will_kill){
 		tmp->next=killed;
 	}
 	if(bad_links!=NULL){
-		for(links=bad_links; links!=NULL; links=links->next){
+		for(links=bad_links; links->prev!=NULL; links=links->prev){}
+		for(; links!=NULL; links=links->next){
 			if(links->miner_id == killed->id){
 				prev = links->prev;
 				next = links->next;

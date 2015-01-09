@@ -36,7 +36,7 @@ void miner_routine(struct miner *miner){
 //#ifdef	DEBUG
 	struct links *tmp_bad;
 	int group;
-/*	if(sim_time%600==0){
+	if(sim_time%600==0){
 		fprintf(stderr, "miner: %d\n", miner->miner_id);
 		if(miner->outbound!=NULL){
 			fprintf(stderr, "outbound: ");
@@ -70,7 +70,7 @@ void miner_routine(struct miner *miner){
 		}
 		fprintf(stderr, "\n");
 	}
-*/
+
 //#endif	//DEBUG
 //	fprintf(stderr, "entered miner_routine()\n"); //debug
 #ifdef DEBUG	

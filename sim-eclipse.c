@@ -102,15 +102,17 @@ int main(int argc, char *argv[]){
 		}
 		fprintf(stderr, "\n");
 #endif	//DEBUG
-//#ifdef	DEBUG
+#ifdef	DEBUG
 		struct links *links;
 		if(bad_links!=NULL){
 			fprintf(stderr, "bad_links: ");
+			for
 			for(links=bad_links; links!=NULL; links = links->next){
 				fprintf(stderr, "id= %d, ", links->miner_id);
 			}
+			fprintf(stderr, "\n");
 		}
-//#endif	//DEBUG
+#endif	//DEBUG
 // kill/create nodes, manage total hash-rate
 		threads = cancel_by_TTL(threads);
 //		threads = keep_total_seeds(threads);

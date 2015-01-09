@@ -22,14 +22,14 @@
 
 
 #define SEED_NUM	4
-#define	TOTAL_NODES	10
+#define	TOTAL_NODES	100
 #define BAD_NODES	5
 //(1000nodes+5bad) * 12h = 9min
 #define NOT_NAT /*for every*/ 0 //+1th
-#define AVE_TTL		60*60*2
+#define AVE_TTL		60*60
 //#define AVE_TTL		1000
-//#define SEED_TTL	60*60*24*1
-#define SEED_TTL	2000
+#define SEED_TTL	60*60*24*1
+//#define SEED_TTL	2000
 #define SIM_DAYS	30
 //#define SIM_TIME	60*60*24*SIM_DAYS
 #define SIM_TIME	60*60*12
