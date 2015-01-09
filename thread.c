@@ -15,6 +15,7 @@
 #include"thread.h"
 #include"connection.c"
 
+
 struct threads *search_head(struct threads *thread){
 	struct threads *tmp;
 	for(tmp = thread;tmp->prev!=NULL;tmp=tmp->prev){}
@@ -103,7 +104,7 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	miner->n_inbound= 0;
 	miner->seed		= seed;//rand()%2;
 	miner->boot		= true;
-	miner->subnet	= rand();
+	miner->subnet	= rand()&0xffff0000;
 //	miner->links	= NULL;
 	memset(&miner->addrman, 0, sizeof(struct addrman));
 	miner->outbound	= NULL;
@@ -111,6 +112,7 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	miner->blocks	= NULL;
 	miner->new_chain= NULL;
 	miner->hash_rate= (double)rand() / (RAND_MAX);
+	miner->connect_count = 1;
 	if(new->type==ATTACKER)
 		miner->hash_rate=0;
 	if(threads!=NULL){
@@ -135,12 +137,14 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 			bad->next=malloc(sizeof(struct bad_threads));//new;		
 			bad->next->prev=bad;
 			bad=bad->next;
+			bad->miner = new->miner;
 			bad->next=NULL;
 			bad->thread = new;
 			
 		}
 		else{
 			bad = malloc(sizeof(struct bad_threads));
+			bad->miner = new->miner;
 			bad->next = NULL;// new;
 			bad->prev = NULL;
 			bad->thread = new;
@@ -186,7 +190,12 @@ struct threads *keep_total_nodes(struct threads *threads){
 			current++;
 		}
 	}
+#ifndef	MULTI
+	for(tmp=threads; current<=TOTAL_NODES+BAD_NODES; current++){
+#endif
+#ifdef	MULTI
 	for(tmp=threads; current<=TOTAL_NODES; current++){
+#endif
 		global_id++;
 		tmp = new_thread(HONEST, global_id, tmp, seed);
 	}
@@ -275,7 +284,7 @@ struct threads *cancel_thread(struct threads *will_kill){
 	else if(before!=NULL){
 		before->next	= NULL;
 		ret =  before;
-	}
+		}
 	else if(after!=NULL){
 		after->prev	= NULL;
 		ret =  after;
@@ -290,6 +299,7 @@ struct threads *cancel_thread(struct threads *will_kill){
 //for cancel_by_TTL
 struct threads *cancel_one_thread(struct threads *will_kill){
 	struct killed *killed, *tmp;
+	struct links *links, *prev=NULL, *next=NULL;
 	killed = malloc(sizeof(struct killed));
 	killed->next	= NULL;
 	killed->id		= (will_kill->miner)->miner_id;
@@ -302,6 +312,25 @@ struct threads *cancel_one_thread(struct threads *will_kill){
 	else{
 		for(tmp=dead; tmp->next!=NULL; tmp=tmp->next){}
 		tmp->next=killed;
+	}
+	if(bad_links!=NULL){
+		for(links=bad_links; links!=NULL; links=links->next){
+			if(links->miner_id == killed->id){
+				prev = links->prev;
+				next = links->next;
+				if(prev!=NULL)
+					prev->next = next;
+				if(next!=NULL)
+					next->prev = prev;
+				if(links==bad_links){
+					if(next!=NULL)
+						bad_links=next;
+					else
+						bad_links=prev;
+				}
+				free(links);
+			}
+		}
 	}
 	free_links(will_kill);
 	free_dns_rec(will_kill);

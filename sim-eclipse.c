@@ -47,12 +47,16 @@ int main(int argc, char *argv[]){
 	memset(&dns, 0, NUM_DNS*sizeof(struct dns)); //will delete?
 
 //Seeds Initialization
+	int subnet = rand() & 0xffff0000;
  	for(i=0; i<SEED_NUM; i++){
+		if(i>SEED_NUM/2 && i <= SEED_NUM/2 +1)
+			subnet = rand() & 0xffff0000;
 		memset(&seeds[i], 0, sizeof(seeds[i]));
 		seeds[i].seed		= true;
 		seeds[i].TTL		= SIM_TIME;
 		seeds[i].miner_id	= global_id;
 		global_id++;
+		seeds[i].subnet		= subnet;
 	}
 
 //bad nodes/DNS initialization
@@ -60,6 +64,9 @@ int main(int argc, char *argv[]){
 		is_bad_dns[i] = false;
 	}
 	bad_links = NULL;
+#ifdef	MULTI
+	pthread_mutex_init(&block_mutex, NULL);
+#endif	//MULTI
 
 #ifdef BAD_NODES
 	unsigned int num_nodes;
@@ -87,23 +94,40 @@ int main(int argc, char *argv[]){
 		fprintf(stderr, "sim_time = %d\n", sim_time);//debug
 #endif
 
-#ifdef DEBUG
+#ifdef	DEBUG
 		struct killed *killed;
 		fprintf(stderr, "dead nodes: ");
 		for(killed = dead; killed!=NULL; killed = killed->next){
-			fprintf(stderr, "id= %d ", killed->id);
+			fprintf(stderr, "id= %d, ", killed->id);
 		}
 		fprintf(stderr, "\n");
-#endif
-
+#endif	//DEBUG
+//#ifdef	DEBUG
+		struct links *links;
+		if(bad_links!=NULL){
+			fprintf(stderr, "bad_links: ");
+			for(links=bad_links; links!=NULL; links = links->next){
+				fprintf(stderr, "id= %d, ", links->miner_id);
+			}
+		}
+//#endif	//DEBUG
 // kill/create nodes, manage total hash-rate
 		threads = cancel_by_TTL(threads);
 //		threads = keep_total_seeds(threads);
 		threads = keep_total_nodes(threads);
+		if(sim_time==0)
+			make_random_connection(threads);
 		keep_total_hash_rate_1(threads);
 		if(sim_time%600==0){
-			add_link_records(threads);
+//			fprintf(stderr, "in bad_links: ");
+			
+//			add_link_records(threads);
+#ifdef	MULTI
+//			add_link_records(bad_threads);
+#endif	//MULTI
+//			print_link_record();
 		}
+
 // routine
 #ifdef	MULTI
 		pthread_t t1, t2, t3, t4;
@@ -114,11 +138,11 @@ int main(int argc, char *argv[]){
 		thread_arg[0].num 		= i/4;
 		thread_arg[0].thread	= threads;
 		pthread_create(&t1, NULL, (void * (*)(void *))thread_job, &thread_arg[0]);
-		for(j=0; j<=i/4; threads=threads->next){ j++;}
+		for(j=0; j<=i/4&& threads->next!=NULL; threads=threads->next){ j++;}
 		thread_arg[1].num		= i/4;
 		thread_arg[1].thread	= threads;
 		pthread_create(&t2, NULL, (void * (*)(void *))thread_job, &thread_arg[1]);
-		for(j=0; j<=i/4; threads=threads->next){ j++;}
+		for(j=0; j<=i/4&& threads->next!=NULL; threads=threads->next){ j++;}
 		thread_arg[2].num		= i/4;
 		thread_arg[2].thread	= threads;
 		pthread_create(&t3, NULL, (void * (*)(void *))thread_job, &thread_arg[2]);
@@ -130,6 +154,11 @@ int main(int argc, char *argv[]){
 		pthread_join(t2, NULL);
 		pthread_join(t3, NULL);
 		pthread_join(t4, NULL);
+		for(; threads->prev!=NULL; threads=threads->prev){}
+		for(; threads->next!=NULL; threads=threads->next){
+			threads->done = false;
+		}
+		threads->done=false;
 #endif
 #ifndef	MULTI
 		for(;threads->next!=NULL; threads=threads->next){}
@@ -147,7 +176,9 @@ int main(int argc, char *argv[]){
 			}
 			else{
 				if(threads->type==ATTACKER){
+#ifdef	BAD_NODES
 					bad_miner_routine(threads->miner);
+#endif	//BAD_NODES
 				}
 				else{
 //					if(sim_time>=SIM_TIME-1){
@@ -181,13 +212,15 @@ int main(int argc, char *argv[]){
 			if(bad_threads->next==NULL)
 				break;
 		}
+#ifdef	BAD_NODES
 		for(i=0; i<BAD_NODES; i++){
 				bad_miner_routine(bad_threads->miner);
 				if(bad_threads->prev==NULL)
 					break;
 				bad_threads=bad_threads->prev;
 		}
-#endif
+#endif	//BAD_NODES
+#endif	//MULTI
 		for(i=0; i<NUM_DNS; i++){
 #ifdef DEBUG
 			fprintf(stderr, "dns[%d]\n", i);
@@ -200,7 +233,7 @@ int main(int argc, char *argv[]){
 #endif
 	cancel_all(threads);
 	free_killed();
-	print_link_record();
+//	print_link_record();
 	print_block_record();
 	exit(1);
 }
@@ -211,6 +244,10 @@ void *thread_job(struct thread_arg *a){
 	struct threads *threads;
 	threads = a->thread;
 	for(i=0;threads!=NULL||(a->num!=0 && i<a->num); threads=threads->next){
+		if(threads->done)
+			break;
+		else
+			threads->done=true;
 #ifdef	DEBUG
 		fprintf(stderr, "threads->miner->miner_id= %d\n", threads->miner->miner_id);
 #endif

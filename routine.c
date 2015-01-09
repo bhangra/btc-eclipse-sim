@@ -30,9 +30,48 @@ void dns_routine(struct dns *dns){
 void miner_routine(struct miner *miner){
 	bool			getblocks_sent=0;
 	int 			i, n;
-	struct links 	*links;//, *tmp_links;
+	struct links 	*links;//, *tmp_bad;//, *tmp_links;
 	struct link		*link;//, *tmp_link;
 	struct killed	*killed;
+//#ifdef	DEBUG
+	struct links *tmp_bad;
+	int group;
+/*	if(sim_time%600==0){
+		fprintf(stderr, "miner: %d\n", miner->miner_id);
+		if(miner->outbound!=NULL){
+			fprintf(stderr, "outbound: ");
+			for(links=miner->outbound; links->prev!=NULL; links=links->prev){}
+			for(; links!=NULL; links=links->next){
+				group = -1;
+				if(bad_links!=NULL){
+					for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
+					for(;tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+						if(tmp_bad->miner_id==links->miner_id)
+							group = tmp_bad->group;
+					}
+				}
+				fprintf(stderr, "id= %d g= %d, ", links->miner_id, group);
+			}
+		}
+		fprintf(stderr, "\ninbound: ");
+		if(miner->inbound!=NULL){
+			for(links=miner->inbound; links->prev!=NULL; links=links->prev){}
+			for(; links!=NULL; links=links->next){
+				group = -1;
+				if(bad_links!=NULL){
+					for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
+					for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+						if(tmp_bad->miner_id==links->miner_id)
+							group = tmp_bad->group;
+					}
+				}
+				fprintf(stderr, "id= %d g= %d, ", links->miner_id, group);
+			}	
+		}
+		fprintf(stderr, "\n");
+	}
+*/
+//#endif	//DEBUG
 //	fprintf(stderr, "entered miner_routine()\n"); //debug
 #ifdef DEBUG	
 //	if(sim_time>=SIM_TIME-1){
@@ -99,11 +138,13 @@ void miner_routine(struct miner *miner){
 		}
 		fprintf(stderr, "\n");
 #endif
+		miner->connect_count--;
+		if(miner->connect_count==0){
 		addr = addrman_select(&miner->addrman, min(noutbound,8)+10);
 #ifdef DEBUG
-		int k; 
-		for(k=0; k<SEED_NUM; k++)
-			fprintf(stderr, "seed[%d].new_comer = %p\n", k, &seeds[k].new_comer);
+//		int k; 
+//		for(k=0; k<SEED_NUM; k++)
+//			fprintf(stderr, "seed[%d].new_comer = %p\n", k, &seeds[k].new_comer);
 		if(addr!=NULL)
 			fprintf(stderr, "*addr: id = %d, new_comer = %p\n", addr->miner_id, addr->new_comer);
 #endif
@@ -143,8 +184,10 @@ void miner_routine(struct miner *miner){
 			else{
 //				fprintf(stderr, "sent version\n");
 				version(miner->miner_id, miner->subnet, addr->miner_id, addr->new_comer, &miner->new_comer, miner);
-				miner->n_outbound++;
+//				miner->n_outbound++;
 			}
+		}
+		miner->connect_count=5;
 		}
 		for(link=&miner->new_comer; link->num_msg!=0;){
 //			fprintf(stderr, "new_comer link\n"); //debug

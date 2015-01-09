@@ -24,7 +24,6 @@ struct miner{
 	unsigned int	one_way;
 	bool            boot;
 	bool            seed;
-
 	unsigned int	miner_id;
 
 	double			hash_rate;
@@ -40,6 +39,7 @@ struct miner{
 	unsigned int	n_outbound;
 	struct links	*outbound;
 	bool			f_propagate;
+	unsigned int	connect_count;
 };
 
 struct dns{

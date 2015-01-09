@@ -225,7 +225,7 @@ void version(unsigned int my_id, unsigned int my_subnet, unsigned int dest_id,  
 //	save = links;
 	new = add_links(dest_id, dest, dest, miner->outbound);
 #ifdef DEBUG
-	fprintf(stderr, "version new->link->num_msg == %d\n", new->link->num_msg);
+	fprintf(stderr, "version: new = %p , new->link->num_msg = %d\n", new, new->link->num_msg);
 #endif
 //	if(new==save)
 //		return;
@@ -243,7 +243,9 @@ void version(unsigned int my_id, unsigned int my_subnet, unsigned int dest_id,  
 	send_msg(dest, (char *)link->sbuf, 16+payload_size);
 //	fprintf(stderr, "sent version to dest: %p, id: %d with mylink: %p\n", link->dest, new->miner_id, link); //debug
 	miner->outbound = new;
+	miner->n_outbound++;
 #ifdef DEBUG
+	fprintf(stderr, "miner->outbound = %p\n", miner->outbound);
 	fprintf(stderr, "miner->outbound->link->num_msg == %d\n", miner->outbound->link->num_msg);
 #endif
 }
@@ -322,6 +324,7 @@ struct links *verack(struct link *new_comer, struct links *links, struct miner *
 	if(tmp==save){
 		return nat(new_comer, links, me);
 	}
+	me->n_inbound++;
 	link		= tmp->link;
 //	fprintf(stderr, "verack to dest: %p, id: %d with mylink: %p\n", dest, miner_id, link);
 	memcpy(&link->sbuf[0], "verack", 6);
@@ -759,5 +762,32 @@ void process_new(struct link *new_comer, struct miner *me){
     return;
 }
 
-
+void make_random_connection(struct threads *threads){
+	struct threads *tmp, *tmp2, *init;
+	struct miner *s, *d;
+	int		dest, i, seed;
+	for(tmp=threads; tmp->prev!=NULL; tmp=tmp->prev){}
+#ifndef MULTI
+#ifdef	BAD_NODES
+	for(i=0; i<BAD_NODES; i++){
+		tmp=tmp->next;
+	}
+#endif	//BAD_NODES
+#endif	//MULTI
+	init=tmp;
+	for(; tmp!=NULL; tmp=tmp->next){
+		seed = rand()%SEED_NUM;
+		dest = rand()%TOTAL_NODES;
+		tmp2=init;
+		for(i=0; i<dest && tmp2->next!=NULL; i++){
+			tmp2=tmp2->next;
+		}
+		if(tmp!=tmp2){
+			s = tmp->miner;
+			d = tmp2->miner;
+			version(s->miner_id, s->subnet, d->miner_id, &d->new_comer, &s->new_comer, s);
+			version(s->miner_id, s->subnet, seeds[seed].miner_id, &seeds[seed].new_comer, &s->new_comer, s);
+		}
+	}
+}
 #endif

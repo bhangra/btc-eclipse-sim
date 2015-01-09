@@ -489,7 +489,7 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 #ifdef ADDR_DEBUG
 	fprintf(stderr, "in addrman_select(): n_tried = %d, n_new = %d\n", addrman->n_tried, addrman->n_new);
 #endif
-	unsigned int n;
+	unsigned int n, num_try=0;
 	double n_cor_tried	= sqrt(addrman->n_tried) * (100.0-n_unk_bias);
 	double n_cor_new	= sqrt(addrman->n_new) * n_unk_bias;
 	double f_chance_factor = 1.0;
@@ -502,6 +502,9 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 
 		//select from tried bucket
 		while(1){
+			num_try++;
+			if(num_try==100)
+				return NULL;
 			connect = true;
 			int n_k_bucket = rand()%ADDRMAN_TRIED_BUCKET_COUNT;
 			int *vtried = (int *)&addrman->vv_tried[n_k_bucket][0];
@@ -541,6 +544,9 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 	else{
 		//select from new bucket
 		while(1){
+			num_try++;
+			if(num_try==100)
+				return NULL;
 			int n_k_bucket = rand()%(ADDRMAN_NEW_BUCKET_COUNT);
 			int (*vnew) = (int *)&addrman->vv_new[n_k_bucket][0];
 			int size=0, i;

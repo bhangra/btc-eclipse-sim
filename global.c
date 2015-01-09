@@ -18,6 +18,9 @@ struct killed		*dead = NULL;
 
 //for recording blocks
 struct block_record *record = NULL;
+#ifdef	MULTI
+pthread_mutex_t block_mutex;
+#endif
 
 //for recording links
 struct node_record	*n_link = NULL;

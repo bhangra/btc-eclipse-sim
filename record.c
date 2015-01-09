@@ -82,12 +82,13 @@ void print_node_s_blocks(struct miner *miner){
 		fprintf(stderr,"\n");
 	}
 }
-
 void add_block_record(struct miner *me, struct block *new, struct blocks *blocks){
 	struct block_record *new_rec, *tmp;
 	struct blocks *mine;
 	unsigned int height;
-
+#ifdef	MULTI
+	pthread_mutex_lock(&block_mutex);
+#endif	//MULTI
 	height = new->height;	
 	for(mine = blocks; mine->prev!=NULL; mine = mine->prev){}
 
@@ -116,6 +117,9 @@ void add_block_record(struct miner *me, struct block *new, struct blocks *blocks
 			if(tmp->height==height){
 				for(;tmp->same!=NULL; tmp=tmp->same){}
 				tmp->same = new_rec;
+#ifdef	MULTI
+				pthread_mutex_unlock(&block_mutex);
+#endif	//MULTI
 				return;
 			}
 			for(;;tmp=tmp->same){
@@ -139,6 +143,9 @@ void add_block_record(struct miner *me, struct block *new, struct blocks *blocks
 					for(tmp=tmp->next; tmp->same!=NULL; tmp=tmp->same){}
 					tmp->same = new_rec;
 				}
+#ifdef	MULTI
+				pthread_mutex_unlock(&block_mutex);
+#endif	//MULTI
 				return;
 			}
 			mine=mine->next;
@@ -158,7 +165,14 @@ void join_record(struct block *new, struct blocks *blocks){
 		if(tmp->height==height){
 			for(;;tmp=tmp->same){
 				if(tmp->miner_id==id){
+#ifdef	MULTI
+//					pthread_mutex_lock(&block_mutex);
+#endif	//MULTI
+
 					tmp->num_nodes++;
+#ifdef	MULTI
+//					pthread_mutex_unlock(&block_mutex);
+#endif	//MULTI
 					return;
 				}
 			}
@@ -173,7 +187,14 @@ void join_record(struct block *new, struct blocks *blocks){
 				break;
 		}
 		if(tmp->height==height && tmp->miner_id==id){
+#ifdef	MULTI
+//			pthread_mutex_lock(&block_mutex);
+#endif	//MULTI
+
 			tmp->num_nodes++;
+#ifdef	MULTI
+//			pthread_mutex_unlock(&block_mutex);
+#endif	//MULTI
 			return;
 		}
 		mine=mine->next;

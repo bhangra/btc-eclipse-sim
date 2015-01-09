@@ -1,6 +1,6 @@
 #ifndef BAD_ROUTINE_C
 #define BAD_ROUTINE_C
-
+#ifdef BAD_NODES
 #include<stdio.h>
 #include<stdlib.h>
 #include<stdbool.h>
@@ -61,16 +61,27 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	}
 	memcpy(&link->sbuf[0], "addr", 4);
 	sets = 0;
-//might change the maximum num of addrs to num of least neighbor
-	if(bad_threads!=NULL)
-	for(bad=bad_threads; bad->prev!=NULL; bad=bad->prev){}
+//	if(bad_threads!=NULL)
+//		for(bad=bad_threads; bad->prev!=NULL; bad=bad->prev){}
+	struct link *link_tmp;
+	struct miner *miner_tmp;
+	for(bad=bad_threads; sets<BAD_NODES; bad=bad->next){
+		miner_tmp	= bad->thread->miner;
+		link_tmp	= &miner_tmp->new_comer;
+		memcpy(&link->sbuf[16+(sets*set_size)], &(bad->thread->miner)->miner_id, sizeof(unsigned int));
+		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &link_tmp, sizeof(struct link*));
+		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)], &sim_time, sizeof(unsigned int));
+		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)+sizeof(unsigned int)], &bad->miner->subnet, sizeof(unsigned int));
+		sets++;
+	}
+
 	if(bad_links!=NULL){
-		for(tmp_bad=bad_links; tmp_bad!=NULL && 16+sets*set_size<BUF_SIZE; tmp_bad=tmp_bad->prev){
+		for(tmp_bad=bad_links; tmp_bad!=NULL && 16+(sets*set_size)-sets<BUF_SIZE; tmp_bad=tmp_bad->prev){
 			if(tmp_bad->miner_id!=dest_id && tmp_bad->group == dest_group){
 				memcpy(&link->sbuf[16+(sets*set_size)], &tmp_bad->miner_id, sizeof(unsigned int));
 				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &tmp_bad->new_comer, sizeof(struct link*));
-				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(unsigned int)], &sim_time, sizeof(unsigned int));
-				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(unsigned int)+sizeof(unsigned int)], &tmp_bad->subnet, sizeof(unsigned int));
+				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)], &sim_time, sizeof(unsigned int));
+				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)+sizeof(unsigned int)], &tmp_bad->subnet, sizeof(unsigned int));
 
 				sets++;
 			}
@@ -138,8 +149,8 @@ void bad_dns_routine(struct dns *dns){
 }
 
 int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me){
-	bool                connect, connected, exists;
-	unsigned int        i, miner_id, size, set, num_addr, payload_size, dgroup;
+	bool                connect, /*connected,*/ exists;
+	unsigned int        i, miner_id, size, set, num_addr, payload_size, dgroup, subnet;//, n_time;
 	struct link         *link, *dest;
 	struct links        *tmp, *tmp_bad;
 	const struct msg_hdr *hdr;
@@ -159,16 +170,16 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 	}
 	else if(strncmp(hdr->command, "addr", 4)==0){
 		memcpy(&payload_size, &link->process_buf[12], sizeof(unsigned int));
-//      num_addr	= (hdr->message_size/(size+sizeof(unsigned int)));
+      num_addr	= (hdr->message_size/(size+sizeof(unsigned int)));
 		size		= sizeof(struct link*);
-		set			= size + sizeof(unsigned int);
+		set			= size + sizeof(unsigned int)*3;
 		num_addr	= payload_size/set;
-#ifdef DEBUG
+//#ifdef DEBUG
 		fprintf(stderr, "num_addr = %d\n", num_addr);
-#endif
-		if(num_addr == 0)
-			me->boot = true;
-		connected = false;
+//#endif
+//		if(num_addr == 0)
+//			me->boot = true;
+//		connected = false;
 //int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me)
 		for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
 		for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
@@ -182,27 +193,48 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 		for(i=0; i<num_addr; i++){
 			memcpy(&miner_id, &link->process_buf[16+i*set], sizeof(unsigned int));
 			memcpy(&dest, &link->process_buf[16+i*set+sizeof(unsigned int)], size);
+//			memcpy(&n_time, &link->process_buf[16+i*set+sizeof(unsigned int+size)], sizeof(unsigned int));
+			memcpy(&subnet, &link->process_buf[16+i*set+sizeof(unsigned int)*2+size], sizeof(unsigned int));
 			connect		= true;
 			if(miner_id==me->miner_id){
 				connect	= false;
 			}
 			else{
-				for(tmp=me->outbound; tmp->prev!=NULL; tmp=tmp->prev){}
-				for(; tmp->next!=NULL; tmp=tmp->next){
-					if(tmp->miner_id==miner_id){
-						connect = false;
-						break;
+				if(me->outbound!=NULL){
+					for(tmp=me->outbound; tmp->prev!=NULL; tmp=tmp->prev){}
+					for(; tmp->next!=NULL; tmp=tmp->next){
+						if(tmp->miner_id==miner_id){
+							connect = false;
+							break;
+						}
+					}
+				}
+				if(me->inbound!=NULL){
+					for(tmp=me->inbound; tmp->prev!=NULL; tmp=tmp->prev){}
+					for(; tmp->next!=NULL; tmp=tmp->next){
+						if(tmp->miner_id==miner_id){
+							connect = false;
+							break;
+						}
 					}
 				}
 			}
+			struct killed *killed;
+			if(dead!=NULL)
+				for(killed=dead; killed!=NULL; killed=killed->next){
+					if(killed->id == miner_id)
+						connect=false;
+				}
 			if(connect){
-				connected = true;
+//				connected = true;
 #ifdef DEBUG
 				fprintf(stderr, "will send version to dest: %p, id: %d\n", dest, miner_id);
 #endif
 				version(me->miner_id, me->subnet, miner_id, dest, &me->new_comer, me);
 				exists = false;
-				for(tmp_bad=bad_links; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+				tmp = me->outbound;
+				for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
+				for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
 					if(tmp_bad->miner_id==tmp->miner_id){
 						exists = true;
 						break;
@@ -211,13 +243,14 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 				if(exists==false){
 					bad_links = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
 					bad_links->group = dgroup;
+					bad_links->subnet= subnet;
 				}
 			}
 		}
-		if(!connected){
+/*		if(!connected){
 			dns_query(&dns[rand()%5], &me->new_comer, me->miner_id);
 		}
-	}
+*/	}
 	else if(strncmp(hdr->command, "verack", 6)==0){
 		memcpy(&link->dest, &link->process_buf[16], sizeof(struct link*));
 #ifdef DEBUG
@@ -262,7 +295,8 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 			}
 			else{
 				exists = false;
-				for(tmp_bad=bad_links; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+				for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
+				for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
 					if(tmp_bad->miner_id==tmp->miner_id){
 						exists = true;
 						break;
@@ -293,7 +327,8 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 			}
 			else{
 				exists = false;
-				for(tmp_bad=bad_links; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+				for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next);
+				for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
 					if(tmp_bad->miner_id==tmp->miner_id){
 						exists = true;
 						break;
@@ -325,6 +360,7 @@ void bad_miner_routine(struct miner *miner){
 		miner->seed = false;
 	}
 */	if(miner->boot == true){
+
 		bad_count[miner->miner_id-SEED_NUM]=0;
 		for(i=0; i<SEED_NUM; i++){
 			version(miner->miner_id, miner->subnet, seeds[i]. miner_id, &seeds[i].new_comer, &miner->new_comer, miner);
@@ -337,18 +373,22 @@ void bad_miner_routine(struct miner *miner){
 							break;
 					}
 				}
-				if(exists==false){
-					bad_links=add_links(seeds[i].miner_id, &seeds[i].new_comer, &seeds[i].new_comer, bad_links);
-					bad_links->group = rand()%GROUPS;
-				}
-//			dns_query(&dns[i/*rand()%5*/], &miner->new_comer, miner->miner_id);
 			}
-			miner->boot = false;
+			if(exists==false){
+				bad_links=add_links(seeds[i].miner_id, &seeds[i].new_comer, &seeds[i].new_comer, bad_links);
+				bad_links->group = rand()%GROUPS;
+//				miner->outbound=add_links(seeds[i].miner_id, &seeds[i].new_comer, &seeds[i].new_comer, miner->outbound);
+//				miner->outbound->group = bad_links->group;
+			
+			}
+//			dns_query(&dns[i/*rand()%5*/], &miner->new_comer, miner->miner_id);
 		}
+		miner->boot = false;
 	}
+
 	else{
 		bad_count[miner->miner_id-SEED_NUM]++;
-		if(bad_count[miner->miner_id-SEED_NUM]==60*0){
+		if(bad_count[miner->miner_id-SEED_NUM]>=30){
 			for(i=0; i<SEED_NUM; i++){
 				for(tmp_bad=miner->outbound; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next);
 				for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
@@ -358,8 +398,8 @@ void bad_miner_routine(struct miner *miner){
 						break;
 					}
 				}
-				bad_count[miner->miner_id-SEED_NUM]=0;
 			}
+			bad_count[miner->miner_id-SEED_NUM]=0;
 		}
 		
 		for(link=&miner->new_comer; link->num_msg!=0;){
@@ -372,7 +412,24 @@ void bad_miner_routine(struct miner *miner){
 		links = miner->outbound;
 		if(links==NULL){
 			i=0;
-			miner->boot=true;
+//			miner->boot=true;
+		}
+		else{
+			for(;links->prev!=NULL; links=links->prev){}
+			for(i=0/*debug*/; links!=NULL; links=links->next){
+				for(link=links->link; link->num_msg!=0;){
+					read_msg(link);
+					process_bad_msg(&miner->new_comer, links, miner);
+				}
+				i++;
+				if(links->next==NULL)
+					break;
+			}
+		}
+		links = miner->inbound;
+		if(links==NULL){
+			i=0;
+//			miner->boot=true;
 		}
 		else{
 			for(;links->prev!=NULL; links=links->prev){}
@@ -393,4 +450,5 @@ void bad_miner_routine(struct miner *miner){
 //		}
 //	}
 }
-#endif
+#endif	//BAD_NODES
+#endif	//BAD_ROUTINE_C

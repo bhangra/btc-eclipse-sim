@@ -19,12 +19,17 @@ struct threads{
 	int				type;
 	struct threads	*next;
 	unsigned int	time;
+#ifdef	MULTI
+	bool			done;
+#endif	//MULTI
+
 //will add TTL and make main thread kill it
 };
 struct bad_threads{
 	struct bad_threads *next;
 	struct bad_threads *prev;
 	struct threads		*thread;
+	struct miner		*miner;
 };
 
 struct killed{
