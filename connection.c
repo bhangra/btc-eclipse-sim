@@ -244,9 +244,9 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 //	hexDump("sending msg", message, msg_size);
 	int 			tmp;
 	unsigned int 	pos, over_size;
-#ifdef MEM_DEBUG
-	fprintf(stderr, "sending msg_size: %d %s\n", msg_size, message); //debug
-#endif
+//#ifdef MEM_DEBUG
+	fprintf(stderr, "sending msg_size: %d type: %s dest->write_pos: %d\n", msg_size, message, dest->write_pos); //debug
+//#endif
 #ifdef ASSERT
 	assert(msg_size < BUF_SIZE );
 	assert(dest->write_pos<BUF_SIZE);

@@ -301,12 +301,14 @@ struct links *nat(struct link *new_comer, unsigned int miner_id, struct links *l
 		tmp2->next=tmp3;
 	if(tmp3!=NULL)
 		tmp3->prev=tmp2;
-	if(me->inbound==tmp){
-		if(tmp2!=NULL)
-			me->inbound=tmp2;
-		else
-			me->inbound=tmp3;
-	}
+//	if(me->inbound==tmp){
+	if(tmp2!=NULL)
+		me->inbound=tmp2;
+	else
+		me->inbound=tmp3;
+//	}
+	me->n_inbound++;
+//	fprintf(stderr, "me->inbound = %p, tmp2 = %p, tmp = %p, tmp3 = %p\n", me->inbound, tmp2, tmp, tmp3);
 	return me->inbound;
 }
 
