@@ -245,7 +245,7 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 	int 			tmp;
 	unsigned int 	pos, over_size;
 //#ifdef MEM_DEBUG
-	fprintf(stderr, "sending msg_size: %d type: %s dest->write_pos: %d\n", msg_size, message, dest->write_pos); //debug
+//	fprintf(stderr, "sending msg_size: %d type: %s &dest->write_pos: %p &dest->buf[0]: %p\n", msg_size, message, &dest->write_pos, &dest->buf[0]); //debug
 //#endif
 #ifdef ASSERT
 	assert(msg_size < BUF_SIZE );
@@ -305,7 +305,7 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 #endif
 	memset(message, 0, BUF_SIZE);
 #ifdef DEBUG
-	fprintf(stderr, "succesfully sent message, dest->num_msg: %d\n", dest->num_msg);	
+	fprintf(stderr, "succesfully sent message, dest->num_msg: %d dest->write_pos: %d\n", dest->num_msg, dest->write_pos);	
 #endif
 	return 1;
 }

@@ -130,6 +130,7 @@ int main(int argc, char *argv[]){
 			add_link_records(bad_threads);
 #endif	//MULTI
 			print_link_record();
+			fprintf(stderr, "SIM_TIME: %d, sim_time: %d\n", SIM_TIME, sim_time);
 		}
 
 // routine
@@ -229,7 +230,7 @@ int main(int argc, char *argv[]){
 #ifdef DEBUG
 			fprintf(stderr, "dns[%d]\n", i);
 #endif
-			dns_routine(&dns[i]);
+//			dns_routine(&dns[i]);
 		}
 	}
 #ifdef DEBUG

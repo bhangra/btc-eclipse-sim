@@ -157,7 +157,7 @@ void miner_routine(struct miner *miner){
 			if(miner->outbound!=NULL&&subnet_found!=true){
 				for(links=miner->outbound; links->next!=NULL; links=links->next){}
 				for(; links!=NULL; links=links->prev){
-					if(subnet==links->subnet || addr->new_comer==links->new_comer){
+					if(subnet==links->subnet || addr->new_comer==links->new_comer||addr->miner_id==links->miner_id){
 						subnet_found=true;
 						break;
 					}
@@ -166,7 +166,7 @@ void miner_routine(struct miner *miner){
 			if(miner->inbound!=NULL&&subnet_found!=true){
 				for(links=miner->inbound; links->next!=NULL; links=links->next){}
 				for(; links!=NULL; links=links->prev){
-					if(addr->new_comer==links->new_comer){
+					if(addr->new_comer==links->new_comer||addr->miner_id==links->miner_id){
 						subnet_found=true;
 						break;
 					}
@@ -178,7 +178,7 @@ void miner_routine(struct miner *miner){
 						subnet_found=true;
 				}
 
-			if(subnet_found){}
+			if(subnet_found==true){}
 			else if(miner->addrman.n_tries > 100){
 				miner->addrman.n_tries = 0;
 //				miner->boot = true;

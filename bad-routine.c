@@ -333,8 +333,32 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 #ifdef DEBUG
 		fprintf(stderr, "version received\n");
 #endif
+		bool links_found=false;
+		struct links *links;
+//		fprintf(stderr, "version received\n");
+//		if(me->one_way==NOT_NAT && me->neighbor < me->max){
+		memcpy(&dest, &new_comer->process_buf[16], size);
+		if(me->outbound!=NULL&&links_found!=true){
+			for(links=me->outbound; links->next!=NULL; links=links->next){}
+			for(; links!=NULL; links=links->prev){
+				if(dest==links->link->dest){
+					links_found=true;
+					break;
+				}
+			}
+		}
+		if(me->inbound!=NULL&&links_found!=true){
+			for(links=me->inbound; links->next!=NULL; links=links->next){}
+			for(; links!=NULL; links=links->prev){
+				if(dest==links->link->dest){
+					links_found=true;
+					break;
+				}
+			}
+		}
 //		return verack(new_comer, me->links);
-		tmp = verack(new_comer, me->inbound, me);
+		if(links_found!=true)
+			tmp = verack(new_comer, me->inbound, me);
 		
 		if(tmp!=NULL){
 			if(bad_links==NULL){

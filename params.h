@@ -16,13 +16,13 @@
 #define ATTACKER	0
 #define HONEST		1
 #define BUF_SIZE	10000//10000
-#define THOUSAND	1000
+#define THOUSAND	100//0
 #define N_MAX_CONNECTIONS 125
 #define MAX_OUTBOUND_CONNECTIONS 8
 
 
 #define SEED_NUM	4
-#define	TOTAL_NODES	1000
+#define	TOTAL_NODES	300
 //#define BAD_NODES	5
 //(1000nodes+5bad) * 12h = 9min
 #define NOT_NAT /*for every*/ 11 //+1th
