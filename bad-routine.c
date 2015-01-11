@@ -22,7 +22,7 @@ void hexDump (char *desc, void *addr, int len);
 unsigned int bad_count[BAD_NODES];
 #endif
 void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
-	unsigned int			payload_size, set_size, sets;	
+	unsigned int			payload_size, set_size, sets;
 //	int 					i;
 	struct link				*link;//, *link_tmp;//, *tmp;
 	struct links			/**links,*/ *tmp;
@@ -51,9 +51,12 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	}
 	else{
 		dest_group = rand()%GROUPS;
-		for(tmp=me->outbound; tmp->prev!=NULL; tmp=tmp->prev){}
-		for(; tmp!=NULL && tmp->miner_id!=dest_id; tmp=tmp->next){}
-		if(tmp==NULL){
+		tmp=NULL;
+		if(me->outbound!=NULL){
+			for(tmp=me->outbound; tmp->prev!=NULL; tmp=tmp->prev){}
+			for(; tmp!=NULL && tmp->miner_id!=dest_id; tmp=tmp->next){}
+		}
+		if(tmp==NULL && me->inbound!=NULL){
 			for(tmp=me->inbound; tmp->prev!=NULL; tmp=tmp->prev){}
 			for(; tmp!=NULL && tmp->miner_id!=dest_id; tmp=tmp->next){}
 		}			
@@ -83,7 +86,7 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	}
 
 	if(bad_links!=NULL){
-		for(tmp_bad=bad_links; tmp_bad!=NULL && 16+(sets*set_size)-sets<BUF_SIZE; tmp_bad=tmp_bad->prev){
+		for(tmp_bad=bad_links; tmp_bad!=NULL && 16+(sets*set_size)<BUF_SIZE-set_size; tmp_bad=tmp_bad->prev){
 			if(tmp_bad->miner_id!=dest_id && tmp_bad->group == dest_group){
 				memcpy(&link->sbuf[16+(sets*set_size)], &tmp_bad->miner_id, sizeof(unsigned int));
 				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &tmp_bad->new_comer, sizeof(struct link*));
@@ -211,7 +214,7 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 			else{
 				if(me->outbound!=NULL){
 					for(tmp=me->outbound; tmp->prev!=NULL; tmp=tmp->prev){}
-					for(; tmp->next!=NULL; tmp=tmp->next){
+					for(; tmp!=NULL; tmp=tmp->next){
 						if(tmp->miner_id==miner_id){
 							connect = false;
 							break;
@@ -220,7 +223,7 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 				}
 				if(me->inbound!=NULL){
 					for(tmp=me->inbound; tmp->prev!=NULL; tmp=tmp->prev){}
-					for(; tmp->next!=NULL; tmp=tmp->next){
+					for(; tmp!=NULL; tmp=tmp->next){
 						if(tmp->miner_id==miner_id){
 							connect = false;
 							break;
@@ -253,7 +256,7 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 				}
 				if(exists==false){
 					tmp_bad = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
-					tmp_bad->group = dgroup;
+					tmp_bad->group = rand()%GROUPS;//dgroup;
 					tmp_bad->subnet= subnet;
 				}
 			}
@@ -264,6 +267,7 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 */	}
 	else if(strncmp(hdr->command, "verack", 6)==0){
 		memcpy(&link->dest, &link->process_buf[16], sizeof(struct link*));
+		bad_addr(link, me, links->miner_id);
 #ifdef DEBUG
 		fprintf(stderr, "received verack with link: %p\n", link->dest);
 #endif
@@ -409,6 +413,34 @@ void bad_miner_routine(struct miner *miner){
 						getaddr(tmp_bad->link, miner->miner_id);
 						break;
 					}
+				}
+			}
+			links = miner->outbound;
+			if(links==NULL){
+				i=0;
+//				miner->boot=true;
+			}
+			else{
+				for(;links->prev!=NULL; links=links->prev){}
+				for(i=0/*debug*/; links!=NULL; links=links->next){
+						bad_addr(links->link/*&seeds[i].new_comer*/, miner, links->miner_id);
+					i++;
+					if(links->next==NULL)
+						break;
+				}
+			}
+			links = miner->inbound;
+			if(links==NULL){
+				i=0;
+//				miner->boot=true;
+			}
+			else{
+				for(;links->prev!=NULL; links=links->prev){}
+				for(i=0/*debug*/; links!=NULL; links=links->next){
+						bad_addr(links->link/*&seeds[i].new_comer*/, miner, links->miner_id);
+					i++;
+					if(links->next==NULL)
+						break;
 				}
 			}
 			bad_count[miner->miner_id-SEED_NUM]=0;

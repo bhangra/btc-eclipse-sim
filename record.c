@@ -223,7 +223,8 @@ void add_link_record(struct threads *thread){
 	struct link_record	*l_rec;
 	struct links		*links;
 	struct miner		*me;
-	
+	int					group;	
+	struct links *tmp_bad;
 	me = thread->miner;
 
 	n_rec = malloc(sizeof(struct node_record));
@@ -236,7 +237,15 @@ void add_link_record(struct threads *thread){
 	n_rec->next		= NULL;
 	n_rec->prev		= NULL;
 	n_rec->my_id	= me->miner_id;
-	n_rec->my_group	= me->group;
+	group = -1;
+	if(bad_links!=NULL){
+		for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
+		for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+			if(tmp_bad->miner_id==me->miner_id)
+				group = tmp_bad->group;
+		}
+	}
+	n_rec->my_group	= group;
 	if(me->outbound!=NULL){
 		for(links=me->outbound; links->next!=NULL; links=links->next){}
 		for(; links!=NULL; links=links->prev){
@@ -256,8 +265,16 @@ void add_link_record(struct threads *thread){
 				}
 				l_rec = l_rec->next;
 			}
+			group = -1;
+			if(bad_links!=NULL){
+				for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
+				for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+					if(tmp_bad->miner_id==links->miner_id)
+						group = tmp_bad->group;
+				}
+			}
 			l_rec->next			= NULL;
-			l_rec->dest_group	= links->group;
+			l_rec->dest_group	= group;
 			l_rec->dest_id		= links->miner_id;
 		}
 	}
@@ -280,8 +297,16 @@ void add_link_record(struct threads *thread){
 				}
 				l_rec = l_rec->next;
 			}
+			group = -1;
+			if(bad_links!=NULL){
+				for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
+				for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+					if(tmp_bad->miner_id==links->miner_id)
+						group = tmp_bad->group;
+				}
+			}
 			l_rec->next			= NULL;
-			l_rec->dest_group	= links->group;
+			l_rec->dest_group	= group;
 			l_rec->dest_id		= links->miner_id;
 		}
 	}

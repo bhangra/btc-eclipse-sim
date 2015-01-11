@@ -191,8 +191,13 @@ struct threads *keep_total_nodes(struct threads *threads){
 		}
 	}
 #ifndef	MULTI
+#ifdef	BAD_NODES
 	for(tmp=threads; current<=TOTAL_NODES+BAD_NODES; current++){
-#endif
+#endif	//BAD_NODES
+#ifndef	BAD_NODES
+	for(tmp=threads; current<=TOTAL_NODES; current++){
+#endif	//BAD_NODES
+#endif	//MULTI
 #ifdef	MULTI
 	for(tmp=threads; current<=TOTAL_NODES; current++){
 #endif
@@ -299,7 +304,7 @@ struct threads *cancel_thread(struct threads *will_kill){
 //for cancel_by_TTL
 struct threads *cancel_one_thread(struct threads *will_kill){
 	struct killed *killed, *tmp;
-	struct links *links, *prev=NULL, *next=NULL;
+	struct links *links, *prev=NULL, *next=NULL, *after;
 	killed = malloc(sizeof(struct killed));
 	killed->next	= NULL;
 	killed->id		= (will_kill->miner)->miner_id;
@@ -315,7 +320,8 @@ struct threads *cancel_one_thread(struct threads *will_kill){
 	}
 	if(bad_links!=NULL){
 		for(links=bad_links; links->prev!=NULL; links=links->prev){}
-		for(; links!=NULL; links=links->next){
+		for(; links!=NULL; links=after){
+			after=links->next;
 			if(links->miner_id == killed->id){
 				prev = links->prev;
 				next = links->next;

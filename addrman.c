@@ -31,9 +31,9 @@ unsigned int map_addr(struct addrman *addrman, struct links *links){
 }
 
 void add(unsigned char *vaddr, struct caddrinfo *ai){
-#ifdef ADDR_DEBUG
+//#ifdef ADDR_DEBUG
 	fprintf(stderr, "add(ai): miner_id = %d, new_comer = %p, n_time = %d, subnet = %d\n", ai->miner_id, ai->new_comer, ai->n_time, ai->subnet);
-#endif
+//#endif
 	memcpy(vaddr, &ai->miner_id, sizeof(unsigned int));
 	memcpy(&vaddr[sizeof(unsigned int)], &ai->new_comer, sizeof(struct link*));;
 	memcpy(&vaddr[sizeof(unsigned int)+sizeof(struct link*)], &ai->n_time, sizeof(unsigned int));
@@ -228,12 +228,14 @@ int select_tried(struct addrman *addrman, unsigned int nkbucket){
 	return n_oldest_pos;
 }
 //the only function that deletes addr from addrman
-int shrink_new(struct addrman *addrman, int n_u_bucket){
+int shrink_new(struct addrman *addrman, int n_u_bucket, unsigned int nid){
 	int *vnew = (int *)&addrman->vv_new[n_u_bucket][0];
 	int i, j;
 	struct caddrinfo *tmp, *prev, *next;
 	//look for deletable items
 	for(i=0; i<ADDRMAN_BUCKET_SIZE; i++){
+		if(vnew[i]==nid)
+				continue;
 		if(vnew[i]!=0){
 			tmp = map_info(addrman, vnew[i]);
 			if(tmp==NULL){
@@ -278,6 +280,8 @@ int shrink_new(struct addrman *addrman, int n_u_bucket){
 	int noldest = -1;
 	struct caddrinfo *tmp1, *tmp2;
 	for(ni=0; ni<4; ni++){
+		if(n[ni]==nid)
+			continue;
 		if(noldest!=-1){
 			tmp1=map_info(addrman, noldest);
 			tmp2=map_info(addrman, n[ni]);
@@ -459,7 +463,7 @@ bool addrman_add_(struct addrman *addrman, struct links *links, struct link *sou
 			return fnew;
 		}
 	}
-	shrink_new(addrman, n_u_bucket);
+	shrink_new(addrman, n_u_bucket, pinfo->nid);
 	for(i=0; i<ADDRMAN_BUCKET_SIZE; i++){
 		if(vnew[i]==0){
 			vnew[i] = pinfo->nid;
@@ -582,7 +586,7 @@ unsigned int getaddr_(struct addrman *addrman, unsigned char *vaddr){//will fix 
 		n_nodes = ADDRMAN_GETADDR_MAX;
 	n_nodes = (unsigned int)(BUF_SIZE-16)/(sizeof(unsigned int)*3+sizeof(struct link *))-5;
 	//gather list of random nodes, skipping low quality ones
-	unsigned int n, i;
+	unsigned int n, i, sets;
 #ifdef ADDR_DEBUG 
 	fprintf(stderr, "addrman->v_random_size = %d\n", addrman->v_random_size);
 #endif
@@ -593,7 +597,8 @@ unsigned int getaddr_(struct addrman *addrman, unsigned char *vaddr){//will fix 
 	fprintf(stderr, "v_random_size = %d\n", addrman->v_random_size);
 #endif
 	i=0;
-	for(n=0; n < addrman->v_random_size; ){
+	sets = sizeof(unsigned int)*3 + sizeof(struct link*);
+	for(n=0; n < addrman->v_random_size && n*sets<BUF_SIZE-16; ){
 		if(n >= n_nodes)
 			break;
 		int n_rnd_pos = (rand()%(addrman->v_random_size - n)) + n;
@@ -604,7 +609,7 @@ unsigned int getaddr_(struct addrman *addrman, unsigned char *vaddr){//will fix 
 		struct caddrinfo *ai = map_info(addrman, *addrman->v_random[n]);
 		if(ai!=NULL){
 			if(!is_terrible(sim_time, ai)){
-				add(&vaddr[n*(sizeof(unsigned int)+sizeof(struct link*)+sizeof(unsigned int)+sizeof(unsigned int))], ai);//will fix vaddr
+				add(&vaddr[n*sets], ai);//will fix vaddr
 				i++;
 			}
 		}

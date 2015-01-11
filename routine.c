@@ -34,7 +34,7 @@ void miner_routine(struct miner *miner){
 	struct link		*link;//, *tmp_link;
 	struct killed	*killed;
 //#ifdef	DEBUG
-	struct links *tmp_bad;
+/*	struct links *tmp_bad;
 	int group;
 	if(sim_time%600==0){
 		fprintf(stderr, "miner: %d\n", miner->miner_id);
@@ -70,7 +70,7 @@ void miner_routine(struct miner *miner){
 		}
 		fprintf(stderr, "\n");
 	}
-
+*/
 //#endif	//DEBUG
 //	fprintf(stderr, "entered miner_routine()\n"); //debug
 #ifdef DEBUG	
@@ -146,7 +146,7 @@ void miner_routine(struct miner *miner){
 //		for(k=0; k<SEED_NUM; k++)
 //			fprintf(stderr, "seed[%d].new_comer = %p\n", k, &seeds[k].new_comer);
 		if(addr!=NULL)
-			fprintf(stderr, "*addr: id = %d, new_comer = %p\n", addr->miner_id, addr->new_comer);
+			fprintf(stderr, "*addr: id = %d, subnet = %d,  new_comer = %p\n", addr->miner_id, addr->subnet, addr->new_comer);
 #endif
 		miner->addrman.n_tries++;
 		if(addr!=NULL){
@@ -166,6 +166,7 @@ void miner_routine(struct miner *miner){
 				for(; links!=NULL; links=links->prev){
 					if(addr->new_comer==links->new_comer){
 						subnet_found=true;
+						break;
 					}
 				}
 			}
@@ -184,6 +185,7 @@ void miner_routine(struct miner *miner){
 			else{
 //				fprintf(stderr, "sent version\n");
 				version(miner->miner_id, miner->subnet, addr->miner_id, addr->new_comer, &miner->new_comer, miner);
+				miner->outbound->subnet=subnet;
 //				miner->n_outbound++;
 			}
 		}

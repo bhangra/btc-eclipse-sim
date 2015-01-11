@@ -47,6 +47,7 @@ int main(int argc, char *argv[]){
 	memset(&dns, 0, NUM_DNS*sizeof(struct dns)); //will delete?
 
 //Seeds Initialization
+//	fprintf(stderr, "seeds' subnet\n");
 	int subnet = rand() & 0xffff0000;
  	for(i=0; i<SEED_NUM; i++){
 		if(i>SEED_NUM/2 && i <= SEED_NUM/2 +1)
@@ -57,6 +58,7 @@ int main(int argc, char *argv[]){
 		seeds[i].miner_id	= global_id;
 		global_id++;
 		seeds[i].subnet		= subnet;
+//		fprintf(stderr, "subnet: %d\n", subnet);
 	}
 
 //bad nodes/DNS initialization
@@ -106,8 +108,8 @@ int main(int argc, char *argv[]){
 		struct links *links;
 		if(bad_links!=NULL){
 			fprintf(stderr, "bad_links: ");
-			for
-			for(links=bad_links; links!=NULL; links = links->next){
+			for(links=bad_links; links->prev!=NULL; links=links->prev){}
+			for(; links!=NULL; links = links->next){
 				fprintf(stderr, "id= %d, ", links->miner_id);
 			}
 			fprintf(stderr, "\n");
@@ -123,11 +125,11 @@ int main(int argc, char *argv[]){
 		if(sim_time%600==0){
 //			fprintf(stderr, "in bad_links: ");
 			
-//			add_link_records(threads);
+			add_link_records(threads);
 #ifdef	MULTI
-//			add_link_records(bad_threads);
+			add_link_records(bad_threads);
 #endif	//MULTI
-//			print_link_record();
+			print_link_record();
 		}
 
 // routine
