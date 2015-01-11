@@ -33,6 +33,8 @@ void free_link(struct links *will_remove, struct miner *miner/*struct miner *min
 		for(; tmp!=NULL; tmp=tmp->prev){
 			if(tmp==will_remove){
 				miner->n_outbound--;
+				found = true;
+				break;
 			}
 		}
 	}
@@ -41,6 +43,8 @@ void free_link(struct links *will_remove, struct miner *miner/*struct miner *min
 		for(; tmp!=NULL; tmp=tmp->prev){
 			if(tmp==will_remove){
 				miner->n_inbound--;
+				found = true;
+				break;
 			}
 		}
 	}

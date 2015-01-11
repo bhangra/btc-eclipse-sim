@@ -4,7 +4,6 @@
 #include"connection.h"
 #include"addrman.h"
 #include"thread.h"
-
 #define max(A,B) (((A)>(B))?(A):(B)) 
 
 struct caddrinfo *map_info(struct addrman *addrman, unsigned int nid){
@@ -29,15 +28,17 @@ unsigned int map_addr(struct addrman *addrman, struct links *links){
 	}
 	return 0;
 }
+void hexDump (char *desc, void *addr, int len);
 
 void add(unsigned char *vaddr, struct caddrinfo *ai){
-//#ifdef ADDR_DEBUG
+#ifdef ADDR_DEBUG
 	fprintf(stderr, "add(ai): miner_id = %d, new_comer = %p, n_time = %d, subnet = %d\n", ai->miner_id, ai->new_comer, ai->n_time, ai->subnet);
-//#endif
+#endif
 	memcpy(vaddr, &ai->miner_id, sizeof(unsigned int));
 	memcpy(&vaddr[sizeof(unsigned int)], &ai->new_comer, sizeof(struct link*));;
 	memcpy(&vaddr[sizeof(unsigned int)+sizeof(struct link*)], &ai->n_time, sizeof(unsigned int));
 	memcpy(&vaddr[sizeof(unsigned int)+sizeof(struct link*)+sizeof(unsigned int)], &ai->subnet, sizeof(unsigned int)); 
+//	hexDump("getaddr_ add", vaddr, sizeof(struct link*)+sizeof(unsigned int)*3);
 }
 
 void erase(struct addrman *addrman, int erase_pos){
@@ -609,12 +610,13 @@ unsigned int getaddr_(struct addrman *addrman, unsigned char *vaddr){//will fix 
 		struct caddrinfo *ai = map_info(addrman, *addrman->v_random[n]);
 		if(ai!=NULL){
 			if(!is_terrible(sim_time, ai)){
-				add(&vaddr[n*sets], ai);//will fix vaddr
+				add(&vaddr[i*sets], ai);//will fix vaddr
 				i++;
 			}
 		}
 		n++;
 	}
+//	fprintf(stderr, "getaddr_ sending i = %d addrs\n", i);
 	return i;
 }
 

@@ -152,7 +152,9 @@ void miner_routine(struct miner *miner){
 		if(addr!=NULL){
 			int subnet = addr->subnet;
 			bool subnet_found=false;
-			if(miner->outbound!=NULL){
+			if(addr->miner_id==miner->miner_id||addr->new_comer==&miner->new_comer)
+				subnet_found=true;
+			if(miner->outbound!=NULL&&subnet_found!=true){
 				for(links=miner->outbound; links->next!=NULL; links=links->next){}
 				for(; links!=NULL; links=links->prev){
 					if(subnet==links->subnet || addr->new_comer==links->new_comer){
@@ -161,7 +163,7 @@ void miner_routine(struct miner *miner){
 					}
 				}
 			}
-			if(miner->inbound!=NULL){
+			if(miner->inbound!=NULL&&subnet_found!=true){
 				for(links=miner->inbound; links->next!=NULL; links=links->next){}
 				for(; links!=NULL; links=links->prev){
 					if(addr->new_comer==links->new_comer){
@@ -170,7 +172,7 @@ void miner_routine(struct miner *miner){
 					}
 				}
 			}
-			if(dead!=NULL)
+			if(dead!=NULL&&subnet_found!=true)
 				for(killed=dead; killed!=NULL; killed=killed->next){
 					if(killed->id == addr->miner_id)
 						subnet_found=true;
@@ -258,7 +260,7 @@ void miner_routine(struct miner *miner){
 							break;
 						read_msg(link);	
 						if(process_msg(&miner->new_comer, links, miner)==-1){
-							links=miner->inbound;
+							links=miner->outbound;
 							if(links!=NULL)
 								link=links->link;
 							else
