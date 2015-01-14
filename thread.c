@@ -321,28 +321,7 @@ struct threads *cancel_one_thread(struct threads *will_kill){
 		for(tmp=dead; tmp->next!=NULL; tmp=tmp->next){}
 		tmp->next=killed;
 	}
-/*	if(bad_links!=NULL){
-		for(links=bad_links; links->prev!=NULL; links=links->prev){}
-		for(; links!=NULL; links=after){
-			after=links->next;
-			if(links->miner_id == killed->id){
-				prev = links->prev;
-				next = links->next;
-				if(prev!=NULL)
-					prev->next = next;
-				if(next!=NULL)
-					next->prev = prev;
-				if(links==bad_links){
-					if(next!=NULL)
-						bad_links=next;
-					else
-						bad_links=prev;
-				}
-				free(links);
-			}
-		}
-	}
-*/	free_links(will_kill);
+	free_links(will_kill);
 	free_dns_rec(will_kill);
 	return cancel_thread(will_kill);
 }

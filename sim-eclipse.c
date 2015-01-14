@@ -241,7 +241,7 @@ int main(int argc, char *argv[]){
 	cancel_all(threads);
 	cancel_seeds();
 	free_killed();
-	free_bad_links();
+//	free_bad_links();
 	print_link_record();
 	print_block_record();
 	exit(1);

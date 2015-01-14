@@ -31,8 +31,8 @@
 #define SEED_TTL	60*60*24*1
 //#define SEED_TTL	2000
 #define SIM_DAYS	2//30
-#define SIM_TIME	60*60*24*SIM_DAYS
-//#define SIM_TIME	60*60*12
+//#define SIM_TIME	60*60*24*SIM_DAYS
+#define SIM_TIME	60*60*24
 //1000nodes*12hour = 2min15~30s
 //24,000nodes*30day = 702min &killed
 

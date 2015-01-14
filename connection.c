@@ -145,22 +145,6 @@ void free_links(struct threads *will_kill){
 			}
 		}
 	}
-#ifdef BAD_NODES
-/*	for(links=bad_links; links!=NULL; links=next){
-		prev = links->prev;
-		next = links->next;
-		if(links->miner_id==kill_id){
-			if(links==bad_links)
-				bad_links=next;
-			free(links->link);
-			free(links);
-			if(next!=NULL)
-				next->prev=prev;
-			if(prev!=NULL)
-				prev->next=next;
-		}
-	}*/
-#endif
 }
 void free_bad_links(){
 	struct links *tmp, *next;

@@ -120,7 +120,8 @@ struct links *process_bad_dns(struct link *new_comer, struct links *seeds){
 		if(tmp!=NULL){
 			exists = 0;
 			if(bad_links!=NULL){
-				for(tmp_bad=bad_links; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
+				for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
+				for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
 					if(tmp_bad->miner_id==tmp->miner_id){
 						exists = true;
 						break;
@@ -326,7 +327,7 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 						break;
 					}
 				}
-				struct links *tmp_bad;
+//				struct links *tmp_bad;
 				if(exists==false){
 					tmp_bad = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
 					free(tmp_bad->link);
@@ -446,16 +447,18 @@ void bad_miner_routine(struct miner *miner){
 	else{
 		bad_count[miner->miner_id-SEED_NUM]++;
 		if(bad_count[miner->miner_id-SEED_NUM]>=30){
-			for(i=0; i<SEED_NUM; i++){
-				for(tmp_bad=miner->outbound; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next);
+//			for(i=0; i<SEED_NUM; i++){
+			if(miner->outbound!=NULL){
+				for(tmp_bad=miner->outbound; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
 				for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
-					if(tmp_bad->miner_id==seeds[i]->miner_id){
-						bad_addr(tmp_bad->link/*&seeds[i].new_comer*/, miner, seeds[i]->miner_id);
+//					if(tmp_bad->miner_id==seeds[i]->miner_id){
+						bad_addr(tmp_bad->link/*&seeds[i].new_comer*/, miner, /*seeds[i]->miner_id*/tmp_bad->miner_id);
 						getaddr(tmp_bad->link, miner->miner_id);
-						break;
-					}
+//						break;
+//					}
 				}
 			}
+//			}
 			links = miner->outbound;
 			if(links==NULL){
 				i=0;
