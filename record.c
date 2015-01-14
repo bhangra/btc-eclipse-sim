@@ -203,20 +203,27 @@ void join_record(struct block *new, struct blocks *blocks){
 
 void print_link_record(){
 	struct node_record	*n_rec, *save, *same;
-	struct link_record	*l_rec;
-	for(n_rec = n_link; n_rec->prev!=NULL; n_rec=n_rec->prev){printf("\n");}
-	for(; n_rec!=NULL; n_rec=save){
-		save=n_rec->next;
-		for(; n_rec!=NULL; n_rec=same){
-			same=n_rec->same;
-			fprintf(stdout, "i= %d g= %d ", n_rec->my_id, n_rec->my_group);
-			for(l_rec=n_rec->record; l_rec!=NULL; l_rec=l_rec->next){
-				fprintf(stdout, "i= %d g= %d ", l_rec->dest_id, l_rec->dest_group);
+	struct link_record	*l_rec, *l_next;
+	if(n_link!=NULL){
+		for(n_rec = n_link; n_rec->prev!=NULL; n_rec=n_rec->prev){printf("\n");}
+		for(; n_rec!=NULL; n_rec=save){
+			save=n_rec->next;
+			for(; n_rec!=NULL; n_rec=same){
+				same=n_rec->same;
+				fprintf(stdout, "i= %d g= %d ", n_rec->my_id, n_rec->my_group);
+				l_rec=n_rec->record;
+				free(n_rec);
+				for(; l_rec!=NULL; l_rec=l_next){
+					fprintf(stdout, "i= %d g= %d ", l_rec->dest_id, l_rec->dest_group);
+					l_next=l_rec->next;
+					free(l_rec);
+				}
+				fprintf(stdout, "\n");
 			}
 			fprintf(stdout, "\n");
 		}
-		fprintf(stdout, "\n");
 	}
+	n_link=NULL;
 }
 void add_link_record(struct threads *thread){
 	struct node_record	*n_rec, *tmp;

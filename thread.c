@@ -210,9 +210,9 @@ struct threads *keep_total_nodes(struct threads *threads){
 
 void free_blocks(struct blocks *blocks, struct blocks *meblocks){
 	struct blocks    *tmp, *tmp2;
-	if(blocks==meblocks){
+/*	if(blocks==meblocks){
 		return;
-	}
+	}*/
 	if(blocks==NULL)
 		return;
 	for(tmp=blocks; tmp->prev!=NULL; tmp=tmp->prev){}
@@ -220,8 +220,8 @@ void free_blocks(struct blocks *blocks, struct blocks *meblocks){
 		free(tmp->block);
 		tmp->block = NULL;
 		tmp2=tmp->next;
-		if(tmp!=meblocks)
-			free(tmp);
+//		if(tmp!=meblocks)
+		free(tmp);
 		tmp=NULL;
 		tmp=tmp2;
 	} 
@@ -263,7 +263,7 @@ void free_node_s_caddrinfo(struct caddrinfo *melinks){
 	}	
 }
 
-//for cancel_all()
+//for cancel_all() and cancel_by_TTL
 struct threads *cancel_thread(struct threads *will_kill){
 	struct miner	*tmp;
 	struct threads *before, *after, *ret;
@@ -278,6 +278,8 @@ struct threads *cancel_thread(struct threads *will_kill){
 	free_node_s_links((struct links*)tmp->outbound);
 	free_node_s_links((struct links*)tmp->inbound);
 	free_blocks(tmp->blocks, (struct blocks*)&tmp->blocks);
+	free_blocks(tmp->new_chain, (struct blocks*)&tmp->new_chain);
+	free_from_bad_links(will_kill->miner->miner_id, &will_kill->miner->new_comer);
 	free(will_kill->miner);
 	will_kill->miner=NULL;
 	free(will_kill);

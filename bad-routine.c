@@ -61,7 +61,7 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 			for(; tmp!=NULL && tmp->miner_id!=dest_id; tmp=tmp->next){}
 		}			
 		if(tmp!=NULL){
-			tmp_bad=add_links(dest_id, tmp->new_comer, tmp->new_comer, bad_links);
+			tmp_bad=add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
 			dest_group			= rand()%GROUPS;
 			tmp_bad->group		= dest_group;
 		}
@@ -222,7 +222,7 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 						}
 					}
 				}
-				if(me->inbound!=NULL){
+				if(me->inbound!=NULL&&connect==true){
 					for(tmp=me->inbound; tmp->prev!=NULL; tmp=tmp->prev){}
 					for(; tmp!=NULL; tmp=tmp->next){
 						if(tmp->miner_id==miner_id){
@@ -233,12 +233,12 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 				}
 			}
 			struct killed *killed;
-			if(dead!=NULL)
+			if(dead!=NULL&&connect==true)
 				for(killed=dead; killed!=NULL; killed=killed->next){
 					if(killed->id == miner_id)
 						connect=false;
 				}
-			if(connect){
+			if(connect==true){
 //				connected = true;
 #ifdef DEBUG
 				fprintf(stderr, "will send version to dest: %p, id: %d\n", dest, miner_id);
@@ -357,11 +357,11 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 				}
 			}
 		}
+		tmp=NULL;
 //		return verack(new_comer, me->links);
 		if(links_found!=true)
 			tmp = verack(new_comer, me->inbound, me);
-		
-		if(tmp!=NULL){
+		if(tmp!=NULL && links_found!=true){
 			if(bad_links==NULL){
 				bad_links = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
 				bad_links->group = rand()%GROUPS;
@@ -377,7 +377,7 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 				}
 				if(exists==false){
 					tmp_bad = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
-					tmp_bad->group = rand()&GROUPS;
+					tmp_bad->group = rand()%GROUPS;
 				}
 			}
 		}
@@ -448,10 +448,8 @@ void bad_miner_routine(struct miner *miner){
 			else{
 				for(;links->prev!=NULL; links=links->prev){}
 				for(i=0/*debug*/; links!=NULL; links=links->next){
-						bad_addr(links->link/*&seeds[i].new_comer*/, miner, links->miner_id);
+					bad_addr(links->link/*&seeds[i].new_comer*/, miner, links->miner_id);
 					i++;
-					if(links->next==NULL)
-						break;
 				}
 			}
 			links = miner->inbound;

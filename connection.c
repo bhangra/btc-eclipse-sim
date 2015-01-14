@@ -162,6 +162,41 @@ void free_links(struct threads *will_kill){
 	}
 #endif
 }
+void free_bad_links(){
+	struct links *tmp, *next;
+	if(bad_links==NULL)
+		return;
+	for(tmp=bad_links; tmp->prev!=NULL; tmp=tmp->prev){}
+	for(; tmp!=NULL; tmp=next){
+		next=tmp->next;
+		free(tmp->link);
+		free(tmp);
+	}
+}
+void free_from_bad_links(unsigned int kill_id, struct link *new_comer){
+	struct links *tmp, *prev, *next;
+	if(bad_links==NULL)
+		return;
+	for(tmp=bad_links; tmp->prev!=NULL; tmp=tmp->prev){}
+	for(;tmp!=NULL; tmp=next){
+		next = tmp->next;
+		if(tmp->miner_id==kill_id||tmp->new_comer==new_comer){
+			prev = tmp->prev;
+			if(prev!=NULL)
+				prev->next = next;
+			if(next!=NULL)
+				next->prev = prev;
+			if(tmp==bad_links){
+				if(next!=NULL)
+					bad_links = next;
+				else
+					bad_links = prev;
+			}
+			free(tmp->link);
+			free(tmp);
+		}
+	}
+}
 void free_dns_rec(struct threads *will_kill){
 	unsigned int 	kill_id, i;
 	struct links	*tmp, *next, *prev;

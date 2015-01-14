@@ -240,7 +240,8 @@ int main(int argc, char *argv[]){
 #endif
 	cancel_all(threads);
 	free_killed();
-//	print_link_record();
+	free_bad_links();
+	print_link_record();
 	print_block_record();
 	exit(1);
 }
