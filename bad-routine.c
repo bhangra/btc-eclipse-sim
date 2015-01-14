@@ -64,6 +64,8 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 			tmp_bad=add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
 			dest_group			= rand()%GROUPS;
 			tmp_bad->group		= dest_group;
+			free(tmp_bad->link);
+			tmp_bad->link		= NULL;
 		}
 		else{
 			dest_group = rand()%GROUPS;
@@ -131,6 +133,8 @@ struct links *process_bad_dns(struct link *new_comer, struct links *seeds){
 			}
 			else if(bad_links==NULL){
 				bad_links = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
+				free(bad_links->link);
+				bad_links->link=NULL;
 			}
 			return tmp;
 		}
@@ -257,6 +261,8 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 				}
 				if(exists==false){
 					tmp_bad = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
+					free(tmp_bad->link);
+					tmp_bad->link=NULL;
 					tmp_bad->group = dgroup;//rand()%GROUPS;//dgroup;
 					tmp_bad->subnet= subnet;
 				}
@@ -307,6 +313,8 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 		if(tmp!=NULL){
 			if(bad_links==NULL){
 				bad_links = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
+				free(bad_links->link);
+				bad_links->link=NULL;
 				bad_links->group = rand()%GROUPS;
 			}
 			else{
@@ -321,6 +329,8 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 				struct links *tmp_bad;
 				if(exists==false){
 					tmp_bad = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
+					free(tmp_bad->link);
+					tmp_bad->link=NULL;
 					tmp_bad->group = rand()%GROUPS;
 				}
 			}
@@ -364,6 +374,8 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 		if(tmp!=NULL && links_found!=true){
 			if(bad_links==NULL){
 				bad_links = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
+				free(bad_links->link);
+				bad_links->link=NULL;
 				bad_links->group = rand()%GROUPS;
 			}
 			else{
@@ -377,6 +389,8 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 				}
 				if(exists==false){
 					tmp_bad = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
+					free(tmp_bad->link);
+					tmp_bad->link=NULL;
 					tmp_bad->group = rand()%GROUPS;
 				}
 			}
@@ -417,6 +431,8 @@ void bad_miner_routine(struct miner *miner){
 			}
 			if(exists==false){
 				tmp_bad=add_links(seeds[i]->miner_id, &seeds[i]->new_comer, &seeds[i]->new_comer, bad_links);
+				free(tmp_bad->link);	
+				tmp_bad->link=NULL;
 				tmp_bad->group = rand()%GROUPS;
 //				miner->outbound=add_links(seeds[i].miner_id, &seeds[i].new_comer, &seeds[i].new_comer, miner->outbound);
 //				miner->outbound->group = bad_links->group;

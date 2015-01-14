@@ -86,7 +86,7 @@ void free_links(struct threads *will_kill){
 	struct miner    *miner;
 	struct links    *links, *prev;
 #ifdef BAD_NODES
-	struct links	 *next;
+//	struct links	 *next;
 #endif	
 	kill_id = (will_kill->miner)->miner_id;
 	
@@ -146,7 +146,7 @@ void free_links(struct threads *will_kill){
 		}
 	}
 #ifdef BAD_NODES
-	for(links=bad_links; links!=NULL; links=next){
+/*	for(links=bad_links; links!=NULL; links=next){
 		prev = links->prev;
 		next = links->next;
 		if(links->miner_id==kill_id){
@@ -159,7 +159,7 @@ void free_links(struct threads *will_kill){
 			if(prev!=NULL)
 				prev->next=next;
 		}
-	}
+	}*/
 #endif
 }
 void free_bad_links(){
@@ -169,7 +169,8 @@ void free_bad_links(){
 	for(tmp=bad_links; tmp->prev!=NULL; tmp=tmp->prev){}
 	for(; tmp!=NULL; tmp=next){
 		next=tmp->next;
-		free(tmp->link);
+		if(tmp->link!=NULL)
+			free(tmp->link);
 		free(tmp);
 	}
 }
@@ -192,7 +193,8 @@ void free_from_bad_links(unsigned int kill_id, struct link *new_comer){
 				else
 					bad_links = prev;
 			}
-			free(tmp->link);
+			if(tmp->link!=NULL)
+				free(tmp->link);
 			free(tmp);
 		}
 	}

@@ -239,6 +239,7 @@ int main(int argc, char *argv[]){
 	fprintf(stderr, "will cancel_all()\n"); //debug
 #endif
 	cancel_all(threads);
+	cancel_seeds();
 	free_killed();
 	free_bad_links();
 	print_link_record();

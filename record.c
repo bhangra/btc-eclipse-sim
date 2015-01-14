@@ -56,9 +56,11 @@ void print_block_record(){
 			for(tmp=printer->record; tmp!=NULL; tmp=tmp2){
 				fprintf(stdout, "t= %d h= %d i= %d r= %f n= %d ",tmp->mined_time, tmp->height, tmp->miner_id, tmp->hash_rate, tmp->num_nodes); 
 				tmp2 = tmp->same;
-//				free(tmp);
+				free(tmp);
 			}
 		}
+		//free records
+
 		fprintf(stdout, "\n");
 		//free current height records
 		for(printer=save; printer!=NULL; printer=controll){

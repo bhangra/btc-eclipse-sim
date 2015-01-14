@@ -307,7 +307,7 @@ struct threads *cancel_thread(struct threads *will_kill){
 //for cancel_by_TTL
 struct threads *cancel_one_thread(struct threads *will_kill){
 	struct killed *killed, *tmp;
-	struct links *links, *prev=NULL, *next=NULL, *after;
+//	struct links *links, *prev=NULL, *next=NULL, *after;
 	killed = malloc(sizeof(struct killed));
 	killed->next	= NULL;
 	killed->id		= (will_kill->miner)->miner_id;
@@ -321,7 +321,7 @@ struct threads *cancel_one_thread(struct threads *will_kill){
 		for(tmp=dead; tmp->next!=NULL; tmp=tmp->next){}
 		tmp->next=killed;
 	}
-	if(bad_links!=NULL){
+/*	if(bad_links!=NULL){
 		for(links=bad_links; links->prev!=NULL; links=links->prev){}
 		for(; links!=NULL; links=after){
 			after=links->next;
@@ -342,7 +342,7 @@ struct threads *cancel_one_thread(struct threads *will_kill){
 			}
 		}
 	}
-	free_links(will_kill);
+*/	free_links(will_kill);
 	free_dns_rec(will_kill);
 	return cancel_thread(will_kill);
 }
@@ -377,6 +377,18 @@ void cancel_all(struct threads *head){
 		tmp = cancel_thread(tmp);
 		if(tmp==tmp2)
 			break;
+	}
+}
+void cancel_seeds(){
+	int i;
+	for(i=0; i<SEED_NUM; i++){
+		free_node_s_caddrinfo(seeds[i]->addrman.caddrinfo);
+		free_node_s_links((struct links*)seeds[i]->outbound);
+		free_node_s_links((struct links*)seeds[i]->inbound);
+		free_blocks(seeds[i]->blocks, (struct blocks*)&seeds[i]->blocks);
+		free_blocks(seeds[i]->new_chain, (struct blocks*)&seeds[i]->new_chain);
+		free_from_bad_links(seeds[1]->miner_id, &seeds[i]->new_comer);
+		free(seeds[i]);
 	}
 }
 

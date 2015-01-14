@@ -95,15 +95,12 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 				fprintf(stderr, "new block was height 1\n");
 #endif
 				if(me->blocks!=NULL){
-					for(tmp=me->blocks; tmp->next==NULL; tmp=tmp->next){
-						if(tmp==NULL||tmp->next==NULL){break;}
-						for(; tmp!=NULL; tmp=tmp2){
+					for(tmp=me->blocks; tmp->next!=NULL; tmp=tmp->next){}
+					for(; tmp!=NULL; tmp=tmp2){
 							tmp2 = tmp->prev;
 							free(tmp->block);
 							tmp->block=NULL;
 							free(tmp);
-							tmp=NULL;
-							}
 					}			
 				}
 				for(tmp=tmp3; tmp->next!=NULL; tmp=tmp->next){}
@@ -129,7 +126,6 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 								free(tmp->block);
 								tmp->block=NULL;
 								free(tmp);		
-								tmp=NULL;				
 							}
 							for(tmp=tmp2; tmp->next!=NULL;  tmp=tmp->next){}
 							me->new_chain=NULL;
@@ -183,19 +179,14 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 #ifdef DEBUG
 				fprintf(stderr, "free new_chain\n");
 #endif
-			for(tmp=me->new_chain; ; tmp=tmp->next){
-					if(tmp==NULL||tmp->next==NULL){
-						break;
+				if(me->new_chain!=NULL){
+					for(tmp=me->new_chain; tmp->next!=NULL; tmp=tmp->next){}
+					for(; tmp!=NULL; tmp=tmp2){
+						tmp2 = tmp->prev;
+						free(tmp->block);
+						free(tmp);
 					}
 				}
-				for(; tmp!=NULL; tmp=tmp2){
-					tmp2 = tmp->prev;
-					free(tmp->block);
-					tmp->block=NULL;
-					free(tmp);
-					tmp=NULL;
-				}
-			
 				me->new_chain = malloc(sizeof(struct blocks));
 				memset(me->new_chain, 0, sizeof(struct blocks));
 				(me->new_chain)->block	= accept;
@@ -203,7 +194,7 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 				(me->new_chain)->prev	= NULL;
 				//get_blocks(from, me->blocks, me->new_chain);
 				from->fgetblock=true;
-		
+			
 				return NULL;
 			}
 		}
@@ -231,14 +222,12 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 #ifdef DEBUG
 				fprintf(stderr, "free new_chain\n");
 #endif
-				for(tmp=me->new_chain; tmp->next!=NULL; tmp=tmp->next){
-				}
+				for(tmp=me->new_chain; tmp->next!=NULL; tmp=tmp->next){	}
 				for(; tmp!=NULL; tmp=tmp2){
 					tmp2 = tmp->prev;
 					free(tmp->block);
 					tmp->block=NULL;
 					free(tmp);
-					tmp=NULL;
 				}
 			}
 			me->new_chain = malloc(sizeof(struct blocks));
