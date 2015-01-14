@@ -47,9 +47,10 @@ struct caddrinfo{
 struct addrman{
 	char				*n_key;
 	unsigned int		n_tries;
+	double				f_chance_factor;
 //	struct caddrinfo	*v_random;
 	struct caddrinfo	*caddrinfo;
-	unsigned int		v_random[ADDRMAN_NEW_BUCKET_COUNT+ADDRMAN_TRIED_BUCKET_COUNT][ADDRMAN_BUCKET_SIZE];
+	unsigned int		v_random[ADDRMAN_NEW_BUCKET_COUNT+ADDRMAN_TRIED_BUCKET_COUNT*ADDRMAN_BUCKET_SIZE];
 	unsigned int		v_random_size;
 	unsigned int		n_id_count;
 	unsigned int		n_tried;

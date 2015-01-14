@@ -829,12 +829,13 @@ void make_random_connection(struct threads *threads){
 		for(i=0; i<dest && tmp2->next!=NULL; i++){
 			tmp2=tmp2->next;
 		}
+
+		s = tmp->miner;
 		if(tmp!=tmp2){
-			s = tmp->miner;
 			d = tmp2->miner;
 			version(s->miner_id, s->subnet, d->miner_id, &d->new_comer, &s->new_comer, s);
 		}
-		version(s->miner_id, s->subnet, seeds[seed].miner_id, &seeds[seed].new_comer, &s->new_comer, s);
+		version(s->miner_id, s->subnet, seeds[seed]->miner_id, &seeds[seed]->new_comer, &s->new_comer, s);
 	}
 }
 #endif

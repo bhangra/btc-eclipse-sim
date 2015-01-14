@@ -13,7 +13,7 @@ bool				is_bad_dns[NUM_DNS];
 struct links		*bad_links = NULL;
 struct bad_threads		*bad_threads=NULL;
 struct dns 			dns[NUM_DNS];
-struct miner		seeds[SEED_NUM];
+struct miner		*seeds[SEED_NUM];
 struct killed		*dead = NULL;
 
 //for recording blocks

@@ -86,7 +86,8 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	}
 
 	if(bad_links!=NULL){
-		for(tmp_bad=bad_links; tmp_bad!=NULL && 16+(sets*set_size)<BUF_SIZE-set_size; tmp_bad=tmp_bad->prev){
+		for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
+		for(/*tmp_bad=bad_links*/; tmp_bad!=NULL && 16+(sets*set_size)<BUF_SIZE-set_size; tmp_bad=tmp_bad->prev){
 			if(tmp_bad->miner_id!=dest_id && tmp_bad->group == dest_group){
 				memcpy(&link->sbuf[16+(sets*set_size)], &tmp_bad->miner_id, sizeof(unsigned int));
 				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &tmp_bad->new_comer, sizeof(struct link*));
@@ -256,7 +257,7 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 				}
 				if(exists==false){
 					tmp_bad = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
-					tmp_bad->group = rand()%GROUPS;//dgroup;
+					tmp_bad->group = dgroup;//rand()%GROUPS;//dgroup;
 					tmp_bad->subnet= subnet;
 				}
 			}
@@ -403,19 +404,19 @@ void bad_miner_routine(struct miner *miner){
 
 		bad_count[miner->miner_id-SEED_NUM]=0;
 		for(i=0; i<SEED_NUM; i++){
-			version(miner->miner_id, miner->subnet, seeds[i]. miner_id, &seeds[i].new_comer, &miner->new_comer, miner);
+			version(miner->miner_id, miner->subnet, seeds[i]->miner_id, &seeds[i]->new_comer, &miner->new_comer, miner);
 			exists = false;
 			if(bad_links!=NULL){
 				for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
 					for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
-						if(tmp_bad->miner_id==seeds[i].miner_id){
+						if(tmp_bad->miner_id==seeds[i]->miner_id){
 							exists = true;
 							break;
 					}
 				}
 			}
 			if(exists==false){
-				tmp_bad=add_links(seeds[i].miner_id, &seeds[i].new_comer, &seeds[i].new_comer, bad_links);
+				tmp_bad=add_links(seeds[i]->miner_id, &seeds[i]->new_comer, &seeds[i]->new_comer, bad_links);
 				tmp_bad->group = rand()%GROUPS;
 //				miner->outbound=add_links(seeds[i].miner_id, &seeds[i].new_comer, &seeds[i].new_comer, miner->outbound);
 //				miner->outbound->group = bad_links->group;
@@ -432,8 +433,8 @@ void bad_miner_routine(struct miner *miner){
 			for(i=0; i<SEED_NUM; i++){
 				for(tmp_bad=miner->outbound; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next);
 				for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
-					if(tmp_bad->miner_id==seeds[i].miner_id){
-						bad_addr(tmp_bad->link/*&seeds[i].new_comer*/, miner, seeds[i].miner_id);
+					if(tmp_bad->miner_id==seeds[i]->miner_id){
+						bad_addr(tmp_bad->link/*&seeds[i].new_comer*/, miner, seeds[i]->miner_id);
 						getaddr(tmp_bad->link, miner->miner_id);
 						break;
 					}

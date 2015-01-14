@@ -107,6 +107,7 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 	miner->subnet	= rand()&0xffff0000;
 //	miner->links	= NULL;
 	memset(&miner->addrman, 0, sizeof(struct addrman));
+	miner->addrman.caddrinfo = NULL;
 	miner->outbound	= NULL;
 	miner->inbound	= NULL;
 	miner->blocks	= NULL;

@@ -42,8 +42,21 @@ void add(unsigned char *vaddr, struct caddrinfo *ai){
 }
 
 void erase(struct addrman *addrman, int erase_pos){
-	fprintf(stderr, "erase_pos = %d, v_random_size = %d\n", erase_pos, addrman->v_random_size);
-	memcpy(&addrman->v_random[erase_pos], &addrman->v_random[erase_pos+1], addrman->v_random_size-erase_pos);
+//	fprintf(stderr, "erase_pos = %d, v_random_size = %d\n", erase_pos, addrman->v_random_size);
+	int i;
+	for(i=0; i<addrman->v_random_size-erase_pos&&i</*sizeof(addrman->v_random)+1*/1000; i++){
+//		fprintf(stderr, "i= %d\n", i);
+		addrman->v_random[erase_pos+i] = addrman->v_random[erase_pos+1+i];
+	}
+
+//	memcpy(&addrman->v_random[erase_pos], &addrman->v_random[erase_pos+1], addrman->v_random_size-erase_pos);
+
+/*unsigned int		tmp[ADDRMAN_NEW_BUCKET_COUNT+ADDRMAN_TRIED_BUCKET_COUNT][ADDRMAN_BUCKET_SIZE];
+
+//	fprintf(stderr, "erase_pos = %d, v_random_size = %d\n", erase_pos, addrman->v_random_size);
+	memcpy(&tmp, &addrman->v_random[erase_pos+1], addrman->v_random_size-erase_pos);
+	memcpy(&addrman->v_random[erase_pos], &tmp, addrman->v_random_size-erase_pos);
+*/
 }
 
 unsigned int get_tried_bucket(struct caddrinfo *info, struct addrman *addrman){
@@ -140,6 +153,8 @@ struct caddrinfo *create(struct addrman *addrman, struct links *links, struct li
 	}
 	struct caddrinfo *new = malloc(sizeof(struct caddrinfo));
 	memset(new, 0, sizeof(struct caddrinfo));
+	new->next=NULL;
+	new->prev=NULL;
 	new->new_comer	= links->new_comer;
 	new->miner_id	= links->miner_id;
 	new->subnet		= links->subnet;
@@ -151,10 +166,10 @@ struct caddrinfo *create(struct addrman *addrman, struct links *links, struct li
 	int i;
 	for(i=0; i<sizeof(addrman->v_random); i++){
 #ifdef ADDR_DEBUG
-		fprintf(stderr, "*addrman->v_random[%d] == %d\n", i, *addrman->v_random[i]);
+		fprintf(stderr, "addrman->v_random[%d] == %d\n", i, addrman->v_random[i]);
 #endif
-		if(*addrman->v_random[i]==0){
-			*addrman->v_random[i] = nid;
+		if(addrman->v_random[i]==0){
+			addrman->v_random[i] = nid;
 			addrman->v_random_size++;
 			break;
 		}			
@@ -162,7 +177,6 @@ struct caddrinfo *create(struct addrman *addrman, struct links *links, struct li
 	if(i==sizeof(addrman->v_random)/sizeof(unsigned int)){
 
 	}
-	new->next=NULL;
 	struct caddrinfo *tmp;
 	if(addrman->caddrinfo!=NULL){
 		for(tmp=addrman->caddrinfo; tmp->next!=NULL; tmp=tmp->next){}
@@ -177,10 +191,10 @@ void swap_random(struct addrman *addrman, unsigned int n_rnd_pos1, unsigned int 
 	if(n_rnd_pos1 == n_rnd_pos2)
 		return;
 //	struct caddrinfo *tmp;
-	int nid1 = *addrman->v_random[n_rnd_pos1];
-	int nid2 = *addrman->v_random[n_rnd_pos2];
-	*addrman->v_random[n_rnd_pos1] = nid2;
-	*addrman->v_random[n_rnd_pos2] = nid1;
+	int nid1 = addrman->v_random[n_rnd_pos1];
+	int nid2 = addrman->v_random[n_rnd_pos2];
+	addrman->v_random[n_rnd_pos1] = nid2;
+	addrman->v_random[n_rnd_pos2] = nid1;
 }
 
 int select_tried(struct addrman *addrman, unsigned int nkbucket){
@@ -221,10 +235,11 @@ int select_tried(struct addrman *addrman, unsigned int nkbucket){
 			n_oldest		= ntemp;
 			n_oldest_pos	= npos;
 		}
-		else if(tmp->n_last_success < tmp2->n_last_success){
-			n_oldest		= ntemp;
-			n_oldest_pos	= npos;
-		}
+		else if(tmp!=NULL&&tmp2!=NULL)
+			if(tmp->n_last_success < tmp2->n_last_success){
+				n_oldest		= ntemp;
+				n_oldest_pos	= npos;
+			}
 	}
 	return n_oldest_pos;
 }
@@ -232,7 +247,7 @@ int select_tried(struct addrman *addrman, unsigned int nkbucket){
 int shrink_new(struct addrman *addrman, int n_u_bucket, unsigned int nid){
 	int *vnew = (int *)&addrman->vv_new[n_u_bucket][0];
 	int i, j;
-	struct caddrinfo *tmp, *prev, *next;
+	struct caddrinfo *tmp=NULL, *prev, *next;
 	//look for deletable items
 	for(i=0; i<ADDRMAN_BUCKET_SIZE; i++){
 		if(vnew[i]==nid)
@@ -246,7 +261,7 @@ int shrink_new(struct addrman *addrman, int n_u_bucket, unsigned int nid){
 			else{
 				if(is_terrible(sim_time, tmp)){
 					if(tmp->n_ref_count-- == 0){
-					prev = tmp->prev;
+						prev = tmp->prev;
 						next = tmp->next;
 						if(prev!=NULL)
 							prev->next = next;
@@ -261,8 +276,8 @@ int shrink_new(struct addrman *addrman, int n_u_bucket, unsigned int nid){
 						free(tmp);
 						addrman->n_new--;
 						
-						for(j=0; j<addrman->v_random_size; j++){
-							if((int)*addrman->v_random[j]==vnew[i]){
+						for(j=0; j<addrman->v_random_size&&j<sizeof(addrman->v_random); j++){
+							if((int)addrman->v_random[j]==vnew[i]){
 //								addrman->v_random[j]=0;
 								erase(addrman, j);
 								break;
@@ -277,6 +292,12 @@ int shrink_new(struct addrman *addrman, int n_u_bucket, unsigned int nid){
 	}
 	//select 4 randomly, picking oldest and replace
 	int n[4] = {rand()%addrman->v_random_size, rand()%addrman->v_random_size, rand()%addrman->v_random_size, rand()%addrman->v_random_size};
+	for(;n[0]==nid&&n[1]==nid&&n[2]==nid&&n[3]==nid;){
+		n[0] = rand()%addrman->v_random_size;
+		n[1] = rand()%addrman->v_random_size;
+		n[2] = rand()%addrman->v_random_size;
+		n[3] = rand()%addrman->v_random_size;
+	}
 	int ni;
 	int noldest = -1;
 	struct caddrinfo *tmp1, *tmp2;
@@ -294,32 +315,35 @@ int shrink_new(struct addrman *addrman, int n_u_bucket, unsigned int nid){
 		if(noldest==-1)
 			noldest = n[ni];
 		else if(tmp2->n_time < tmp1->n_time){
-			noldest = ni;
+			noldest = n[ni];
 		}
 	}
 	struct caddrinfo *oldest;
 	oldest = map_info(addrman, noldest);
+	if(oldest!=NULL)
 	if(oldest->n_ref_count-- == 0){
-		prev = tmp->prev;
-		next = tmp->next;
+		prev = oldest->prev;
+		next = oldest->next;
 		if(prev!=NULL)
 			prev->next = next;
 		if(next!=NULL)
 			next->prev = prev;
-		if(addrman->caddrinfo==tmp){
+		if(addrman->caddrinfo==oldest){
 			if(next!=NULL)
 				addrman->caddrinfo	= next;
-			addrman->caddrinfo		= prev;
+			else
+				addrman->caddrinfo		= prev;
 		}
-		free(tmp);
+		free(oldest);
 		for(j=0; j<addrman->v_random_size; j++){
-			if(*addrman->v_random[j]==noldest){
+			if(addrman->v_random[j]==noldest){
 				erase(addrman, j);
 				break;
 			}
 		}
-		addrman->n_new--;
 	}
+
+	addrman->n_new--;
 	vnew[noldest] = 0;
 	return 1;
 }
@@ -424,7 +448,32 @@ void addrman_good(struct addrman *addrman, struct link *new_comer, unsigned int 
 bool addrman_add_(struct addrman *addrman, struct links *links, struct link *source, int n_time_penalty){
 	bool fnew = false;
 	int nid = 0;
+	//int	w, x;
+	//struct caddrinfo *tried;
 	struct caddrinfo *pinfo = find(addrman, links, &nid);
+/*	for(w=0;addrman->v_random_size>50;w++){
+		if(pinfo!=NULL)
+			shrink_new(addrman, rand()%ADDRMAN_NEW_BUCKET_COUNT, pinfo->nid);
+		else
+			shrink_new(addrman, rand()%ADDRMAN_NEW_BUCKET_COUNT, (unsigned int)0-1);
+		if(w==100){
+			x = rand()%ADDRMAN_TRIED_BUCKET_COUNT;
+			int n_pos = select_tried(addrman, x);
+			tried = map_info(addrman, addrman->vv_tried[x][n_pos]);
+			addrman->vv_tried[x][n_pos]=0;
+			addrman->n_tried--;
+			if(tried!=NULL){
+				tried->f_in_tried=0;
+				for(x=rand()%ADDRMAN_NEW_BUCKET_COUNT;;w++){
+					if(addrman->vv_new[x][w]==0){
+						addrman->vv_new[x][w]=tried->nid;
+						break;
+					}
+				}
+			}
+			break;
+		}
+	}*/
 	if(pinfo){
 		bool f_currently_online = (sim_time - links->n_time < 24 * 60 * 60);
 		unsigned int n_update_interval = (f_currently_online? 60 * 60 : 24 * 60 * 60);
@@ -457,6 +506,7 @@ bool addrman_add_(struct addrman *addrman, struct links *links, struct link *sou
 	int n_u_bucket		= get_new_bucket(pinfo, addrman);
 	unsigned int *vnew	= &addrman->vv_new[n_u_bucket][0];
 	int i;
+	//for DEBUG
 	for(i=0; i<ADDRMAN_BUCKET_SIZE; i++){
 		if(vnew[i]==0){
 			vnew[i] = pinfo->nid;
@@ -494,16 +544,18 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 #ifdef ADDR_DEBUG
 	fprintf(stderr, "in addrman_select(): n_tried = %d, n_new = %d\n", addrman->n_tried, addrman->n_new);
 #endif
-	unsigned int n, num_try=0;
+	unsigned int /*n,*/ num_try=0;
 	double n_cor_tried	= sqrt(addrman->n_tried) * (100.0-n_unk_bias);
 	double n_cor_new	= sqrt(addrman->n_new) * n_unk_bias;
-	double f_chance_factor = 1.0;
+	if(addrman->f_chance_factor<0)
+		addrman->f_chance_factor = 1.0;
 	struct killed 		*killed;
 	bool 				connect;
 	if((n_cor_tried + n_cor_new)*(rand()%(1 << 30)) / (1 << 30) < n_cor_tried){
-	for(n=0; n<ADDRMAN_TRIED_BUCKET_COUNT; n++){
+//	unsigned int n;
+//	for(n=0; n<ADDRMAN_TRIED_BUCKET_COUNT; n++){
 //		fprintf(stderr, "vv_tried[%d][0] = %d\n", n, addrman->vv_tried[n][0]);
-	}
+//	}
 
 		//select from tried bucket
 		while(1){
@@ -540,10 +592,12 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 			}
 			if(connect!=true)
 				continue;
-//			if((rand()%(1 << 30) < f_chance_factor * get_chance(sim_time, info) * (1 << 30))){
+//			if((rand()%(1 << 30) < addrman->f_chance_factor * get_chance(sim_time, info) * (1 << 30))){
+				addrman->f_chance_factor = 1;
 				return info;
 //			}
-			f_chance_factor *= 2.0;//was 1.2
+			addrman->f_chance_factor *= 2000000;//1.2;
+//			return NULL;
 		}
 	}
 	else{
@@ -574,10 +628,12 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 			struct caddrinfo *info = map_info(addrman, nid);
 			if(info==NULL)
 				continue;
-//			if((rand()%(1 << 30)< f_chance_factor * get_chance(sim_time, info) * (1 << 30))){
+//			if((rand()%(1 << 30)< addrman->f_chance_factor * get_chance(sim_time, info) * (1 << 30))){
+				addrman->f_chance_factor = 1;
 				return info;
-			f_chance_factor *=2.0;//was 1.2
 //			}
+			addrman->f_chance_factor *= 2000000;//1.2;
+//			return NULL;
 		}
 	}
 }
@@ -593,7 +649,7 @@ unsigned int getaddr_(struct addrman *addrman, unsigned char *vaddr){//will fix 
 #endif
 #ifdef ADDR_DEBUG
 	for(n=0; n<addrman->v_random_size; n++){
-		fprintf(stderr, "vrandom[%d] = %d\n", n, *addrman->v_random[n]);
+		fprintf(stderr, "vrandom[%d] = %d\n", n, addrman->v_random[n]);
 	}
 	fprintf(stderr, "v_random_size = %d\n", addrman->v_random_size);
 #endif
@@ -607,7 +663,7 @@ unsigned int getaddr_(struct addrman *addrman, unsigned char *vaddr){//will fix 
 //		fprintf(stderr, "n = %d, n_rnd_pos = %d, v_random_size = %d\n", n, n_rnd_pos, addrman->v_random_size);
 #endif
 		swap_random(addrman, n, n_rnd_pos);
-		struct caddrinfo *ai = map_info(addrman, *addrman->v_random[n]);
+		struct caddrinfo *ai = map_info(addrman, addrman->v_random[n]);
 		if(ai!=NULL){
 			if(!is_terrible(sim_time, ai)){
 				add(&vaddr[i*sets], ai);//will fix vaddr
@@ -638,9 +694,9 @@ void add_fixed_seeds(struct addrman *addrman){
 	struct links tmp;
 	for(i=0; i<SEED_NUM; i++){
 // seeds[i].miner_id, &seeds[i].new_comer, &seeds[i].new_comer,
-		tmp.miner_id	= seeds[i].miner_id;
-		tmp.new_comer	= &seeds[i].new_comer;
-		tmp.subnet		= seeds[i].subnet;
+		tmp.miner_id	= seeds[i]->miner_id;
+		tmp.new_comer	= &seeds[i]->new_comer;
+		tmp.subnet		= seeds[i]->subnet;
 		
 		addrman_add_(addrman, &tmp, NULL, 0);
 //bool addrman_add_(struct addrman *addrman, struct links *links, struct link *source, int n_time_penalty){

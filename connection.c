@@ -119,7 +119,7 @@ void free_links(struct threads *will_kill){
 		}
 	}
 	for(i=0; i<SEED_NUM; i++){
-		miner=&seeds[i];
+		miner=seeds[i];
 		if(miner->outbound!=NULL){
 			for(links=miner->outbound; links->next!=NULL; links=links->next){}
 			for(; links!=NULL; links=prev){

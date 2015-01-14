@@ -52,12 +52,14 @@ int main(int argc, char *argv[]){
  	for(i=0; i<SEED_NUM; i++){
 		if(i>SEED_NUM/2 && i <= SEED_NUM/2 +1)
 			subnet = rand() & 0xffff0000;
-		memset(&seeds[i], 0, sizeof(seeds[i]));
-		seeds[i].seed		= true;
-		seeds[i].TTL		= SIM_TIME;
-		seeds[i].miner_id	= global_id;
+		seeds[i] = malloc(sizeof(struct miner));
+		memset(seeds[i], 0, sizeof(struct miner));
+		memset(&seeds[i]->addrman, 0, sizeof(struct addrman));
+		seeds[i]->seed		= true;
+		seeds[i]->TTL		= SIM_TIME;
+		seeds[i]->miner_id	= global_id;
 		global_id++;
-		seeds[i].subnet		= subnet;
+		seeds[i]->subnet		= subnet;
 //		fprintf(stderr, "subnet: %d\n", subnet);
 	}
 
@@ -201,10 +203,10 @@ int main(int argc, char *argv[]){
 #endif	//MULTI
 		for(i=0; i<SEED_NUM; i++){
 #ifdef DEBUG
-						fprintf(stderr, "\nminer: %d seed: %d\n", seeds[i].miner_id, seeds[i].seed);
+			fprintf(stderr, "\nminer: %d seed: %d\n", seeds[i].miner_id, seeds[i].seed);
 #endif
 
-			miner_routine(&seeds[i]);
+			miner_routine(seeds[i]);
 		}
 #ifdef	MULTI
 #ifdef	DEBUG
