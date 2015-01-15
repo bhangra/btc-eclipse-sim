@@ -36,5 +36,10 @@ struct links{
 	struct links		*next;
 };
 
+struct link_sets{
+	struct link_sets	*next;
+	unsigned char		set;
+	struct link			links[8];
+};
 
 #endif
