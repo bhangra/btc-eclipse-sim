@@ -128,20 +128,23 @@ double get_chance(unsigned int n_now, struct caddrinfo *info){
 //will fix
 struct caddrinfo *find(struct addrman *addrman, struct links *links, int* pnid){
 	unsigned int 	 it = map_addr(addrman, links);
-	struct caddrinfo *tmp;
-	if(addrman->caddrinfo==NULL)
+	struct caddrinfo *tmp=NULL;
+/*	if(addrman->caddrinfo==NULL)
 		return NULL;
 	for(tmp=addrman->caddrinfo; tmp->next!=NULL; tmp=tmp->next){}
 	for(; tmp!=NULL; tmp=tmp->prev){
-		if(tmp->new_comer==links->new_comer)
-			return tmp;
+		if(tmp->new_comer==links->new_comer&&tmp->miner_id==links->miner_id)
+			break;
+//			return tmp;
 	}
+*/
+	tmp = map_info(addrman, it);
 	if(it==0)
 		return NULL;
 	if(pnid)
 		*pnid = it;
-	
-	return NULL;
+	return tmp;
+//	return NULL;
 }
 
 struct caddrinfo *create(struct addrman *addrman, struct links *links, struct link *addr_src){
@@ -245,6 +248,7 @@ int select_tried(struct addrman *addrman, unsigned int nkbucket){
 }
 //the only function that deletes addr from addrman
 int shrink_new(struct addrman *addrman, int n_u_bucket, unsigned int nid){
+//	fprintf(stderr, "shrink_new\n");
 	int *vnew = (int *)&addrman->vv_new[n_u_bucket][0];
 	int i, j;
 	struct caddrinfo *tmp=NULL, *prev, *next;
@@ -260,7 +264,7 @@ int shrink_new(struct addrman *addrman, int n_u_bucket, unsigned int nid){
 			}
 			else{
 				if(is_terrible(sim_time, tmp)){
-					if(tmp->n_ref_count-- == 0){
+					if(tmp->n_ref_count-- <= 0){
 						prev = tmp->prev;
 						next = tmp->next;
 						if(prev!=NULL)
@@ -321,7 +325,7 @@ int shrink_new(struct addrman *addrman, int n_u_bucket, unsigned int nid){
 	struct caddrinfo *oldest;
 	oldest = map_info(addrman, noldest);
 	if(oldest!=NULL)
-	if(oldest->n_ref_count-- == 0){
+	if(oldest->n_ref_count-- <= 0){
 		prev = oldest->prev;
 		next = oldest->next;
 		if(prev!=NULL)
@@ -375,6 +379,7 @@ void make_tried(struct addrman *addrman, struct caddrinfo *info, unsigned int ni
 #endif
 			vv_tried[k]=nid;
 			addrman->n_tried++;
+			info->n_ref_count= 1;
 			info->f_in_tried = true;
 			return;
 		}
@@ -483,14 +488,12 @@ bool addrman_add_(struct addrman *addrman, struct links *links, struct link *sou
 			return false;
 		if(pinfo->f_in_tried)
 			return false;
-		if(pinfo->n_ref_count == ADDRMAN_NEW_BUCKETS_PER_ADDRESS)
+		if(pinfo->n_ref_count == ADDRMAN_NEW_BUCKETS_PER_ADDRESS) //4
 			return false;
 
 		pinfo->n_time = max(0, pinfo->n_time - n_time_penalty);
 		int n_factor = 1;
 		int n;
-		if(pinfo->n_ref_count==4)
-			return false;
 		for(n=0; n < pinfo->n_ref_count; n++)
 			n_factor *= 2;
 		if(n_factor > 1 && rand()%n_factor==0)
@@ -641,7 +644,8 @@ unsigned int getaddr_(struct addrman *addrman, unsigned char *vaddr){//will fix 
 	unsigned int n_nodes = ADDRMAN_GETADDR_MAX_PCT * addrman->v_random_size / 100;
 	if(n_nodes > ADDRMAN_GETADDR_MAX)
 		n_nodes = ADDRMAN_GETADDR_MAX;
-	n_nodes = (unsigned int)(BUF_SIZE-16)/(sizeof(unsigned int)*3+sizeof(struct link *))-5;
+	if(n_nodes>(unsigned int)(BUF_SIZE-16)/(sizeof(unsigned int)*3+sizeof(struct link *))-5)
+		n_nodes = (unsigned int)(BUF_SIZE-16)/(sizeof(unsigned int)*3+sizeof(struct link *))-5;
 	//gather list of random nodes, skipping low quality ones
 	unsigned int n, i, sets;
 #ifdef ADDR_DEBUG 

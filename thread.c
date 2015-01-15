@@ -262,7 +262,56 @@ void free_node_s_caddrinfo(struct caddrinfo *melinks){
 		tmp=tmp2;
 	}	
 }
-
+void free_from_seeds(unsigned int kill_id){
+	int i;
+	struct links *tmp, *prev, *next;
+	for(i=0; i<SEED_NUM; i++){
+		if(seeds[i]->outbound!=NULL){
+			for(tmp=seeds[i]->outbound; tmp->next!=NULL; tmp=tmp->next){}
+			for(; tmp!=NULL; tmp=tmp->prev){
+				if(tmp->miner_id==kill_id){
+					prev = tmp->prev;
+					next = tmp->next;
+					if(prev!=NULL)
+						prev->next = next;
+					if(next!=NULL)
+						next->prev = prev;
+					if(tmp==seeds[i]->inbound){
+						if(next!=NULL)
+							seeds[i]->outbound = next;
+						else 
+							seeds[i]->outbound = prev;
+					}
+					free(tmp->link);
+					free(tmp);
+					break;
+				}
+			}
+		}
+		if(seeds[i]->inbound!=NULL){
+			for(tmp=seeds[i]->inbound; tmp->next!=NULL; tmp=tmp->next){}
+			for(; tmp!=NULL; tmp=tmp->prev){
+				if(tmp->miner_id==kill_id){
+					prev = tmp->prev;
+					next = tmp->next;
+					if(prev!=NULL)
+						prev->next = next;
+					if(next!=NULL)
+						next->prev = prev;
+					if(tmp==seeds[i]->inbound){
+						if(next!=NULL)
+							seeds[i]->inbound = next;
+						else 
+							seeds[i]->inbound = prev;
+					}
+					free(tmp->link);
+					free(tmp);
+					break;
+				}
+			}
+		}
+	}
+}
 //for cancel_all() and cancel_by_TTL
 struct threads *cancel_thread(struct threads *will_kill){
 	struct miner	*tmp;
@@ -274,6 +323,7 @@ struct threads *cancel_thread(struct threads *will_kill){
 	after	= will_kill->next;
 
 	tmp = will_kill->miner;
+	free_from_seeds(will_kill->miner->miner_id);
 	free_node_s_caddrinfo(tmp->addrman.caddrinfo);
 	free_node_s_links((struct links*)tmp->outbound);
 	free_node_s_links((struct links*)tmp->inbound);

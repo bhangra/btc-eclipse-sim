@@ -13,15 +13,15 @@
 #include<time.h>
 #include<math.h>
 
-#define ADDRMAN_BUCKET_SIZE			64
-#define ADDRMAN_TRIED_BUCKET_COUNT	64
-#define ADDRMAN_NEW_BUCKET_COUNT	256
-#define ADDRMAN_NEW_BUCKETS_PER_ADDRESS 4
-#define ADDRMAN_NEW_BUCKETS_PER_SOURCE_GROUP 32
-#define ADDRMAN_TRIED_BUCKETS_PER_GROUP 4
+#define ADDRMAN_BUCKET_SIZE			16//64
+#define ADDRMAN_TRIED_BUCKET_COUNT	16//64
+#define ADDRMAN_NEW_BUCKET_COUNT	64//256
+#define ADDRMAN_NEW_BUCKETS_PER_ADDRESS 1//4
+#define ADDRMAN_NEW_BUCKETS_PER_SOURCE_GROUP 8//32
+#define ADDRMAN_TRIED_BUCKETS_PER_GROUP 1//4
 #define ADDRMAN_TRIED_ENTRIES_INSPECT_ON_EVICT 4
 #define ADDRMAN_GETADDR_MAX_PCT		23
-#define ADDRMAN_GETADDR_MAX			2500
+#define ADDRMAN_GETADDR_MAX			625//2500
 #define ADDRMAN_MIN_FAIL_DAYS		7
 #define ADDRMAN_MAX_FAILURES		10
 #define	ADDRMAN_RETRIES				3
@@ -50,7 +50,7 @@ struct addrman{
 	double				f_chance_factor;
 //	struct caddrinfo	*v_random;
 	struct caddrinfo	*caddrinfo;
-	unsigned int		v_random[ADDRMAN_NEW_BUCKET_COUNT+ADDRMAN_TRIED_BUCKET_COUNT*ADDRMAN_BUCKET_SIZE];
+	unsigned int		v_random[(ADDRMAN_NEW_BUCKET_COUNT+ADDRMAN_TRIED_BUCKET_COUNT)*ADDRMAN_BUCKET_SIZE];
 	unsigned int		v_random_size;
 	unsigned int		n_id_count;
 	unsigned int		n_tried;

@@ -15,7 +15,7 @@
 #define NUM_GROUPS	2
 #define ATTACKER	0
 #define HONEST		1
-#define BUF_SIZE	10000//10000
+#define BUF_SIZE	2500//10000
 #define THOUSAND	100//0
 #define N_MAX_CONNECTIONS 125
 #define MAX_OUTBOUND_CONNECTIONS 8
@@ -30,9 +30,9 @@
 //#define AVE_TTL		1000
 #define SEED_TTL	60*60*24*1
 //#define SEED_TTL	2000
-#define SIM_DAYS	2//30
-//#define SIM_TIME	60*60*24*SIM_DAYS
-#define SIM_TIME	60*60*24
+#define SIM_DAYS	4//30
+#define SIM_TIME	60*60*24*SIM_DAYS
+//#define SIM_TIME	60*60*24
 //1000nodes*12hour = 2min15~30s
 //24,000nodes*30day = 702min &killed
 

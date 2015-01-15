@@ -138,8 +138,8 @@ void miner_routine(struct miner *miner){
 		}
 		fprintf(stderr, "\n");
 #endif
-		miner->connect_count--;
-		if(miner->connect_count==0){
+//		miner->connect_count--;
+//		if(miner->connect_count==0){
 		addr = addrman_select(&miner->addrman, min(noutbound,8)+10);
 #ifdef DEBUG
 //		int k; 
@@ -191,8 +191,8 @@ void miner_routine(struct miner *miner){
 //				miner->n_outbound++;
 			}
 		}
-		miner->connect_count=5;
-		}
+//		miner->connect_count=5;
+//		}
 		for(link=&miner->new_comer; link->num_msg!=0;){
 //			fprintf(stderr, "new_comer link\n"); //debug
 			read_msg(link);
