@@ -219,13 +219,15 @@ void version(unsigned int my_id, unsigned int my_subnet, unsigned int dest_id,  
 	struct link *link, *tmp;
 	unsigned int size, payload_size;
 //	fprintf(stderr, "will send version msg\n"); //debug
-//	fprintf(stderr, "version to link: %p id: \n", dest, dest_id); //debug
+#ifdef VER_DEBUG
+	fprintf(stderr, "version to link: %p id: %d\n", dest, dest_id); //debug
+#endif
 	size = sizeof(struct link*);
 	payload_size = size+sizeof(unsigned int)+size+sizeof(unsigned int);
 //	save = links;
 	new = add_links(dest_id, dest, dest, miner->outbound);
-#ifdef DEBUG
-	fprintf(stderr, "version: new = %p , new->link->num_msg = %d\n", new, new->link->num_msg);
+#ifdef VER_DEBUG
+	fprintf(stderr, "version: new = %p , new->link = %p\n", new, new->link);
 #endif
 //	if(new==save)
 //		return;
@@ -241,7 +243,9 @@ void version(unsigned int my_id, unsigned int my_subnet, unsigned int dest_id,  
 	memcpy(&link->sbuf[16+size+sizeof(unsigned int)], &tmp, size);
 	memcpy(&link->sbuf[16+size*2+sizeof(unsigned int)], &my_subnet, sizeof(unsigned int));
 	send_msg(dest, (char *)link->sbuf, 16+payload_size);
-//	fprintf(stderr, "sent version to dest: %p, id: %d with mylink: %p\n", link->dest, new->miner_id, link); //debug
+#ifdef VER_DEBUG
+	fprintf(stderr, "sent version to dest: %p, id: %d with mylink: %p\n", link->dest, new->miner_id, link); //debug
+#endif
 	miner->outbound = new;
 	miner->n_outbound++;
 #ifdef DEBUG
@@ -268,7 +272,7 @@ struct links *nat(struct link *new_comer, unsigned int miner_id, struct links *l
 			}
 	}
 //	fprintf(stderr, "nat: ");
-#ifdef	DEBUG
+#ifdef	VER_DEBUG
 	fprintf(stderr, "will send nat to %d\n", dest_id);
 #endif	//DEBUG
 //	save		= links;
@@ -293,7 +297,9 @@ struct links *nat(struct link *new_comer, unsigned int miner_id, struct links *l
 	memcpy(&link->sbuf[0], "nat", 3);
 	memcpy(&link->sbuf[12], &size, 4);
 	send_msg(link->dest, (char *)link->sbuf, 16);
-//	fprintf(stderr, "sent nat to link->dest->write_pos: %p", &link->dest->write_pos);
+#ifdef VER_DEBUG
+	fprintf(stderr, "sent nat to link->dest %p\n", &link->dest);
+#endif
 	memset(&link->sbuf, 0, sizeof(link->sbuf));
 	tmp2=tmp->prev;
 	tmp3=tmp->next;
@@ -343,7 +349,9 @@ struct links *verack(struct link *new_comer, struct links *links, struct miner *
 	}
 */	me->n_inbound++;
 	link		= tmp->link;
-//	fprintf(stderr, "verack to dest: %p, id: %d, dest->write_pos: %p with mylink: %p &buf[0]: %p\n", dest, miner_id, &dest->write_pos, link, &link->buf[0]);
+#ifdef VER_DEBUG
+	fprintf(stderr, "verack to dest: %p, id: %d, dest->write_pos: %p with mylink: %p &buf[0]: %p\n", dest, miner_id, &dest->write_pos, link, &link->buf[0]);
+#endif
 	memcpy(&link->sbuf[0], "verack", 6);
 	memcpy(&link->sbuf[12], &size, 4);
 	memcpy(&link->sbuf[16], &link, size);
@@ -687,7 +695,9 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 	else if(strncmp(hdr->command, "verack", 6)==0){
 //		link->dest = (struct link*)payload;
 		memcpy(&link->dest, &link->process_buf[16], sizeof(struct link*));
-//		fprintf(stderr, "verack addrman_add_: links->new_comer = %p, links->miner_id = %d, &links->link->dest->buf[0]: %p\n", links->new_comer, links->miner_id, &links->link->dest->buf[0]);
+#ifdef VER_DEBUG
+		fprintf(stderr, "verack addrman_add_: links->new_comer = %p, links->miner_id = %d, &links->link->dest %p\n", links->new_comer, links->miner_id, &links->link->dest);
+#endif
 		addrman_add_(&me->addrman, links, links->new_comer, 0);
 		addrman_good(&me->addrman, links->new_comer, sim_time);
 
@@ -755,7 +765,7 @@ void process_new(struct link *new_comer, struct miner *me){
 		}
 //		me->neighbor++;
 		me->n_outbound++;
-		version(me->miner_id, me->subnet, dest_id, dest, &me->new_comer, me);
+//		version(me->miner_id, me->subnet, dest_id, dest, &me->new_comer, me);
     }
 	else if(strncmp(hdr->command, "version", 7)==0){
 		bool links_found=false;
@@ -763,6 +773,9 @@ void process_new(struct link *new_comer, struct miner *me){
 //		fprintf(stderr, "version received\n");
 //		if(me->one_way==NOT_NAT && me->neighbor < me->max){
 		memcpy(&dest, &new_comer->process_buf[16], size);
+#ifdef VER_DEBUG
+		fprintf(stderr, "version msg received: dest=  %p\n", dest);
+#endif
 		if(me->outbound!=NULL&&links_found!=true){
 			for(links=me->outbound; links->next!=NULL; links=links->next){}
 			for(; links!=NULL; links=links->prev){

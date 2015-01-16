@@ -139,8 +139,8 @@ struct caddrinfo *find(struct addrman *addrman, struct links *links, int* pnid){
 	}
 */
 	tmp = map_info(addrman, it);
-	if(it==0)
-		return NULL;
+//	if(it==0)
+//		return NULL;
 	if(pnid)
 		*pnid = it;
 	return tmp;
@@ -167,7 +167,7 @@ struct caddrinfo *create(struct addrman *addrman, struct links *links, struct li
 	fprintf(stderr, "caddrinfo *create: new->new_comer: %p, new->miner_id = %d\n", new->new_comer, new->miner_id);
 #endif
 	int i;
-	for(i=0; i<sizeof(addrman->v_random); i++){
+	for(i=0; i<sizeof(addrman->v_random)/sizeof(unsigned int); i++){
 #ifdef ADDR_DEBUG
 		fprintf(stderr, "addrman->v_random[%d] == %d\n", i, addrman->v_random[i]);
 #endif
@@ -178,7 +178,10 @@ struct caddrinfo *create(struct addrman *addrman, struct links *links, struct li
 		}			
 	}
 	if(i==sizeof(addrman->v_random)/sizeof(unsigned int)){
-
+		addrman->v_random_size=i;
+		for(;addrman->v_random_size==sizeof(addrman->v_random)/sizeof(unsigned int);){
+			shrink_new(addrman, rand()%ADDRMAN_NEW_BUCKET_COUNT);
+		}
 	}
 	struct caddrinfo *tmp;
 	if(addrman->caddrinfo!=NULL){
@@ -295,12 +298,13 @@ int shrink_new(struct addrman *addrman, int n_u_bucket, unsigned int nid){
 		}
 	}
 	//select 4 randomly, picking oldest and replace
-	int n[4] = {rand()%addrman->v_random_size, rand()%addrman->v_random_size, rand()%addrman->v_random_size, rand()%addrman->v_random_size};
+/*	int n[4] = {rand()%addrman->v_random_size, rand()%addrman->v_random_size, rand()%addrman->v_random_size, rand()%addrman->v_random_size};
+*/	int n[4] = {vnew[rand()%ADDRMAN_BUCKET_SIZE],vnew[rand()%ADDRMAN_BUCKET_SIZE],vnew[rand()%ADDRMAN_BUCKET_SIZE],vnew[rand()%ADDRMAN_BUCKET_SIZE]};
 	for(;n[0]==nid&&n[1]==nid&&n[2]==nid&&n[3]==nid;){
-		n[0] = rand()%addrman->v_random_size;
-		n[1] = rand()%addrman->v_random_size;
-		n[2] = rand()%addrman->v_random_size;
-		n[3] = rand()%addrman->v_random_size;
+		n[0] = vnew[rand()%ADDRMAN_BUCKET_SIZE];
+		n[1] = vnew[rand()%ADDRMAN_BUCKET_SIZE];
+		n[2] = vnew[rand()%ADDRMAN_BUCKET_SIZE];
+		n[3] = vnew[rand()%ADDRMAN_BUCKET_SIZE];
 	}
 	int ni;
 	int noldest = -1;
@@ -348,7 +352,13 @@ int shrink_new(struct addrman *addrman, int n_u_bucket, unsigned int nid){
 	}
 
 	addrman->n_new--;
-	vnew[noldest] = 0;
+//	vnew[noldest] = 0;
+	for(i=0; i<ADDRMAN_BUCKET_SIZE; i++){
+		if(vnew[i] == noldest){
+			vnew[i]=0;
+			break;
+		}
+	}
 	return 1;
 }
 
@@ -498,7 +508,7 @@ bool addrman_add_(struct addrman *addrman, struct links *links, struct link *sou
 			n_factor *= 2;
 		if(n_factor > 1 && rand()%n_factor==0)
 			return false;
-
+		pinfo->n_ref_count++;
 	}
 	else{
 		pinfo = (struct caddrinfo*)create(addrman, links, source);

@@ -199,6 +199,8 @@ void miner_routine(struct miner *miner){
 			process_new(&miner->new_comer, miner);
 //			fprintf(stderr, "miner->links = %p\n", miner->links);
 		}
+		memset(&miner->new_comer.buf[0], 0, BUF_SIZE);
+		memset(&miner->new_comer.process_buf[0], 0, BUF_SIZE);
 		links = miner->inbound;
 		if(links==NULL){
 			miner->n_inbound=0;

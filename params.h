@@ -3,6 +3,7 @@
 
 //#define MULTI
 #define MALLOC_CHECK_ 3
+//#define VER_DEBUG
 //#define DEBUG
 //#define MEM_DEBUG
 //#define ADDR_DEBUG

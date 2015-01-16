@@ -334,7 +334,7 @@ int send_msg(struct link *dest, char *message, unsigned int msg_size){
 int read_msg(struct link *link){
 	const struct msg_hdr	*hdr;
 	unsigned char			char_size[sizeof(unsigned int)];
-	int						i, j;
+	int						i;//, j;
 	unsigned int			read_size, tmp_size, over_size;
 #ifdef ASSERT
 	assert(link->read_pos < BUF_SIZE);
@@ -366,16 +366,18 @@ int read_msg(struct link *link){
 //			memcpy(&char_size[i], &link->buf[link->read_pos+12+i], 1);
 //			fprintf(stderr, "link->buf[%d] = %u, char_size[%d] = %u\n", link->read_pos+12+i, link->buf[link->read_pos+12+i], i, char_size[i]);
 		}
-		j = i;
+//		j = i;
 		for(;i<sizeof(unsigned int); i++){
-#ifdef MEM_DEBUG
-			fprintf(stderr, "i = %d, j = %d\n", i, j);
-			fprintf(stderr, "i-j+link->read_pos+12-BUF_SIZE = %d\n", i-j+link->read_pos+12-BUF_SIZE);
-#endif
+//#ifdef MEM_DEBUG
+/*			if(!(i-j+link->read_pos+12-BUF_SIZE>=0 && i-j+link->read_pos+12-BUF_SIZE < 16)){
+				fprintf(stderr, "i = %d, j = %d\n", i, j);
+				fprintf(stderr, "i-j+link->read_pos+12-BUF_SIZE = %d\n", i-j+link->read_pos+12-BUF_SIZE);
+			}*/
+//#endif
 #ifdef ASSERT
-			assert(i-j+link->read_pos+12-BUF_SIZE>=0 && i-j+link->read_pos+12-BUF_SIZE < 16);
+//			assert(i-j+link->read_pos+12-BUF_SIZE>=0 && i-j+link->read_pos+12-BUF_SIZE < 16);
 #endif
-			char_size[i] = link->buf[i-j+link->read_pos+12-BUF_SIZE];
+			char_size[i] = link->buf[i/*-j*/+link->read_pos+12-BUF_SIZE];
 //			memcpy(&char_size[i], &link->buf[(i-j)+link->read_pos+12-BUF_SIZE], 1);
 //			fprintf(stderr, "link->buf[%d] = %u, char_size[%d] = %u\n", i-j, link->buf[i-j], i, char_size[i]);
 		}

@@ -175,8 +175,8 @@ int main(int argc, char *argv[]){
 #endif	//DEBUG
 			if(threads->miner->seed == true){
 #ifdef	DEBUG
-					fprintf(stderr, "\nminer: %d seed: %d\n", (threads->miner)->miner_id, threads->miner->seed);
-					fprintf(stderr, "created at: %d\n", threads->time);
+				fprintf(stderr, "\nminer: %d seed: %d\n", (threads->miner)->miner_id, threads->miner->seed);
+				fprintf(stderr, "created at: %d\n", threads->time);
 #endif	//DEBUG
 					miner_routine(threads->miner);
 
@@ -190,8 +190,8 @@ int main(int argc, char *argv[]){
 				else{
 //					if(sim_time>=SIM_TIME-1){
 #ifdef	DEBUG
-						fprintf(stderr, "\nminer: %d seed: %d\n", (threads->miner)->miner_id, threads->miner->seed);
-						fprintf(stderr, "created at: %d\n", threads->time);
+					fprintf(stderr, "\nminer: %d seed: %d\n", (threads->miner)->miner_id, threads->miner->seed);
+					fprintf(stderr, "created at: %d\n", threads->time);
 #endif	//DEBUG
 //					}
 					miner_routine(threads->miner);
