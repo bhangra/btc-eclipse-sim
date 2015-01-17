@@ -430,49 +430,49 @@ void propagate_block(struct block *block, struct miner *me){
 }
 
 struct blocks *mine_block(struct blocks *chain_head, unsigned int miner_id, struct miner *me){
-	int				x,/* y,*/ times, mined;
+	int				x,/* y,*/ /*times,*/ mined;
 	double			y;
 	struct block	*head, *current;
 	struct blocks	*tmp;
 	tmp = chain_head;
 	if(tmp!=NULL){
 		for(;tmp->next!=NULL; tmp=tmp->next){}
+		me->blocks=tmp;
 		current = tmp->block;
 	}else{
 		current = NULL;
 	}
 //	fprintf(stderr, "start mining on current: %p\n", current);
 	mined = 0;
-	for(times = 0;times < 1;times++){
+//	for(times = 0;times < 1;times++){
 //		x = rand()%10;  // /(RAND_MAX);
 //		y = rand()%10;  // /(RAND_MAX);
 /*		if((x*x+y*y)>161*//*0.5 0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001*/
-		x = rand()%601;
-		y = (double )rand() /(RAND_MAX);
-		if(x > 599 && y < me->hash_rate){
-//			fprintf(stdout,"mined block in %d times\n", times);
-			mined			= 1;
-			head			= malloc(sizeof(struct block));
-			memset(head, 0, sizeof(struct block));
-//			head->prev      = current;
-			if(current==NULL){
-				head->height	= 1;
-				memset(head->hash, 0, SHA256_DIGEST_LENGTH);
-			}
-			else/* if(current->height!=0)*/{
-				head->height	= current->height+1;
-				memcpy(head->hash, SHA256((const unsigned char *)current, sizeof(struct block), 0), SHA256_DIGEST_LENGTH);
-			}/*else{
-				head->height	= 1;
-				memset(head->prev, 0, SHA256_DIGEST_LENGTH);
-			}*/
-//			head->time              = ~~~
-			head->miner_id	= miner_id;
-			head->size		= sizeof(struct block);
-			head->valid		= true;
-			break;
+	x = rand()%601;
+	y = (double )rand() /(RAND_MAX);
+	if(me->new_chain==NULL&&(me->outbound!=NULL||me->inbound!=NULL)&&(x > 599 && y < me->hash_rate)){
+//		fprintf(stdout,"mined block in %d times\n", times);
+		mined			= 1;
+		head			= malloc(sizeof(struct block));
+		memset(head, 0, sizeof(struct block));
+//		head->prev      = current;
+		if(current==NULL){
+			head->height	= 1;
+			memset(head->hash, 0, SHA256_DIGEST_LENGTH);
 		}
+		else/* if(current->height!=0)*/{
+			head->height	= current->height+1;
+			memcpy(head->hash, SHA256((const unsigned char *)current, sizeof(struct block), 0), SHA256_DIGEST_LENGTH);
+		}/*else{
+			head->height	= 1;
+			memset(head->prev, 0, SHA256_DIGEST_LENGTH);
+		}*/
+//		head->time              = ~~~
+		head->miner_id	= miner_id;
+		head->size		= sizeof(struct block);
+		head->valid		= true;
 	}
+//	}
 	if(mined){
 //		fprintf(stderr, "will propagate block with height: %d\n", head->height); //debug
 		tmp = add_block(head, tmp);
@@ -503,6 +503,9 @@ void get_blocks(struct link *dest, struct blocks *main_chain, struct blocks *new
 		for(tmp=main_chain; tmp->next!=NULL; tmp=tmp->next){}
 	if(new_chain!=NULL){
 		for(tmp1=new_chain; tmp1->prev!=NULL; tmp1=tmp1->prev){}
+#ifdef BLOCK_DEBUG
+		fprintf(stderr, "getblocks: height = %d\n", tmp1->block->height);
+#endif
 		height	= (tmp1->block)->height;
 	}
 	if(main_chain==NULL){
@@ -542,12 +545,22 @@ void send_blocks(struct link *from, struct blocks *main_chain, unsigned int heig
 /*	if(height)
 		for(tmp=main_chain; (tmp->block)->height!=height && tmp->prev!=NULL; tmp=tmp->prev){}
 	else
-*/	for(tmp=main_chain; tmp->next!=NULL; tmp=tmp->next){}
+*/
+#ifdef BLOCK_DEBUG
+	fprintf(stderr, "send_blocks(): ");
+#endif
+	for(tmp=main_chain; tmp->next!=NULL; tmp=tmp->next){}
 	for(; tmp->prev!=NULL && tmp->block->height!=height;tmp=tmp->prev){}
-	for(i=0;(i*80+16)<(BUF_SIZE-80)&&/*(tmp->block)->height!=height2-1*/tmp!=NULL;tmp=tmp->prev){
+	for(i=0;((i*80)+16)<(BUF_SIZE-80)&&/*(tmp->block)->height!=height2-1*/tmp!=NULL;tmp=tmp->prev){
+#ifdef BLOCK_DEBUG
+		fprintf(stderr, " height %d, ", tmp->block->height);
+#endif		
 		send_block(tmp->block, from);
 		i++;
 	}
+#ifdef BLOCK_DEBUG
+	fprintf(stderr,"\n");
+#endif
 }
 
 struct links *process_dns(struct link *new_comer, struct links *seeds){
@@ -603,8 +616,8 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 //		fprintf(stderr, "getblocks received. height: %d, height2: %d\n", height, height2);
 		if(me->blocks==NULL)
 			return 1;
-		for(blocks=me->blocks; (blocks->block)->height!=height2 && blocks->prev!=NULL; blocks=blocks->prev){
-		}
+//		for(blocks=me->blocks; (blocks->block)->height!=height2 && blocks->prev!=NULL; blocks=blocks->prev){
+//		}
 //		for(set=0; blocks!=NULL; blocks=blocks->prev){
 //			if(!memcmp(&link->process_buf[16+sizeof(unsigned int)+sizeof(unsigned int)+(set*SHA256_DIGEST_LENGTH)], (blocks->block)->hash, SHA256_DIGEST_LENGTH)){
 //				height2=(blocks->block)->height;
@@ -774,7 +787,6 @@ void process_new(struct link *new_comer, struct miner *me){
 //		version(me->miner_id, me->subnet, dest_id, dest, &me->new_comer, me);
     }
 	else if(strncmp(hdr->command, "version", 7)==0){
-//		struct blocks *for_send=NULL;
 		bool links_found=false;
 		struct links *links;
 //		fprintf(stderr, "version received\n");
@@ -814,6 +826,7 @@ void process_new(struct link *new_comer, struct miner *me){
 			addrman_add_(&me->addrman, me->inbound, me->inbound->new_comer, 0);
 			addrman_good(&me->addrman, me->inbound->new_comer, sim_time);
 			if(me->blocks!=NULL){
+
 				for(blocks=me->blocks; blocks->next!=NULL; blocks=blocks->next){}
 				send_block(blocks->block, /*(me->links)->link*/me->inbound->link);	
 //				send_blocks(me->inbound->link, blocks, /*height2*/1, 1);

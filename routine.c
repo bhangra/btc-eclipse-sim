@@ -73,8 +73,8 @@ void miner_routine(struct miner *miner){
 */
 //#endif	//DEBUG
 //	fprintf(stderr, "entered miner_routine()\n"); //debug
-#ifdef DEBUG	
-	if(sim_time>=SIM_TIME-1/* && miner->seed == true*/){
+//#ifdef DEBUG	
+	if(sim_time>=SIM_TIME-1 && miner->seed == true){
 		fprintf(stderr, "miner->blocks = %p ", miner->blocks);
 		if(miner->blocks!=NULL){
 			fprintf(stderr, "height = %d\n", ((miner->blocks)->block)->height);
@@ -89,7 +89,7 @@ void miner_routine(struct miner *miner){
 			fprintf(stderr,"\n");
 		}
 
-//#endif
+//#endif 
 //#ifdef DEBUG
 		if(miner->new_chain!=NULL){
 			struct blocks *blocks;
@@ -101,7 +101,7 @@ void miner_routine(struct miner *miner){
 			fprintf(stderr, "\n");
 		}
 	}
-#endif //DEBUG
+//#endif //DEBUG
 	if(miner->boot == true){
 		memset(miner->addrman.v_random, 0, sizeof(miner->addrman.v_random));
 		memset(miner->addrman.vv_new, 0, sizeof(miner->addrman.vv_new));
