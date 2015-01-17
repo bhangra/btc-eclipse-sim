@@ -19,6 +19,7 @@ void join_record(struct block *new, struct blocks *blocks);
 void get_blocks(struct link *dest, struct blocks *main_chain, struct blocks *new_chain);
 void request_block(unsigned int wanted_height, struct link *dest);
 void propagate_block(struct block *block, struct miner *me);
+void send_block(struct block *block, struct link *dest);
 
 struct blocks *add_block(struct block *block, struct blocks *chain_head){
 	struct blocks *tmp, *tmp2;
@@ -42,7 +43,7 @@ struct blocks *add_block(struct block *block, struct blocks *chain_head){
 
 struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head, struct miner *me, struct link *from){
 	struct block	*accept=NULL, *head=NULL;
-	struct blocks	*tmp=NULL, *tmp2=NULL, *tmp3=NULL;
+	struct blocks	*tmp=NULL, *tmp2=NULL, *tmp3=NULL, *check_new=NULL;
 #ifdef DEBUG
 	fprintf(stderr, "will process block: chain_head= %p new_chain=%p\n", chain_head, me->new_chain);
 #endif
@@ -214,7 +215,8 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 	if(chain_head!=NULL)
 		head = chain_head->block;
 	if(me->new_chain!=NULL){
-		if(/*block->height > head->height+1 && */block->height > me->new_chain->block->height ){
+		for(check_new=me->new_chain; check_new->next!=NULL; check_new=check_new->next){}
+		if(/*block->height > head->height+1 && */block->height > /*me->new_chain*/check_new->block->height ){
 #ifdef DEBUG
 			fprintf(stderr, "need previous block\n"); //debug
 #endif
@@ -254,7 +256,12 @@ struct blocks *process_new_blocks(struct block *block, struct blocks *chain_head
 	}
 #ifdef DEBUG
 	fprintf(stderr, "block received not added\n");
-#endif
+#endif	
+	if(me->blocks!=NULL){
+		for(tmp=me->blocks; tmp->next!=NULL; tmp=tmp->next){}
+		if(accept->height<tmp->block->height)
+			send_block(tmp->block, from);
+	}
 	free(accept);
 	return chain_head;
 }

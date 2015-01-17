@@ -401,8 +401,11 @@ void propagate_block(struct block *block, struct miner *me){
 				return;
 			}
 	*/
-			if(links->new_comer != links->link->dest)
+			if(links->new_comer != links->link->dest){
+//			if(me->seed == true)
+//				fprintf(stderr, "seed sent block with height: %d to miner: %d\n", block->height, links->miner_id);
 				send_block(block, link);
+			}
 		}
 	}
 	if(me->inbound!=NULL){
@@ -416,8 +419,11 @@ void propagate_block(struct block *block, struct miner *me){
 				return;
 			}
 */
-			if(links->new_comer != links->link->dest)
+			if(links->new_comer != links->link->dest){
+//				if(me->seed == true)
+//					fprintf(stderr, "seed sent block with height: %d to miner: %d\n", block->height, links->miner_id);
 				send_block(block, link);
+			}
 		}
 	}
 //	fprintf(stderr, "propagated block\n"); //debug
@@ -537,7 +543,7 @@ void send_blocks(struct link *from, struct blocks *main_chain, unsigned int heig
 		for(tmp=main_chain; (tmp->block)->height!=height && tmp->prev!=NULL; tmp=tmp->prev){}
 	else
 */	for(tmp=main_chain; tmp->next!=NULL; tmp=tmp->next){}
-//	tmp=tmp->prev;
+	for(; tmp->prev!=NULL && tmp->block->height!=height;tmp=tmp->prev){}
 	for(i=0;(i*80+16)<(BUF_SIZE-80)&&/*(tmp->block)->height!=height2-1*/tmp!=NULL;tmp=tmp->prev){
 		send_block(tmp->block, from);
 		i++;
@@ -586,7 +592,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 		fprintf(stderr, "received block with height: %d from %d\n", block->height, links->miner_id); //debug
 #endif	//DEBUG
 #ifdef	BEHAVIOR
-	if(me->seed!=true)	
+//	if(me->seed!=true)	
 #endif	//BEHAVIOR
 		me->blocks = process_new_blocks(block, me->blocks, me, link);
 	}
@@ -768,6 +774,7 @@ void process_new(struct link *new_comer, struct miner *me){
 //		version(me->miner_id, me->subnet, dest_id, dest, &me->new_comer, me);
     }
 	else if(strncmp(hdr->command, "version", 7)==0){
+//		struct blocks *for_send=NULL;
 		bool links_found=false;
 		struct links *links;
 //		fprintf(stderr, "version received\n");
@@ -808,8 +815,8 @@ void process_new(struct link *new_comer, struct miner *me){
 			addrman_good(&me->addrman, me->inbound->new_comer, sim_time);
 			if(me->blocks!=NULL){
 				for(blocks=me->blocks; blocks->next!=NULL; blocks=blocks->next){}
-//				send_block(blocks->block, (me->links)->link);	
-				send_blocks(me->inbound->link, me->blocks, /*height2*/1, 1);
+				send_block(blocks->block, /*(me->links)->link*/me->inbound->link);	
+//				send_blocks(me->inbound->link, blocks, /*height2*/1, 1);
 			}
 			return;
 		} 

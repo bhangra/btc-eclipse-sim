@@ -21,9 +21,9 @@
 #define N_MAX_CONNECTIONS 125
 #define MAX_OUTBOUND_CONNECTIONS 8
 
-
+//s4t50b3d3
 #define SEED_NUM	4
-#define	TOTAL_NODES	40
+#define	TOTAL_NODES	50
 #define BAD_NODES	3
 //(1000nodes+5bad) * 12h = 9min
 #define NOT_NAT /*for every*/ 5//11 //+1th

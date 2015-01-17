@@ -6,6 +6,9 @@
 #include"thread.h"
 #define max(A,B) (((A)>(B))?(A):(B)) 
 
+
+int shrink_new(struct addrman *addrman, int n_u_bucket, unsigned int nid);
+
 struct caddrinfo *map_info(struct addrman *addrman, unsigned int nid){
 	struct caddrinfo *tmp;
 	if(addrman->caddrinfo==NULL)
@@ -180,7 +183,7 @@ struct caddrinfo *create(struct addrman *addrman, struct links *links, struct li
 	if(i==sizeof(addrman->v_random)/sizeof(unsigned int)){
 		addrman->v_random_size=i;
 		for(;addrman->v_random_size==sizeof(addrman->v_random)/sizeof(unsigned int);){
-			shrink_new(addrman, rand()%ADDRMAN_NEW_BUCKET_COUNT);
+			shrink_new(addrman, rand()%ADDRMAN_NEW_BUCKET_COUNT, 0-1);
 		}
 	}
 	struct caddrinfo *tmp;

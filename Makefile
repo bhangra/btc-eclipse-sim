@@ -2,10 +2,10 @@
 COMPILER 	= gcc#
 #COMPILER	= mingw32-gcc.exe
 #LINKER		= ld
-CFLAGS		= -pthread -Wall  -g -O0 
+CFLAGS		= -Wall  -g -O0 
 #LDFLAGS	=  --allow-multiple-definition 
 LDFLAGS		= -z muldefs #-lmcheck
-LIBS		= -lcrypto -lssl /lib64/libpthread.so.0 /lib64/libm.so.6 #/lib/i686/nosegneg/libm-2.14.1.so #-lm
+LIBS		= -lcrypto -lssl -lpthread -lm #/lib64/libpthread.so.0 /lib64/libm.so.6 #/lib/i686/nosegneg/libm-2.14.1.so #-lm
 INCLUDE		= -I./
 TARGET		= ./$(shell basename `readlink -f .`)
 OBJDIR		= ./obj
