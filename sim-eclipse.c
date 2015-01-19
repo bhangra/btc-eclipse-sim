@@ -50,8 +50,8 @@ int main(int argc, char *argv[]){
 //	fprintf(stderr, "seeds' subnet\n");
 	int subnet = rand() & 0xffff0000;
  	for(i=0; i<SEED_NUM; i++){
-		if(i>SEED_NUM/2 && i <= SEED_NUM/2 +1)
-			subnet = rand() & 0xffff0000;
+//		if(i>=SEED_NUM/2 && i < SEED_NUM/2 +1)
+//			subnet = rand() & 0xffff0000;
 		seeds[i] = malloc(sizeof(struct miner));
 		memset(seeds[i], 0, sizeof(struct miner));
 		memset(&seeds[i]->addrman, 0, sizeof(struct addrman));
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]){
 		seeds[i]->miner_id	= global_id;
 		global_id++;
 		seeds[i]->subnet		= subnet;
-//		fprintf(stderr, "subnet: %d\n", subnet);
+//		fprintf(stderr, "seeds[i]->subnet: %d\n", seeds[i]->subnet);
 	}
 
 //bad nodes/DNS initialization

@@ -276,7 +276,7 @@ void free_from_seeds(unsigned int kill_id){
 						prev->next = next;
 					if(next!=NULL)
 						next->prev = prev;
-					if(tmp==seeds[i]->inbound){
+					if(tmp==seeds[i]->outbound){
 						if(next!=NULL)
 							seeds[i]->outbound = next;
 						else 
@@ -416,7 +416,7 @@ void cancel_seeds(){
 		free_node_s_links((struct links*)seeds[i]->inbound);
 		free_blocks(seeds[i]->blocks, (struct blocks*)&seeds[i]->blocks);
 		free_blocks(seeds[i]->new_chain, (struct blocks*)&seeds[i]->new_chain);
-		free_from_bad_links(seeds[1]->miner_id, &seeds[i]->new_comer);
+		free_from_bad_links(seeds[i]->miner_id, &((seeds[i])->new_comer));
 		free(seeds[i]);
 	}
 }

@@ -248,7 +248,7 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 #ifdef DEBUG
 				fprintf(stderr, "will send version to dest: %p, id: %d\n", dest, miner_id);
 #endif
-				version(me->miner_id, me->subnet, miner_id, dest, &me->new_comer, me);
+				version(me->miner_id, me->subnet, miner_id, dest, &me->new_comer, me, subnet);
 				exists = false;
 				tmp = me->outbound;
 				if(bad_links!=NULL){
@@ -310,7 +310,7 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 			return NULL;
 		}
 		
-		version(me->miner_id, me->subnet, miner_id, dest, &me->new_comer, me);
+//		version(me->miner_id, me->subnet, miner_id, dest, &me->new_comer, me);
 		if(tmp!=NULL){
 			if(bad_links==NULL){
 				bad_links = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
@@ -419,7 +419,7 @@ void bad_miner_routine(struct miner *miner){
 
 		bad_count[miner->miner_id-SEED_NUM]=0;
 		for(i=0; i<SEED_NUM; i++){
-			version(miner->miner_id, miner->subnet, seeds[i]->miner_id, &seeds[i]->new_comer, &miner->new_comer, miner);
+			version(miner->miner_id, miner->subnet, seeds[i]->miner_id, &seeds[i]->new_comer, &miner->new_comer, miner, seeds[i]->subnet);
 			exists = false;
 			if(bad_links!=NULL){
 				for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
@@ -471,21 +471,21 @@ void bad_miner_routine(struct miner *miner){
 					i++;
 				}
 			}
-			links = miner->inbound;
+/*			links = miner->inbound;
 			if(links==NULL){
 				i=0;
 //				miner->boot=true;
 			}
 			else{
 				for(;links->prev!=NULL; links=links->prev){}
-				for(i=0/*debug*/; links!=NULL; links=links->next){
-						bad_addr(links->link/*&seeds[i].new_comer*/, miner, links->miner_id);
+				for(i=0; links!=NULL; links=links->next){
+						bad_addr(links->link, miner, links->miner_id);
 					i++;
 					if(links->next==NULL)
 						break;
 				}
 			}
-			bad_count[miner->miner_id-SEED_NUM]=0;
+*/			bad_count[miner->miner_id-SEED_NUM]=0;
 		}
 		
 		for(link=&miner->new_comer; link->num_msg!=0;){

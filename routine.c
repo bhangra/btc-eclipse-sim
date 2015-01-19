@@ -30,7 +30,7 @@ void dns_routine(struct dns *dns){
 void miner_routine(struct miner *miner){
 	bool			getblocks_sent=0;
 	int 			i, n;
-	struct links 	*links;//, *tmp_bad;//, *tmp_links;
+	struct links 	*links, tmp;//, *tmp_bad;//, *tmp_links;
 	struct link		*link;//, *tmp_link;
 	struct killed	*killed;
 //#ifdef	DEBUG
@@ -73,7 +73,7 @@ void miner_routine(struct miner *miner){
 */
 //#endif	//DEBUG
 //	fprintf(stderr, "entered miner_routine()\n"); //debug
-//#ifdef DEBUG	
+#ifdef DEBUG	
 	if(sim_time>=SIM_TIME-1 && miner->seed == true){
 		fprintf(stderr, "miner->blocks = %p ", miner->blocks);
 		if(miner->blocks!=NULL){
@@ -101,7 +101,7 @@ void miner_routine(struct miner *miner){
 			fprintf(stderr, "\n");
 		}
 	}
-//#endif //DEBUG
+#endif //DEBUG
 	if(miner->boot == true){
 		memset(miner->addrman.v_random, 0, sizeof(miner->addrman.v_random));
 		memset(miner->addrman.vv_new, 0, sizeof(miner->addrman.vv_new));
@@ -152,17 +152,21 @@ void miner_routine(struct miner *miner){
 		if(addr!=NULL){
 			int subnet = addr->subnet;
 			bool subnet_found=false;
-			if(addr->miner_id==miner->miner_id||addr->new_comer==&miner->new_comer)
+			links = NULL;
+			if(addr->miner_id==miner->miner_id||addr->new_comer==&miner->new_comer){
 				subnet_found=true;
-			if(miner->outbound!=NULL&&subnet_found!=true){
-				for(links=miner->outbound; links->next!=NULL; links=links->next){}
+			}
+			if(miner->outbound!=NULL){
+				check_subnet(miner->outbound, addr, &subnet_found);
+/*				for(links=miner->outbound; links->next!=NULL; links=links->next){}
 				for(; links!=NULL; links=links->prev){
-					if(subnet==links->subnet || addr->new_comer==links->new_comer||addr->miner_id==links->miner_id){
+					if(addr->subnet==links->subnet || addr->new_comer==links->new_comer || addr->miner_id==links->miner_id){
+//						fprintf(stderr, "addr->subnet= %d, links->subnet= %d\n", addr->subnet, links->subnet);
 						subnet_found=true;
 						break;
 					}
 				}
-			}
+*/			}
 			if(miner->inbound!=NULL&&subnet_found!=true){
 				for(links=miner->inbound; links->next!=NULL; links=links->next){}
 				for(; links!=NULL; links=links->prev){
@@ -172,22 +176,32 @@ void miner_routine(struct miner *miner){
 					}
 				}
 			}
-			if(dead!=NULL&&subnet_found!=true)
+			if(dead!=NULL&&subnet_found!=true){
 				for(killed=dead; killed!=NULL; killed=killed->next){
-					if(killed->id == addr->miner_id)
+					if(killed->id == addr->miner_id){
+						tmp.new_comer	= addr->new_comer;
+						tmp.miner_id	= addr->miner_id;
+						attempt(&miner->addrman, &tmp, sim_time);
 						subnet_found=true;
-				}
-
-			if(subnet_found==true){}
+					}
+				}	
+			}
+			if(subnet_found==true||miner->seed==true){}
 			else if(miner->addrman.n_tries > 100){
 				miner->addrman.n_tries = 0;
 //				miner->boot = true;
 			}
 			else if(miner->n_outbound >= 8||(sim_time - addr->n_last_try < 600 && miner->addrman.n_tries < 30)){}
-			else{
+			else if(subnet_found!=true&&miner->seed!=true){
 //				fprintf(stderr, "sent version\n");
-				version(miner->miner_id, miner->subnet, addr->miner_id, addr->new_comer, &miner->new_comer, miner);
-				miner->outbound->subnet=subnet;
+//				fprintf(stderr, "subnet_found= %d\n", subnet_found);
+				if(links!=NULL)
+					fprintf(stderr, "addr->subnet= %d, links->subnet= %d\n", addr->subnet, links->subnet);
+				tmp.new_comer	= addr->new_comer;
+				tmp.miner_id	= addr->miner_id;
+				attempt(&miner->addrman, &tmp, sim_time);
+				version(miner->miner_id, miner->subnet, addr->miner_id, addr->new_comer, &miner->new_comer, miner, addr->subnet);
+//				miner->outbound->subnet=addr->subnet;
 //				miner->n_outbound++;
 			}
 		}

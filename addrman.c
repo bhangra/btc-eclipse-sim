@@ -115,7 +115,7 @@ double get_chance(unsigned int n_now, struct caddrinfo *info){
 	if(n_since_last_try < 0)
 		n_since_last_try = 0;
 //	fprintf(stderr, "n_since_last_seen = %d\n", n_since_last_seen);
-	f_chance *= (double)(600 / (600+(double)n_since_last_seen));
+	f_chance *= (double)(600.0 / (600.0+(double)n_since_last_seen));
 //	fprintf(stderr, "(600 / (600+n_since_last_seen)) = %d\n", (600 / (600+n_since_last_seen)));
 //	fprintf(stderr, "f_chance *= 1 = %f\n", f_chance); 
 	//deprioritize very recent attempts away
@@ -563,10 +563,8 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 	unsigned int /*n,*/ num_try=0;
 	double n_cor_tried	= sqrt(addrman->n_tried) * (100.0-n_unk_bias);
 	double n_cor_new	= sqrt(addrman->n_new) * n_unk_bias;
-	if(addrman->f_chance_factor<0)
+	if(addrman->f_chance_factor<=0)
 		addrman->f_chance_factor = 1.0;
-	struct killed 		*killed;
-	bool 				connect;
 	if((n_cor_tried + n_cor_new)*(rand()%(1 << 30)) / (1 << 30) < n_cor_tried){
 //	unsigned int n;
 //	for(n=0; n<ADDRMAN_TRIED_BUCKET_COUNT; n++){
@@ -576,14 +574,11 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 		//select from tried bucket
 		while(1){
 			num_try++;
-			if(num_try==100)
+			if(num_try>=100)
 				return NULL;
-			connect = true;
 			int n_k_bucket = rand()%ADDRMAN_TRIED_BUCKET_COUNT;
 			int *vtried = (int *)&addrman->vv_tried[n_k_bucket][0];
 			int size=0, i;
-			if(vtried[0]==0)
-				continue;
 			for(i=0; i<ADDRMAN_BUCKET_SIZE; i++){
 				if(vtried[i]!=0){
 						size++;
@@ -598,21 +593,13 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 			struct caddrinfo *info = map_info(addrman, nid);
 			if(info==NULL)
 				continue;
-			if(dead!=NULL){
-				for(killed=dead; killed!=NULL; killed=killed->next){
-					if(killed->id==info->miner_id){
-						connect=false;
-						break;
-					}
-				}
-			}
-			if(connect!=true)
-				continue;
-//			if((rand()%(1 << 30) < addrman->f_chance_factor * get_chance(sim_time, info) * (1 << 30))){
+//			fprintf(stderr, "addrman_select:\n addrman->f_chance_factor= %lf\n", addrman->f_chance_factor);
+//			fprintf(stderr, "(addrman->f_chance_factor * get_chance(sim_time, info) * (1 << 30)) = %lf\n", (addrman->f_chance_factor * get_chance(sim_time, info) * (1 << 30)));
+			if((rand()%(1 << 30)) < (addrman->f_chance_factor * get_chance(sim_time, info) * (1 << 30))){
 				addrman->f_chance_factor = 1;
 				return info;
-//			}
-			addrman->f_chance_factor *= 2000000;//1.2;
+			}
+			addrman->f_chance_factor *= 200;//1.2;
 //			return NULL;
 		}
 	}
@@ -625,8 +612,6 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 			int n_k_bucket = rand()%(ADDRMAN_NEW_BUCKET_COUNT);
 			int (*vnew) = (int *)&addrman->vv_new[n_k_bucket][0];
 			int size=0, i;
-			if(vnew[0]==0)
-				continue;
 			for(i=0; i<ADDRMAN_BUCKET_SIZE; i++){
 				if(vnew[i]!=0){
 						size++;
@@ -635,7 +620,7 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 					break;
 			}
 #ifdef ADDR_DEBUG
-//			fprintf(stderr, "addrman_select size = %d\n", size);
+			fprintf(stderr, "addrman_select size = %d\n", size);
 #endif
 			if(size==0)
 				continue;
@@ -644,11 +629,12 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 			struct caddrinfo *info = map_info(addrman, nid);
 			if(info==NULL)
 				continue;
-//			if((rand()%(1 << 30)< addrman->f_chance_factor * get_chance(sim_time, info) * (1 << 30))){
+//			fprintf(stderr, "addrman_select: in if= %lf\n", (addrman->f_chance_factor * get_chance(sim_time, info) * (1 << 30)));
+			if((rand()%(1 << 30))< (addrman->f_chance_factor * get_chance(sim_time, info) * (1 << 30))){
 				addrman->f_chance_factor = 1;
 				return info;
-//			}
-			addrman->f_chance_factor *= 2000000;//1.2;
+			}
+			addrman->f_chance_factor *= 200;//1.2;
 //			return NULL;
 		}
 	}
@@ -716,6 +702,7 @@ void add_fixed_seeds(struct addrman *addrman){
 		tmp.subnet		= seeds[i]->subnet;
 		
 		addrman_add_(addrman, &tmp, NULL, 0);
+//		fprintf(stderr, "tmp.subnet=%d\n", tmp.subnet);
 //bool addrman_add_(struct addrman *addrman, struct links *links, struct link *source, int n_time_penalty){
 	}
 }

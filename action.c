@@ -214,7 +214,7 @@ void addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	send_msg(link->dest, (char *)link->sbuf, 16+(set*i));
 }
 //dest is desination's new_comer
-void version(unsigned int my_id, unsigned int my_subnet, unsigned int dest_id,  struct link *dest, struct link *new_comer, struct miner *miner){
+void version(unsigned int my_id, unsigned int my_subnet, unsigned int dest_id,  struct link *dest, struct link *new_comer, struct miner *miner, unsigned int subnet){
 	struct links *new;//, *save;
 	struct link *link, *tmp;
 	unsigned int size, payload_size;
@@ -226,6 +226,7 @@ void version(unsigned int my_id, unsigned int my_subnet, unsigned int dest_id,  
 	payload_size = size+sizeof(unsigned int)+size+sizeof(unsigned int);
 //	save = links;
 	new = add_links(dest_id, dest, dest, miner->outbound);
+	new->subnet = subnet;
 #ifdef VER_DEBUG
 	fprintf(stderr, "version: new = %p , new->link = %p\n", new, new->link);
 #endif
@@ -842,6 +843,17 @@ void process_new(struct link *new_comer, struct miner *me){
     return;
 }
 
+void check_subnet(struct links *outbound, struct caddrinfo *addr, bool *subnet_found){
+	struct links *links=outbound;
+	for(links=outbound; links->next!=NULL; links=links->next){}
+	for(; links!=NULL; links=links->prev){
+		if(links->subnet==addr->subnet||links->new_comer==addr->new_comer||links->miner_id==addr->miner_id){
+			*subnet_found=true;
+			break;
+		}
+	}
+}
+
 void make_random_connection(struct threads *threads){
 	struct threads *tmp, *tmp2, *init;
 	struct miner *s, *d;
@@ -866,9 +878,9 @@ void make_random_connection(struct threads *threads){
 		s = tmp->miner;
 		if(tmp!=tmp2){
 			d = tmp2->miner;
-			version(s->miner_id, s->subnet, d->miner_id, &d->new_comer, &s->new_comer, s);
+			version(s->miner_id, s->subnet, d->miner_id, &d->new_comer, &s->new_comer, s, d->subnet);
 		}
-		version(s->miner_id, s->subnet, seeds[seed]->miner_id, &seeds[seed]->new_comer, &s->new_comer, s);
+		version(s->miner_id, s->subnet, seeds[seed]->miner_id, &seeds[seed]->new_comer, &s->new_comer, s, seeds[seed]->subnet);
 	}
 }
 #endif
