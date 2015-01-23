@@ -10,7 +10,8 @@
 //#define ADDR_DEBUG
 #define ASSERT
 
-//#define BEHAVIOR
+//#define BEHAVIOR //stops seed from handling blocks
+#define NONSENSE_ADDR //make bad nodes send non-existent network address
 #define NUM_DNS		6
 #define GROUPS		2
 #define BAD_DNS		0
@@ -20,19 +21,19 @@
 #define BUF_SIZE	10000//2500//10000
 #define THOUSAND	10//00
 #define N_MAX_CONNECTIONS 125
-#define MAX_OUTBOUND_CONNECTIONS 8
+#define MAX_OUTBOUND_CONNECTIONS 4//8
 
-//s4t50b3d3
+//s6t50a16a6d20
 #define SEED_NUM	6
 #define	TOTAL_NODES	50
-//#define BAD_NODES	8
+#define BAD_NODES	16
 //(1000nodes+5bad) * 12h = 9min
 #define NOT_NAT /*for every*/ 5//11 //+1th
-#define AVE_TTL		60*60*6
+#define AVE_TTL		60*60*1//6
 //#define AVE_TTL		1000
 #define SEED_TTL	60*60*24*1
 //#define SEED_TTL	2000
-#define SIM_DAYS	3//30
+#define SIM_DAYS	10
 //#define SIM_TIME	60*60*24*SIM_DAYS
 #define SIM_TIME	60*60*24
 //1000nodes*12hour = 2min15~30s

@@ -150,13 +150,19 @@ void miner_routine(struct miner *miner){
 #endif
 		miner->addrman.n_tries++;
 		if(addr!=NULL){
-			int subnet = addr->subnet;
+//			int subnet = addr->subnet;
 			bool subnet_found=false;
 			links = NULL;
 			if(addr->miner_id==miner->miner_id||addr->new_comer==&miner->new_comer){
 				subnet_found=true;
 			}
-			if(miner->outbound!=NULL){
+			if(addr->new_comer==NULL){
+				subnet_found=true;
+				tmp.new_comer	= addr->new_comer;
+				tmp.miner_id	= addr->miner_id;
+				attempt(&miner->addrman, &tmp, sim_time);
+			}
+			if(miner->outbound!=NULL&&subnet_found!=true){
 				check_subnet(miner->outbound, addr, &subnet_found);
 /*				for(links=miner->outbound; links->next!=NULL; links=links->next){}
 				for(; links!=NULL; links=links->prev){

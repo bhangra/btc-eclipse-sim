@@ -26,7 +26,7 @@ unsigned int map_addr(struct addrman *addrman, struct links *links){
 		return 0;
 	for(tmp=addrman->caddrinfo; tmp->next!=NULL; tmp=tmp->next){}
 	for(; tmp!=NULL; tmp=tmp->prev){
-		if(tmp->new_comer==links->new_comer)
+		if(tmp->new_comer==links->new_comer && tmp->miner_id==links->miner_id)
 			return tmp->nid;
 	}
 	return 0;
@@ -574,7 +574,7 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 		//select from tried bucket
 		while(1){
 			num_try++;
-			if(num_try>=100)
+			if(num_try>=2)
 				return NULL;
 			int n_k_bucket = rand()%ADDRMAN_TRIED_BUCKET_COUNT;
 			int *vtried = (int *)&addrman->vv_tried[n_k_bucket][0];
@@ -586,8 +586,10 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 				else
 					break;
 			}
-			if(size==0)
+			if(size==0){
+				num_try++;
 				continue;
+			}
 			int n_pos = rand()%size;
 			int nid = vtried[n_pos];
 			struct caddrinfo *info = map_info(addrman, nid);
@@ -599,7 +601,7 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 				addrman->f_chance_factor = 1;
 				return info;
 			}
-			addrman->f_chance_factor *= 200;//1.2;
+			addrman->f_chance_factor *= 1.2;//1.2;
 //			return NULL;
 		}
 	}
@@ -607,7 +609,7 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 		//select from new bucket
 		while(1){
 			num_try++;
-			if(num_try==100)
+			if(num_try==2)
 				return NULL;
 			int n_k_bucket = rand()%(ADDRMAN_NEW_BUCKET_COUNT);
 			int (*vnew) = (int *)&addrman->vv_new[n_k_bucket][0];
@@ -622,8 +624,10 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 #ifdef ADDR_DEBUG
 			fprintf(stderr, "addrman_select size = %d\n", size);
 #endif
-			if(size==0)
+			if(size==0){
+				num_try++;
 				continue;
+			}
 			int n_pos = rand()%(size);
 			int nid		= vnew[n_pos];
 			struct caddrinfo *info = map_info(addrman, nid);
@@ -634,7 +638,7 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 				addrman->f_chance_factor = 1;
 				return info;
 			}
-			addrman->f_chance_factor *= 200;//1.2;
+			addrman->f_chance_factor *= 1.2;//1.2;
 //			return NULL;
 		}
 	}

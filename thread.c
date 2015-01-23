@@ -138,14 +138,14 @@ struct threads *new_thread(int type, unsigned int miner_id,  struct threads *thr
 			bad->next=malloc(sizeof(struct bad_threads));//new;		
 			bad->next->prev=bad;
 			bad=bad->next;
-			bad->miner = new->miner;
+//			bad->miner = new->miner;
 			bad->next=NULL;
 			bad->thread = new;
 			
 		}
 		else{
 			bad = malloc(sizeof(struct bad_threads));
-			bad->miner = new->miner;
+//			bad->miner = new->miner;
 			bad->next = NULL;// new;
 			bad->prev = NULL;
 			bad->thread = new;

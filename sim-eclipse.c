@@ -50,8 +50,8 @@ int main(int argc, char *argv[]){
 //	fprintf(stderr, "seeds' subnet\n");
 	int subnet = rand() & 0xffff0000;
  	for(i=0; i<SEED_NUM; i++){
-//		if(i>=SEED_NUM/2 && i < SEED_NUM/2 +1)
-//			subnet = rand() & 0xffff0000;
+		if(i>=SEED_NUM/2 && i < SEED_NUM/2 +1)
+			subnet = rand() & 0xffff0000;
 		seeds[i] = malloc(sizeof(struct miner));
 		memset(seeds[i], 0, sizeof(struct miner));
 		memset(&seeds[i]->addrman, 0, sizeof(struct addrman));
@@ -84,6 +84,21 @@ int main(int argc, char *argv[]){
 #endif	//MULTI
 #ifndef	MULTI
 		threads=new_thread(ATTACKER, global_id, threads, 0);
+/*		if(bad_threads==NULL){
+			bad_threads=malloc(sizeof(struct bad_threads));
+			bad_threads->thread=threads;
+			bad_threads->next=NULL;
+			bad_threads->prev=NULL;
+		}
+		else{
+			struct bad_threads bad_threads_tmp;
+			for(bad_threads_tmp=bad_threads;bad_threads_tmp->next!=NULL;bad_threads_tmp=bad_threads_tmp->next){}
+			bad_threads_tmp->next=malloc(sizeof(struct bad_threads));
+			bad_threads_tmp->next->thread=threads;
+			bad_threads_tmp->next->prev=bad_threads_tmp;
+			
+		}
+*/
 #endif	//MULTI
 		num_nodes++;
 	}

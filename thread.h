@@ -29,7 +29,6 @@ struct bad_threads{
 	struct bad_threads *next;
 	struct bad_threads *prev;
 	struct threads		*thread;
-	struct miner		*miner;
 };
 
 struct killed{

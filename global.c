@@ -11,7 +11,9 @@ struct block_record;
 unsigned int		sim_time = 0, global_id = 0;
 bool				is_bad_dns[NUM_DNS];
 struct links		*bad_links = NULL;
+#ifndef MULTI
 struct bad_threads		*bad_threads=NULL;
+#endif //MULTI
 struct dns 			dns[NUM_DNS];
 struct miner		*seeds[SEED_NUM];
 struct killed		*dead = NULL;

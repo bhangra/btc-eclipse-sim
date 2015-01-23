@@ -75,21 +75,34 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 	sets = 0;
 //	if(bad_threads!=NULL)
 //		for(bad=bad_threads; bad->prev!=NULL; bad=bad->prev){}
+#ifdef NONSENSE_ADDR
+
+	for(; 16+(sets*set_size)<BUF_SIZE-set_size&&sets<1; sets++){
+		global_id++;
+		struct link *link_null = NULL;
+		unsigned int subnet = rand()&0xffff0000;
+		memcpy(&link->sbuf[16+(sets*set_size)], &global_id, sizeof(unsigned int));
+		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &link_null, sizeof(struct link*));
+		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)], &sim_time, sizeof(unsigned int));
+		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)+sizeof(unsigned int)], &subnet, sizeof(unsigned int));
+	}
+
+#endif //ifdef NONSENSE_ADDR
+#ifndef NONSENSE_ADDR
 	struct link *link_tmp;
 	struct miner *miner_tmp;
-	for(bad=bad_threads; sets<BAD_NODES; bad=bad->next){
+	for(bad=bad_threads; sets<BAD_NODES && bad!=NULL; bad=bad->next){
 		miner_tmp	= bad->thread->miner;
 		link_tmp	= &miner_tmp->new_comer;
 		memcpy(&link->sbuf[16+(sets*set_size)], &(bad->thread->miner)->miner_id, sizeof(unsigned int));
 		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &link_tmp, sizeof(struct link*));
 		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)], &sim_time, sizeof(unsigned int));
-		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)+sizeof(unsigned int)], &bad->miner->subnet, sizeof(unsigned int));
+		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)+sizeof(unsigned int)], &bad->thread->miner->subnet, sizeof(unsigned int));
 		sets++;
 	}
-
-	if(bad_links!=NULL){
+/*	if(bad_links!=NULL){
 		for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
-		for(/*tmp_bad=bad_links*/; tmp_bad!=NULL && 16+(sets*set_size)<BUF_SIZE-set_size; tmp_bad=tmp_bad->prev){
+		for(; tmp_bad!=NULL && 16+(sets*set_size)<BUF_SIZE-set_size; tmp_bad=tmp_bad->prev){
 			if(tmp_bad->miner_id!=dest_id && tmp_bad->group == dest_group){
 				memcpy(&link->sbuf[16+(sets*set_size)], &tmp_bad->miner_id, sizeof(unsigned int));
 				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &tmp_bad->new_comer, sizeof(struct link*));
@@ -100,6 +113,8 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 			}
 		}
 	}
+*/
+#endif //ifndef NONSENSE_ADDR
 	payload_size = set_size*sets;
 	memcpy(&link->sbuf[12], &payload_size, sizeof(unsigned int));
 	send_msg(link->dest, (char *)link->sbuf, 16+payload_size);
@@ -243,7 +258,7 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 					if(killed->id == miner_id)
 						connect=false;
 				}
-			if(connect==true){
+			if(connect==true&&dest!=NULL){
 //				connected = true;
 #ifdef DEBUG
 				fprintf(stderr, "will send version to dest: %p, id: %d\n", dest, miner_id);
@@ -446,7 +461,7 @@ void bad_miner_routine(struct miner *miner){
 
 	else{
 		bad_count[miner->miner_id-SEED_NUM]++;
-		if(bad_count[miner->miner_id-SEED_NUM]>=30){
+		if(bad_count[miner->miner_id-SEED_NUM]>=60){
 //			for(i=0; i<SEED_NUM; i++){
 			if(miner->outbound!=NULL){
 				for(tmp_bad=miner->outbound; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
@@ -471,7 +486,7 @@ void bad_miner_routine(struct miner *miner){
 					i++;
 				}
 			}
-/*			links = miner->inbound;
+			links = miner->inbound;
 			if(links==NULL){
 				i=0;
 //				miner->boot=true;
@@ -485,7 +500,7 @@ void bad_miner_routine(struct miner *miner){
 						break;
 				}
 			}
-*/			bad_count[miner->miner_id-SEED_NUM]=0;
+			bad_count[miner->miner_id-SEED_NUM]=0;
 		}
 		
 		for(link=&miner->new_comer; link->num_msg!=0;){

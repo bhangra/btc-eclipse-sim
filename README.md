@@ -9,11 +9,9 @@ This is a work in progress C language implementation of Bitcoin network simulato
 
 status
 ---------
+assumingly fully functional, however not able to reproduce eclipse attack due to the randomness in new nodes' connection to seed nodes.
 
-have written up to a point, where creating 1,000 nodes each indivudually mining and keeping up with newest block is achieved.
 
 todo
 ---------
-test & fix attackers' behavior
-make simulator behave as close as to the real bitcoin network
-
+.....
