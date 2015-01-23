@@ -26,7 +26,7 @@
 //s6t50a16a6d20
 #define SEED_NUM	6
 #define	TOTAL_NODES	50
-#define BAD_NODES	16
+#define BAD_NODES	8
 //(1000nodes+5bad) * 12h = 9min
 #define NOT_NAT /*for every*/ 5//11 //+1th
 #define AVE_TTL		60*60*1//6
