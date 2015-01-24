@@ -77,7 +77,7 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 //		for(bad=bad_threads; bad->prev!=NULL; bad=bad->prev){}
 #ifdef NONSENSE_ADDR
 
-	for(; 16+(sets*set_size)<BUF_SIZE-set_size&&sets<1; sets++){
+	for(; 16+(sets*set_size)<BUF_SIZE-set_size/*&&sets<1*/; sets++){
 		global_id++;
 		struct link *link_null = NULL;
 		unsigned int subnet = rand()&0xffff0000;
@@ -100,7 +100,9 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)+sizeof(unsigned int)], &bad->thread->miner->subnet, sizeof(unsigned int));
 		sets++;
 	}
-/*	if(bad_links!=NULL){
+	if(dest_group)
+		tmp_bad=
+	if(bad_links!=NULL){
 		for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
 		for(; tmp_bad!=NULL && 16+(sets*set_size)<BUF_SIZE-set_size; tmp_bad=tmp_bad->prev){
 			if(tmp_bad->miner_id!=dest_id && tmp_bad->group == dest_group){
@@ -113,7 +115,7 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 			}
 		}
 	}
-*/
+
 #endif //ifndef NONSENSE_ADDR
 	payload_size = set_size*sets;
 	memcpy(&link->sbuf[12], &payload_size, sizeof(unsigned int));
@@ -294,6 +296,44 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 #ifdef DEBUG
 		fprintf(stderr, "received verack with link: %p\n", link->dest);
 #endif
+		if(links->group==0){
+			if(a_good==NULL){
+				a_good=malloc(sizeof(struct links));
+				memcpy(a_good, links, sizeof(struct links));
+				a_good->prev=NULL;
+				a_good->next=NULL;
+			}
+			else{
+				for(tmp_bad=a_good;tmp_bad->next!=NULL;tmp_bad=tmp_bad->next){
+					if(tmp_bad->miner_id==links->miner_id)
+						return 1;
+				}
+				tmp_bad->next=malloc(sizeof(struct links));
+				memcpy(tmp_bad->next, links, sizeof(struct links));
+				tmp_bad->next->next=NULL;
+				tmp_bad->next->prev=tmp_bad;
+			}
+		}
+		else if(links->group==1){
+			if(b_good==NULL){
+				b_good=malloc(sizeof(struct links));
+				memcpy(a_good, links, sizeof(struct links));
+				b_good->prev=NULL;
+				b_good->next=NULL;
+			}
+			else{
+				for(tmp_bad=b_good;tmp_bad->next!=NULL;tmp_bad=tmp_bad->next){
+					if(tmp_bad->miner_id==links->miner_id)
+						return 1;
+				}
+				tmp_bad->next=malloc(sizeof(struct links));
+				memcpy(tmp_bad->next, links, sizeof(struct links));
+				tmp_bad->next->next=NULL;
+				tmp_bad->next->prev=tmp_bad;
+
+			}	
+		}	
+
     }
 	return 1;
 }
@@ -461,7 +501,7 @@ void bad_miner_routine(struct miner *miner){
 
 	else{
 		bad_count[miner->miner_id-SEED_NUM]++;
-		if(bad_count[miner->miner_id-SEED_NUM]>=60){
+		if(bad_count[miner->miner_id-SEED_NUM]>=15){
 //			for(i=0; i<SEED_NUM; i++){
 			if(miner->outbound!=NULL){
 				for(tmp_bad=miner->outbound; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
