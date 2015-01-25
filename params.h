@@ -23,17 +23,17 @@
 #define N_MAX_CONNECTIONS 125
 #define MAX_OUTBOUND_CONNECTIONS 4//8
 
-//s6t50a16a6d20
+//s6t100b16n11a6d30
 #define SEED_NUM	6
-#define	TOTAL_NODES	1000
+#define	TOTAL_NODES	50
 #define BAD_NODES	8
 //(1000nodes+5bad) * 12h = 9min
-#define NOT_NAT /*for every*/ 5//11 //+1th
-#define AVE_TTL		60*60*1//6
+#define NOT_NAT /*for every*/ 11 //+1th
+#define AVE_TTL		60*60*6
 //#define AVE_TTL		1000
 #define SEED_TTL	60*60*24*1
 //#define SEED_TTL	2000
-#define SIM_DAYS	10
+#define SIM_DAYS	30
 #define SIM_TIME	60*60*24*SIM_DAYS
 //#define SIM_TIME	60*60*24
 //1000nodes*12hour = 2min15~30s

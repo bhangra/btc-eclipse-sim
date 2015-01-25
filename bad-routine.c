@@ -101,7 +101,7 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 		sets++;
 	}
 	if(dest_group)
-		tmp_bad=
+//		tmp_bad=
 	if(bad_links!=NULL){
 		for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
 		for(; tmp_bad!=NULL && 16+(sets*set_size)<BUF_SIZE-set_size; tmp_bad=tmp_bad->prev){
