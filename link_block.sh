@@ -23,13 +23,15 @@ then
 #	echo "${line}"
 	columns=$(echo ${line} | head -n1 |awk '{print NF}')
 	num_links=$(( $columns/4))
-	the_node=$(echo ${line} | awk '{print $4}')
+#	the_node=$(echo ${line} | awk '{print $4}') #change to "cut" for performance
+	the_node=$(echo ${line}|cut -d' ' -f4)
 #	echo $num_links
 #	echo "the_node= $the_node"
 	for ((i=0;i<num_links;i++))
 	do
 		pos=$((8+($num_links*4)))
-		dest=$(echo ${line} | awk '{print $'$pos'}')
+#		dest=$(echo ${line} | awk '{print $'$pos'}')
+		dest=$(echo ${line} | cut -d' ' -f$pos)
 		if [[ $the_node == -1 ]];  then
 			link_ab=$(($link_ab+1))
 		elif [[ $the_node == $dest ]]; then	
