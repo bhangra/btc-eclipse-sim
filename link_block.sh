@@ -31,7 +31,7 @@ then
 	for ((i=0;i<num_links;i++))
 	do
 		pos=$((8+($num_links*4)))
-		dest=$(echo ${line} | awk '{print $$(pos)}')
+		dest=$(echo ${line} | awk '{print $'$pos'}')
 		echo $dest
 		if [[ $the_node == -1 ]];  then
 			link_ab=$(($link_ab+1))
