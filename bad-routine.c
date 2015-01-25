@@ -465,12 +465,14 @@ struct links *process_bad_new(struct link *new_comer, struct miner *me){
 						break;
 					}
 				}
+/*
 				if(exists==false){
 					tmp_bad = add_links(tmp->miner_id, tmp->new_comer, tmp->new_comer, bad_links);
 					free(tmp_bad->link);
 					tmp_bad->link=NULL;
 					tmp_bad->group = rand()%GROUPS;
 				}
+*/
 			}
 		}
 		return tmp;
