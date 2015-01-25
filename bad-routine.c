@@ -100,8 +100,30 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)+sizeof(unsigned int)], &bad->thread->miner->subnet, sizeof(unsigned int));
 		sets++;
 	}
-	if(dest_group)
-//		tmp_bad=
+	if(dest_group==0&&a_good!=NULL){
+		for(tmp_bad=a_good; tmp_bad!=NULL && 16+(sets*set_size)<BUF_SIZE-set_size; tmp_bad=tmp_bad->next){
+			if(tmp_bad->miner_id!=dest_id && tmp_bad->group == dest_group){
+				memcpy(&link->sbuf[16+(sets*set_size)], &tmp_bad->miner_id, sizeof(unsigned int));
+				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &tmp_bad->new_comer, sizeof(struct link*));
+				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)], &sim_time, sizeof(unsigned int));
+				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)+sizeof(unsigned int)], &tmp_bad->subnet, sizeof(unsigned int));
+
+				sets++;
+			}
+		}
+	}
+	else if(dest_group==1&&b_good!=NULL){
+		for(tmp_bad=b_good; tmp_bad!=NULL && 16+(sets*set_size)<BUF_SIZE-set_size; tmp_bad=tmp_bad->next){
+			if(tmp_bad->miner_id!=dest_id && tmp_bad->group == dest_group){
+				memcpy(&link->sbuf[16+(sets*set_size)], &tmp_bad->miner_id, sizeof(unsigned int));
+				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)], &tmp_bad->new_comer, sizeof(struct link*));
+				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)], &sim_time, sizeof(unsigned int));
+				memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)+sizeof(unsigned int)], &tmp_bad->subnet, sizeof(unsigned int));
+
+				sets++;
+			}
+		}
+	}
 	if(bad_links!=NULL){
 		for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
 		for(; tmp_bad!=NULL && 16+(sets*set_size)<BUF_SIZE-set_size; tmp_bad=tmp_bad->prev){

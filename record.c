@@ -207,7 +207,7 @@ void print_link_record(){
 	struct node_record	*n_rec, *save, *same;
 	struct link_record	*l_rec, *l_next;
 #ifdef PRINT_ONLY_TOTAL_AB_LINK
-	int the_node, total_ab=0;
+	int the_node, total_ab=0, total_link=0;
 #endif
 	if(n_link!=NULL){
 		for(n_rec = n_link; n_rec->prev!=NULL; n_rec=n_rec->prev){printf("\n");}
@@ -233,6 +233,7 @@ void print_link_record(){
 						total_ab++;
 					else if(the_node!=l_rec->dest_group)
 						total_ab++;
+					total_link++;
 #endif //PRINT_ONLY_TOTAL_AB_LINK
 					l_next=l_rec->next;
 					free(l_rec);
@@ -242,7 +243,7 @@ void print_link_record(){
 #endif //PRINT_ONLY_TOTAL_AB_LINK
 			}
 #ifdef PRINT_ONLY_TOTAL_AB_LINK
-			fprintf(stdout, "sim_time= %d total_ab= %d", sim_time, total_ab/2);
+			fprintf(stdout, "sim_time= %d total_link= %d total_ab= %d", sim_time, total_link/2, total_ab/2);
 #endif //PRINT_ONLY_TOTAL_AB_LINK
 			fprintf(stdout, "\n");
 		}
