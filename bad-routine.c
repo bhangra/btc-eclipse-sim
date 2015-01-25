@@ -100,7 +100,7 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 		memcpy(&link->sbuf[16+(sets*set_size)+sizeof(unsigned int)+sizeof(struct link*)+sizeof(unsigned int)], &bad->thread->miner->subnet, sizeof(unsigned int));
 		sets++;
 	}
-/*	if(bad_links!=NULL){
+	if(bad_links!=NULL){
 		for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
 		for(; tmp_bad!=NULL && 16+(sets*set_size)<BUF_SIZE-set_size; tmp_bad=tmp_bad->prev){
 			if(tmp_bad->miner_id!=dest_id && tmp_bad->group == dest_group){
@@ -113,7 +113,7 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 			}
 		}
 	}
-*/
+
 #endif //ifndef NONSENSE_ADDR
 	payload_size = set_size*sets;
 	memcpy(&link->sbuf[12], &payload_size, sizeof(unsigned int));
