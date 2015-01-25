@@ -17,9 +17,6 @@ time=600
 
 while read line
 do 
-#for line in $(cat success.txt); do
-#awk '{print NF}'
-#if (echo $line | grep -Fxq "g=")
 if [[ $line == *"g="* ]]
 then
 #	echo "${line}"
@@ -43,8 +40,6 @@ then
 	done
 	echo "link_ab = $link_ab"
 	link_ab=0
-#	echo "links ${num_links}"
-#elif(echo $line | grep -Fxq "t=")
 elif [[ $line == *"t="* ]]
 then
 	#| awk '{print $1}' |
@@ -55,7 +50,5 @@ else
 	links=0
 	time=${time}+600
 fi
-done <success.txt
+done < test.txt
 
-#IFS=$IFS_BAK
-#IFS_BAK=
