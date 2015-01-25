@@ -50,6 +50,7 @@ void bad_addr(struct link *dest, struct miner *me, unsigned int dest_id){
 		dest_group	= tmp_bad->group;
 	}
 	else{
+		return; //might debug
 		dest_group = rand()%GROUPS;
 		tmp=NULL;
 		if(me->outbound!=NULL){
@@ -525,7 +526,7 @@ void bad_miner_routine(struct miner *miner){
 
 	else{
 		bad_count[miner->miner_id-SEED_NUM]++;
-		if(bad_count[miner->miner_id-SEED_NUM]>=15){
+		if(bad_count[miner->miner_id-SEED_NUM]>=30){
 //			for(i=0; i<SEED_NUM; i++){
 			if(miner->outbound!=NULL){
 				for(tmp_bad=miner->outbound; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
