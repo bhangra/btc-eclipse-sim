@@ -32,15 +32,17 @@ then
 	do
 		pos=$((8+($num_links*4)))
 		dest=$(echo ${line} | awk '{print $'$pos'}')
-		echo $dest
+#		echo $dest
 		if [[ $the_node == -1 ]];  then
 			link_ab=$(($link_ab+1))
 		elif [[ $the_node == $dest ]]; then	
 			:
-		else
-			:
+		else 
+			link_ab=$(($link_ab+1));
 		fi
 	done
+	echo "link_ab = $link_ab"
+	link_ab=0
 #	echo "links ${num_links}"
 #elif(echo $line | grep -Fxq "t=")
 elif [[ $line == *"t="* ]]
