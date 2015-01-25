@@ -3,6 +3,7 @@
 
 //#define MULTI
 #define MALLOC_CHECK_ 3
+#define PRINT_ONLY_TOTAL_AB_LINK
 //#define VER_DEBUG
 //#define DEBUG
 //#define BLOCK_DEBUG
@@ -25,8 +26,8 @@
 
 //s6t100b16n11a6d30
 #define SEED_NUM	6
-#define	TOTAL_NODES	50
-#define BAD_NODES	8
+#define	TOTAL_NODES	100
+#define BAD_NODES	16
 //(1000nodes+5bad) * 12h = 9min
 #define NOT_NAT /*for every*/ 11 //+1th
 #define AVE_TTL		60*60*6

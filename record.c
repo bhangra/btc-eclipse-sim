@@ -206,35 +206,57 @@ void join_record(struct block *new, struct blocks *blocks){
 void print_link_record(){
 	struct node_record	*n_rec, *save, *same;
 	struct link_record	*l_rec, *l_next;
+#ifdef PRINT_ONLY_TOTAL_AB_LINK
+	int the_node, total_ab=0;
+#endif
 	if(n_link!=NULL){
 		for(n_rec = n_link; n_rec->prev!=NULL; n_rec=n_rec->prev){printf("\n");}
 		for(; n_rec!=NULL; n_rec=save){
 			save=n_rec->next;
 			for(; n_rec!=NULL; n_rec=same){
 				same=n_rec->same;
+#ifdef PRINT_ONLY_TOTAL_AB_LINK
+				the_node = n_rec->my_group;
+#endif //PRINT_ONLY_TOTAL_AB_LINK
+#ifndef PRINT_ONLY_TOTAL_AB_LINK
 				fprintf(stdout, "i= %d g= %d ", n_rec->my_id, n_rec->my_group);
+#endif //PRINT_ONLY_TOTAL_AB_LINK
 				l_rec=n_rec->record;
 				free(n_rec);
 				for(; l_rec!=NULL; l_rec=l_next){
+#ifndef PRINT_ONLY_TOTAL_AB_LINK
 					fprintf(stdout, "i= %d g= %d ", l_rec->dest_id, l_rec->dest_group);
+#endif //PRINT_ONLY_TOTAL_AB_LINK
+#ifdef PRINT_ONLY_TOTAL_AB_LINK
+					if((l_rec->dest_id>=SEED_NUM && l_rec->dest_id<SEED_NUM+BAD_NODES)||(n_rec->my_id>=SEED_NUM&&n_rec->my_id<SEED_NUM+BAD_NODES)){}
+					else if(the_node==-1)
+						total_ab++;
+					else if(the_node!=l_rec->dest_group)
+						total_ab++;
+#endif //PRINT_ONLY_TOTAL_AB_LINK
 					l_next=l_rec->next;
 					free(l_rec);
 				}
+#ifndef PRINT_ONLY_TOTAL_AB_LINK
 				fprintf(stdout, "\n");
+#endif //PRINT_ONLY_TOTAL_AB_LINK
 			}
+#ifdef PRINT_ONLY_TOTAL_AB_LINK
+			fprintf(stdout, "sim_time= %d total_ab= %d", sim_time, total_ab/2);
+#endif //PRINT_ONLY_TOTAL_AB_LINK
 			fprintf(stdout, "\n");
 		}
 	}
 	n_link=NULL;
 }
-void add_link_record(struct threads *thread){
+void add_link_record(/*struct threads *thread*/struct miner *miner){
 	struct node_record	*n_rec, *tmp;
 	struct link_record	*l_rec;
 	struct links		*links;
 	struct miner		*me;
 	int					group;	
 	struct links *tmp_bad;
-	me = thread->miner;
+	me = miner;//thread->miner;
 
 	n_rec = malloc(sizeof(struct node_record));
 	if(n_rec==NULL){
@@ -321,13 +343,14 @@ void add_link_record(struct threads *thread){
 	}
 	if(n_link == NULL)
 		n_link = n_rec;
-
+/*
 	else if(thread->next==NULL){
 		n_link->next 	= n_rec;
 		tmp				= n_link;
 		n_link			= n_link->next;
 		n_link->prev	= tmp;
 	}
+*/
 	else{
 		for(tmp = n_link; tmp->same!=NULL; tmp=tmp->same){}
 		tmp->same = n_rec;
@@ -338,7 +361,11 @@ void add_link_records(struct threads *threads){
 	struct threads		*tmp;
 	for(tmp=threads; tmp->next!=NULL; tmp=tmp->next){}
 	for(; tmp!=NULL; tmp=tmp->prev){
-		add_link_record(tmp);
+		add_link_record(tmp->miner);
+	}
+	int i;
+	for(i=0; i<SEED_NUM; i++){
+		add_link_record(seeds[i]);
 	}
 }
 
