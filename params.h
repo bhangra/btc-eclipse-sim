@@ -14,6 +14,7 @@
 //#define BEHAVIOR //stops seed from handling blocks
 //#define NONSENSE_ADDR //make bad nodes send non-existent network address
 #define NUM_DNS		6
+#define SEEDS_PER_DNS	2
 #define GROUPS		2
 #define BAD_DNS		0
 #define NUM_GROUPS	2
@@ -25,9 +26,9 @@
 #define MAX_OUTBOUND_CONNECTIONS 4//8
 
 //s6t100b16n11a6d30
-#define SEED_NUM	6
+#define SEED_NUM	NUM_DNS*SEEDS_PER_DNS //12
 #define	TOTAL_NODES	100
-#define BAD_NODES	16
+#define BAD_NODES	0//16
 //(1000nodes+5bad) * 12h = 9min
 #define NOT_NAT /*for every*/ 4 //11 //+1th
 #define AVE_TTL		60*60*2//6

@@ -17,13 +17,13 @@
 #define LEAST_NEIGHBOR 8
 #define min(A,B) (((A)<(B))?(A):(B)) 
 
-void dns_routine(struct dns *dns){
+void dns_routine(struct dns *dns, unsigned int dns_num){
 //	fprintf(stderr, "\n");
 	for(; (&dns->new_comer)->num_msg!=0;){
 //		fprintf(stderr, "num of msgs to dns: %d\n", (&dns->new_comer)->num_msg);
 		read_msg(&dns->new_comer);
 //		fprintf(stderr, "read msg to dns\n");
-		dns->seeds = process_dns(&dns->new_comer, /*(struct links*)&*/dns->seeds);
+		dns->seeds = process_dns(&dns->new_comer, /*(struct links*)&*/dns->seeds, dns_num);
 	}
 }
 
@@ -33,46 +33,6 @@ void miner_routine(struct miner *miner){
 	struct links 	*links, tmp;//, *tmp_bad;//, *tmp_links;
 	struct link		*link;//, *tmp_link;
 	struct killed	*killed;
-//#ifdef	DEBUG
-/*	struct links *tmp_bad;
-	int group;
-	if(sim_time%600==0){
-		fprintf(stderr, "miner: %d\n", miner->miner_id);
-		if(miner->outbound!=NULL){
-			fprintf(stderr, "outbound: ");
-			for(links=miner->outbound; links->prev!=NULL; links=links->prev){}
-			for(; links!=NULL; links=links->next){
-				group = -1;
-				if(bad_links!=NULL){
-					for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
-					for(;tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
-						if(tmp_bad->miner_id==links->miner_id)
-							group = tmp_bad->group;
-					}
-				}
-				fprintf(stderr, "id= %d g= %d, ", links->miner_id, group);
-			}
-		}
-		fprintf(stderr, "\ninbound: ");
-		if(miner->inbound!=NULL){
-			for(links=miner->inbound; links->prev!=NULL; links=links->prev){}
-			for(; links!=NULL; links=links->next){
-				group = -1;
-				if(bad_links!=NULL){
-					for(tmp_bad=bad_links; tmp_bad->next!=NULL; tmp_bad=tmp_bad->next){}
-					for(; tmp_bad!=NULL; tmp_bad=tmp_bad->prev){
-						if(tmp_bad->miner_id==links->miner_id)
-							group = tmp_bad->group;
-					}
-				}
-				fprintf(stderr, "id= %d g= %d, ", links->miner_id, group);
-			}	
-		}
-		fprintf(stderr, "\n");
-	}
-*/
-//#endif	//DEBUG
-//	fprintf(stderr, "entered miner_routine()\n"); //debug
 #ifdef DEBUG	
 	if(sim_time>=SIM_TIME-1 && miner->seed == true){
 		fprintf(stderr, "miner->blocks = %p ", miner->blocks);
@@ -102,21 +62,20 @@ void miner_routine(struct miner *miner){
 		}
 	}
 #endif //DEBUG
-	if(miner->boot == true){
-		memset(miner->addrman.v_random, 0, sizeof(miner->addrman.v_random));
-		memset(miner->addrman.vv_new, 0, sizeof(miner->addrman.vv_new));
-		memset(miner->addrman.vv_tried, 0, sizeof(miner->addrman.vv_tried));
-	}
+/*
 	if(miner->boot == true && miner->seed == true){
 		for(i=0; i<NUM_DNS; i++){
-			dns_seed(miner->miner_id, &dns[i], &miner->new_comer);
+			dns_seed(miner->miner_id, &dns[i], &miner->new_comer, miner->subnet);
 		}
 		i=rand()%NUM_DNS;
 		add_fixed_seeds(&miner->addrman);
 		miner->boot = false;
 	}
-	else if(miner->boot == true){
-		add_fixed_seeds(&miner->addrman);
+	else 
+*/	
+	if(miner->boot == true){
+//		add_fixed_seeds(&miner->addrman);
+		dns_query(&dns[rand()%NUM_DNS], &miner->new_comer, miner->miner_id);
 		miner->boot = false;
 	}
 	else{

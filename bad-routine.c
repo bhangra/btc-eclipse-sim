@@ -186,7 +186,7 @@ struct links *process_bad_dns(struct link *new_comer, struct links *seeds){
 #ifdef DEBUG
 		fprintf(stderr, "dnsquery received\n"); //debug
 #endif
-		dns_roundrobin(link, seeds);
+//		dns_roundrobin(link, /*seeds*/);
 		return seeds;
 	}
 	else{
@@ -319,45 +319,47 @@ int process_bad_msg(struct link *new_comer,struct links *links, struct miner *me
 #ifdef DEBUG
 		fprintf(stderr, "received verack with link: %p\n", link->dest);
 #endif
-		if(links->group==0){
-			if(a_good==NULL){
-				a_good=malloc(sizeof(struct links));
-				memcpy(a_good, links, sizeof(struct links));
-				a_good->prev=NULL;
-				a_good->next=NULL;
-			}
-			else{
-				for(tmp_bad=a_good;tmp_bad->next!=NULL;tmp_bad=tmp_bad->next){
-					if(tmp_bad->miner_id==links->miner_id)
-						return 1;
+		if(links->miner_id>=SEED_NUM){
+			if(links->group==0){
+				if(a_good==NULL){
+					a_good=malloc(sizeof(struct links));
+					memcpy(a_good, links, sizeof(struct links));
+					a_good->prev=NULL;
+					a_good->next=NULL;
 				}
-				tmp_bad->next=malloc(sizeof(struct links));
-				memcpy(tmp_bad->next, links, sizeof(struct links));
-				tmp_bad->next->next=NULL;
-				tmp_bad->next->prev=tmp_bad;
+				else{
+					for(tmp_bad=a_good;tmp_bad->next!=NULL;tmp_bad=tmp_bad->next){
+						if(tmp_bad->miner_id==links->miner_id)
+							return 1;
+					}
+					tmp_bad->next=malloc(sizeof(struct links));
+					memcpy(tmp_bad->next, links, sizeof(struct links));
+					tmp_bad->next->next=NULL;
+					tmp_bad->next->prev=tmp_bad;
+				}
+			}
+			else if(links->group==1){
+				if(b_good==NULL){
+					b_good=malloc(sizeof(struct links));
+					memcpy(a_good, links, sizeof(struct links));
+					b_good->prev=NULL;
+					b_good->next=NULL;
+				}
+				else{
+					for(tmp_bad=b_good;tmp_bad->next!=NULL;tmp_bad=tmp_bad->next){
+						if(tmp_bad->miner_id==links->miner_id)
+							return 1;
+					}
+					tmp_bad->next=malloc(sizeof(struct links));
+					memcpy(tmp_bad->next, links, sizeof(struct links));
+					tmp_bad->next->next=NULL;
+					tmp_bad->next->prev=tmp_bad;
+	
+				}
 			}
 		}
-		else if(links->group==1){
-			if(b_good==NULL){
-				b_good=malloc(sizeof(struct links));
-				memcpy(a_good, links, sizeof(struct links));
-				b_good->prev=NULL;
-				b_good->next=NULL;
-			}
-			else{
-				for(tmp_bad=b_good;tmp_bad->next!=NULL;tmp_bad=tmp_bad->next){
-					if(tmp_bad->miner_id==links->miner_id)
-						return 1;
-				}
-				tmp_bad->next=malloc(sizeof(struct links));
-				memcpy(tmp_bad->next, links, sizeof(struct links));
-				tmp_bad->next->next=NULL;
-				tmp_bad->next->prev=tmp_bad;
-
-			}	
-		}	
-
-    }
+	
+    	}
 	return 1;
 }
 

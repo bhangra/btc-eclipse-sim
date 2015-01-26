@@ -593,8 +593,10 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 			int n_pos = rand()%size;
 			int nid = vtried[n_pos];
 			struct caddrinfo *info = map_info(addrman, nid);
-			if(info==NULL)
+			if(info==NULL){
+				num_try++;
 				continue;
+			}
 //			fprintf(stderr, "addrman_select:\n addrman->f_chance_factor= %lf\n", addrman->f_chance_factor);
 //			fprintf(stderr, "(addrman->f_chance_factor * get_chance(sim_time, info) * (1 << 30)) = %lf\n", (addrman->f_chance_factor * get_chance(sim_time, info) * (1 << 30)));
 			if((rand()%(1 << 30)) < (addrman->f_chance_factor * get_chance(sim_time, info) * (1 << 30))){
@@ -602,6 +604,7 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 				return info;
 			}
 			addrman->f_chance_factor *= 1.2;//1.2;
+			num_try++;
 //			return NULL;
 		}
 	}
@@ -609,7 +612,7 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 		//select from new bucket
 		while(1){
 			num_try++;
-			if(num_try==2)
+			if(num_try>=2)
 				return NULL;
 			int n_k_bucket = rand()%(ADDRMAN_NEW_BUCKET_COUNT);
 			int (*vnew) = (int *)&addrman->vv_new[n_k_bucket][0];
@@ -631,14 +634,17 @@ struct caddrinfo *addrman_select(struct addrman *addrman, int n_unk_bias){
 			int n_pos = rand()%(size);
 			int nid		= vnew[n_pos];
 			struct caddrinfo *info = map_info(addrman, nid);
-			if(info==NULL)
+			if(info==NULL){
+				num_try++;
 				continue;
+			}
 //			fprintf(stderr, "addrman_select: in if= %lf\n", (addrman->f_chance_factor * get_chance(sim_time, info) * (1 << 30)));
 			if((rand()%(1 << 30))< (addrman->f_chance_factor * get_chance(sim_time, info) * (1 << 30))){
 				addrman->f_chance_factor = 1;
 				return info;
 			}
 			addrman->f_chance_factor *= 1.2;//1.2;
+			num_try++;
 //			return NULL;
 		}
 	}

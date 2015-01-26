@@ -65,18 +65,19 @@ void hexDump (char *desc, void *addr, int len) {
     fprintf (stderr,"  %s\n", buff);
 }
 
-void dns_seed(unsigned int my_id, struct dns *dns, struct link *new_comer){
-    struct link		*link;
-    unsigned int	size, payload_size;
-    size			= sizeof(struct link*);
+void dns_seed(unsigned int my_id, struct dns *dns, struct link *new_comer, unsigned int subnet){
+	struct link		*link;
+	unsigned int	size, payload_size;
+	size			= sizeof(struct link*);
 	link			= new_comer; 
-    link->dest		= &dns->new_comer;
-	payload_size	= size + sizeof(unsigned int);
-    memcpy(&link->sbuf[0], "dnsseed", 7);
-    memcpy(&link->sbuf[12], &payload_size, sizeof(unsigned int));
-    memcpy(&link->sbuf[16], &link, size);
+	link->dest		= &dns->new_comer;
+	payload_size	= size + sizeof(unsigned int)*2;
+	memcpy(&link->sbuf[0], "dnsseed", 7);
+	memcpy(&link->sbuf[12], &payload_size, sizeof(unsigned int));
+	memcpy(&link->sbuf[16], &link, size);
 	memcpy(&link->sbuf[16+size], &my_id, sizeof(unsigned int));
-    send_msg(&dns->new_comer, (char *)link->sbuf, 16+payload_size);
+	memcpy(&link->sbuf[16+size+sizeof(unsigned int)], &subnet, sizeof(unsigned int));
+	send_msg(&dns->new_comer, (char *)link->sbuf, 16+payload_size);
 }
 struct links *seed_receive(struct link *new_comer, struct links *seeds){
 	unsigned int	miner_id, size;
@@ -112,25 +113,25 @@ void dns_query(struct dns *dns, struct link *new_comer, unsigned int my_id){
 	send_msg(&dns->new_comer, (char *)link->sbuf, 16+payload_size);  
 }
 
-void dns_roundrobin(struct link *new_comer, struct links *seeds){
-	unsigned int	i, j, num_seeds, size, payload_size, dest_id, random;
+void dns_roundrobin(struct link *new_comer,/* struct links *seeds,*/ unsigned int dns_num){
+	unsigned int	i,/* j,*/ /*num_seeds,*/ size, payload_size, dest_id;/*, random;*/
 	struct link		*link;
-	struct links	*tmp, *head;
+	struct miner	*tmp;//, *head;
 	size			= sizeof(struct link*);
-	payload_size	= size + sizeof(unsigned int);
+	payload_size	= size + sizeof(unsigned int)*2;
 	link 			= new_comer;
 
-//	srand((unsigned)time(NULL));
-
 	memcpy(&dest_id, &link->process_buf[16+size], sizeof(unsigned int));
-	if(seeds==NULL)
-		return;
-	for(tmp=seeds;tmp->prev!=NULL;tmp=tmp->prev){}
-	head=tmp;
-	for(i=1; tmp->next!=NULL; i++){
+//	if(seeds==NULL)
+//		return;
+//	for(tmp=seeds;tmp->prev!=NULL;tmp=tmp->prev){}
+//	head=tmp;
+/*	for(i=1; tmp->next!=NULL; i++){
 		tmp=tmp->next;
 	}
-	num_seeds=i;
+*/
+//	num_seeds=i;
+/*
 	for(; ;){
 		i=num_seeds;
 		random=rand();
@@ -153,7 +154,7 @@ void dns_roundrobin(struct link *new_comer, struct links *seeds){
 //			}
 //		}
 			tmp = head;
-			for(i=0; i<j; tmp=tmp->next/*i++*/){
+			for(i=0; i<j; tmp=tmp->next){
 				i++;//	tmp = tmp->next;
 			}
 			if(tmp->miner_id != dest_id){
@@ -161,12 +162,17 @@ void dns_roundrobin(struct link *new_comer, struct links *seeds){
 			}
 		}
 	}
-//	fprintf(stderr, "seed: %d %p\n", tmp->miner_id, tmp->new_comer);
+*/
+	i=rand()%SEEDS_PER_DNS;
+	tmp=seeds[dns_num+i];	
+	struct link *dest=&tmp->new_comer;
+//	fprintf(stderr, "seed: %d %p\n", tmp->miner_id, &tmp->new_comer);
 	memcpy(&link->dest, &link->process_buf[16], size);
 	memcpy(&link->sbuf[0], "roundrobin", 10);
 	memcpy(&link->sbuf[12], &payload_size, 4);
-	memcpy(&link->sbuf[16], &tmp->new_comer, size);
+	memcpy(&link->sbuf[16], &dest, size);
 	memcpy(&link->sbuf[16+size], &tmp->miner_id, sizeof(unsigned int));
+	memcpy(&link->sbuf[16+size+sizeof(unsigned int)], &tmp->subnet, sizeof(unsigned int));
 	send_msg(link->dest, (char *)link->sbuf, 16+payload_size);
 //	fprintf(stderr, "sent DNS round robin\n");
 }
@@ -564,7 +570,7 @@ void send_blocks(struct link *from, struct blocks *main_chain, unsigned int heig
 #endif
 }
 
-struct links *process_dns(struct link *new_comer, struct links *seeds){
+struct links *process_dns(struct link *new_comer, struct links *seeds, unsigned int dns_num){
 	struct link				*link;
 	struct links			*tmp;
 	const struct msg_hdr	*hdr;
@@ -580,7 +586,7 @@ struct links *process_dns(struct link *new_comer, struct links *seeds){
 	}
 	else if(strncmp(hdr->command, "dnsquery", 8)==0){
 //		fprintf(stderr, "dnsquery received\n"); //debug
-		dns_roundrobin(link, seeds);
+		dns_roundrobin(link,/* seeds,*/ dns_num);
 		return seeds;
 	}
 	else{
@@ -741,7 +747,7 @@ int process_msg(struct link *new_comer,struct links *links, struct miner *me){
 }
 
 void process_new(struct link *new_comer, struct miner *me){
-    unsigned int        size, payload_size, dest_id, miner_id;
+    unsigned int        size, payload_size, dest_id, miner_id, subnet;
     struct link         *link, *dest;
 	struct links		*tmp;
 	struct msg_hdr *hdr;
@@ -757,6 +763,7 @@ void process_new(struct link *new_comer, struct miner *me){
     if(strncmp(hdr->command, "roundrobin", 10)==0){
 		memcpy(&dest, &link->process_buf[16], size);
 		memcpy(&dest_id, &link->process_buf[16+size], sizeof(unsigned int));
+		memcpy(&subnet, &link->process_buf[16+size+sizeof(unsigned int)], sizeof(unsigned int));
 		if(dest_id==me->miner_id){
 			return;
 		}
@@ -785,8 +792,8 @@ void process_new(struct link *new_comer, struct miner *me){
 		}
 //		me->neighbor++;
 		me->n_outbound++;
-//		version(me->miner_id, me->subnet, dest_id, dest, &me->new_comer, me);
-    }
+		version(me->miner_id, me->subnet, dest_id, dest, &me->new_comer, me, subnet);
+	}
 	else if(strncmp(hdr->command, "version", 7)==0){
 		bool links_found=false;
 		struct links *links;
@@ -874,8 +881,8 @@ void make_random_connection(struct threads *threads){
 		for(i=0; i<dest && tmp2->next!=NULL; i++){
 			tmp2=tmp2->next;
 		}
-
 		s = tmp->miner;
+		s->boot=false;
 		if(tmp!=tmp2){
 			d = tmp2->miner;
 			version(s->miner_id, s->subnet, d->miner_id, &d->new_comer, &s->new_comer, s, d->subnet);
